@@ -1,0 +1,11 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /eventprint/public/
+
+    # Kalau file / folder fisik ada, serve langsung
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # Selain itu, lempar ke index.php
+    RewriteRule ^ index.php [L]
+</IfModule>
