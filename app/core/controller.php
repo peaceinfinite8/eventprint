@@ -90,19 +90,30 @@ class Controller
         require __DIR__ . '/../../views/admin/layout/main.php';
     }
 
-    protected function renderFrontend(string $view, array $data = [], string $title = '')
-    {
-        if ($title !== '') {
-            $data['title'] = $title;
-        }
+    // app/core/controller.php
 
-        $data['baseUrl'] = rtrim($this->config['base_url'] ?? '/eventprint/public', '/');
-        $data['flash']   = $this->pullFlash();
+public function renderFrontend(string $viewName, array $vars = [], string $title = 'EventPrint', string $layout = 'layout/main')
+{
+    $viewsRoot = realpath(__DIR__ . '/../../views/frontend');
+    if (!$viewsRoot) throw new Exception("Views root tidak ditemukan.");
 
-        $viewFile = __DIR__ . '/../../views/frontend/' . $view . '.php';
-        $view     = $viewFile;
-        $vars     = $data;
-
-        require __DIR__ . '/../../views/frontend/layout/main.php';
+    $viewFile = $viewsRoot . '/' . trim($viewName, '/') . '.php';
+    if (!is_file($viewFile)) {
+        throw new Exception("View frontend tidak ditemukan: {$viewFile}");
     }
+
+    $layoutFile = $viewsRoot . '/' . trim($layout, '/') . '.php';
+    if (!is_file($layoutFile)) {
+        throw new Exception("Layout frontend tidak ditemukan: {$layoutFile}");
+    }
+
+    $vars['title'] = $title;
+
+    // ini yang bikin layout bisa require $view
+    $view = $viewFile;
+
+    require $layoutFile;
+}
+
+
 }

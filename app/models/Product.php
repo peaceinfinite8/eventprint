@@ -110,6 +110,100 @@ class Product
         return $rows;
     }
 
+    // ===============================
+// PUBLIC DETAIL (BY SLUG) + ALIAS
+// ===============================
+public function findPublicBySlug(string $slug): ?array
+{
+    $db   = $this->db();
+    $slug = trim($slug);
+    if ($slug === '') return null;
+
+    $sql = "SELECT
+                id, category_id, name, slug,
+                short_description, description,
+                thumbnail, base_price, stock,
+                is_featured, is_active
+            FROM products
+            WHERE slug = ?
+              AND is_active = 1
+              AND deleted_at IS NULL
+            LIMIT 1";
+
+    $stmt = $db->prepare($sql);
+    if (!$stmt) throw new Exception("Prepare failed: " . $db->error);
+
+    $stmt->bind_param('s', $slug);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $row = $res ? $res->fetch_assoc() : null;
+    $stmt->close();
+
+    return $row ?: null;
+}
+
+/**
+ * Alias biar typo lama nggak bikin fatal error lagi.
+ * (Kalau ada file lain yang masih manggil method typo)
+ */
+public function findPubliBySlug(string $slug): ?array
+{
+    return $this->findPublicBySlug($slug);
+}
+
+public function findPublicbyIdPublic(int $id): ?array
+{
+    return $this->findPublicById((int)$id);
+}
+
+public function getPublicAllWithCategory(int $limit = 200): array
+{
+    $db = $this->db();
+    $limit = max(1, (int)$limit);
+
+    $sql = "SELECT p.id, p.name, p.slug, p.thumbnail, p.short_description, p.base_price,
+                   c.name AS category_name, c.slug AS category_slug
+            FROM products p
+            LEFT JOIN product_categories c ON c.id = p.category_id
+            WHERE p.is_active = 1 AND p.deleted_at IS NULL
+            ORDER BY p.is_featured DESC, p.id DESC
+            LIMIT ?";
+
+    $stmt = $db->prepare($sql);
+    if (!$stmt) throw new Exception("Prepare failed: " . $db->error);
+
+    $stmt->bind_param("i", $limit);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+    $stmt->close();
+
+    return $rows;
+}
+
+protected function renderFrontend(string $viewName, array $vars = []): void
+{
+    // viewName WAJIB: "product/index" (tanpa "frontend/" dan tanpa ".php")
+    $baseUrl = $vars['baseUrl'] ?? '/eventprint/public';
+    $vars['baseUrl'] = $baseUrl;
+
+    // app/ sebagai root view
+    $appPath = realpath(__DIR__ . '/..'); // app/
+    if (!$appPath) die("App path tidak valid.");
+
+    $viewName = trim($viewName, '/');
+    $viewFile = $appPath . '/views/frontend/' . $viewName . '.php';
+    $layout   = $appPath . '/views/frontend/layout/main.php';
+
+    if (!file_exists($layout)) die("Layout frontend tidak ditemukan: " . $layout);
+    if (!file_exists($viewFile)) die("View frontend tidak ditemukan: " . $viewFile);
+
+    $view = $viewFile; // layout akan include $view
+    $vars = $vars;
+    include $layout;
+}
+
+
     public function findPublicById(int $id): ?array
     {
         $db = db();

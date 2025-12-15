@@ -1,82 +1,95 @@
-<?php require __DIR__ . '/../layout/header.php'; ?>
+<?php
+$baseUrl   = $vars['baseUrl'] ?? '/eventprint/public';
+$stores    = $stores ?? ($vars['stores'] ?? []);
+$storeMain = $storeMain ?? ($vars['storeMain'] ?? null);
 
-<body data-page="our-home">
-  <div class="ep-topbar d-none d-lg-block">
-    <div class="container-fluid px-4">
-      <div class="d-flex align-items-center justify-content-between py-2">
-        <div class="d-flex align-items-center gap-3 text-white-50 small">
-          <span class="d-inline-flex align-items-center gap-2"><i class="bi bi-whatsapp"></i> CS</span>
-          <span class="d-inline-flex align-items-center gap-2"><i class="bi bi-chevron-left"></i> Cetak online terbesar <i class="bi bi-chevron-right"></i></span>
-        </div>
-        <div class="d-flex align-items-center gap-3 text-white-50 small">
-          <span class="d-inline-flex align-items-center gap-2"><i class="bi bi-geo-alt"></i> Order tracking</span>
-          <span class="d-inline-flex align-items-center gap-2"><span class="ep-flag-id"></span> Ind / Rp</span>
-        </div>
+function e($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
+
+function labelOfficeType($t){
+  return ($t === 'hq') ? 'Head Office' : 'Branch';
+}
+
+// Kalau gmaps_url bukan embed link, kita tampilkan tombol "Buka Maps"
+function isEmbedUrl($url){
+  $url = (string)$url;
+  return $url !== '' && (strpos($url, 'google.com/maps/embed') !== false || strpos($url, '/maps/embed') !== false);
+}
+?>
+
+<main class="ep-section py-5 ep-bg-soft">
+  <div class="container-fluid px-4">
+
+    <?php if (!$storeMain): ?>
+      <div class="alert alert-warning mb-0">
+        Data toko belum tersedia. Pastikan ada record di tabel <b>our_store</b> dengan <b>is_active = 1</b>.
       </div>
-    </div>
-  </div>
-  <nav id="epNavbar" class="navbar navbar-expand-lg bg-white sticky-top ep-navbar shadow-sm">
-    <div class="container-fluid px-4">
-      <a class="navbar-brand d-flex align-items-center gap-2" href="index.html" aria-label="EventPrint">
-        <div class="ep-brand-mark" aria-hidden="true"><i class="bi bi-printer-fill"></i></div>
-        <div class="lh-1">
-          <div class="ep-brand-name">EventPrint</div>
-          <div class="ep-brand-sub">Online</div>
-        </div>
-      </a>
+    <?php else: ?>
 
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#epNavMenu" aria-controls="epNavMenu" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-
-      <div class="collapse navbar-collapse" id="epNavMenu">
-        <form class="ep-search d-none d-lg-flex mx-lg-4" role="search" id="epSearchForm">
-          <i class="bi bi-search"></i>
-          <input id="epSearchInput" class="form-control form-control-sm" type="search" placeholder="Search for products" aria-label="Search">
-        </form>
-
-        <ul class="navbar-nav mx-auto mb-2 mb-lg-0 ep-navlinks" id="epNavLinks">
-          <li class="nav-item"><a class="nav-link" data-nav="home" href="index.html">Home</a></li>
-          <li class="nav-item"><a class="nav-link" data-nav="products" href="products.html">Produk &amp; Layanan</a></li>
-          <li class="nav-item"><a class="nav-link" data-nav="our-home" href="our-home.html">Our Home</a></li>
-          <li class="nav-item"><a class="nav-link" data-nav="articles" href="articles.html">Artikel</a></li>
-          <li class="nav-item"><a class="nav-link" data-nav="contact" href="contact.html">Kontak</a></li>
-        </ul>
-
-        <div class="d-flex align-items-center gap-2">
-          <a class="btn btn-primary ep-cta" href="contact.html#order"><i class="bi bi-lightning-charge-fill me-1"></i>Order Sekarang</a>
-        </div>
-      </div>
-    </div>
-  </nav>
-
-  <main class="ep-section py-5 ep-bg-soft">
-    <div class="container-fluid px-4">
       <div class="row g-4 align-items-center">
         <div class="col-lg-6">
           <div class="ep-eyebrow">Our Home</div>
           <h1 class="ep-title" style="font-size:clamp(1.6rem,2.6vw,2.4rem)">Alamat toko & jam operasional</h1>
-          <p class="ep-subtitle">Data seharusnya dari backend settings.</p>
+          <p class="ep-subtitle mb-0">
+            Data diambil dari database (<code>our_store</code>).
+          </p>
 
           <div class="ep-store-card p-4 mt-3">
             <div class="d-flex align-items-start gap-3">
               <div class="ep-store-icon"><i class="bi bi-shop-window"></i></div>
+
               <div class="flex-grow-1">
-                <div class="fw-semibold" id="epStoreName">EventPrint Store</div>
-                <div class="text-muted" id="epStoreAddress"></div>
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                  <div class="fw-semibold" id="epStoreName"><?= e($storeMain['name'] ?? '-') ?></div>
+                  <span class="badge bg-primary">
+                    <?= e(labelOfficeType($storeMain['office_type'] ?? 'branch')) ?>
+                  </span>
+                </div>
+
+                <div class="text-muted" id="epStoreAddress">
+                  <?= e($storeMain['address'] ?? '-') ?>, <?= e($storeMain['city'] ?? '-') ?>
+                </div>
 
                 <div class="row g-3 mt-3">
                   <div class="col-6">
-                    <div class="small text-muted">Jam</div>
-                    <div class="fw-semibold" id="epStoreHours"></div>
+                    <div class="small text-muted">Telepon</div>
+                    <div class="fw-semibold" id="epStorePhone"><?= e($storeMain['phone'] ?? '-') ?></div>
                   </div>
                   <div class="col-6">
-                    <div class="small text-muted">Telepon</div>
-                    <div class="fw-semibold" id="epStorePhone"></div>
+                    <div class="small text-muted">WhatsApp</div>
+                    <div class="fw-semibold"><?= e($storeMain['whatsapp'] ?? '-') ?></div>
                   </div>
                 </div>
 
-                <div class="d-flex flex-wrap gap-2 mt-3" id="epStoreBadges"></div>
+                <div class="d-flex flex-wrap gap-2 mt-3" id="epStoreBadges">
+                  <?php if (!empty($storeMain['city'])): ?>
+                    <span class="badge bg-light text-dark border"><i class="bi bi-geo-alt me-1"></i><?= e($storeMain['city']) ?></span>
+                  <?php endif; ?>
+                  <?php if (!empty($storeMain['phone'])): ?>
+                    <span class="badge bg-light text-dark border"><i class="bi bi-telephone me-1"></i><?= e($storeMain['phone']) ?></span>
+                  <?php endif; ?>
+                  <?php if (!empty($storeMain['whatsapp'])): ?>
+                    <span class="badge bg-success"><i class="bi bi-whatsapp me-1"></i><?= e($storeMain['whatsapp']) ?></span>
+                  <?php endif; ?>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                  <?php if (!empty($storeMain['whatsapp'])):
+                    $wa = preg_replace('/\D+/', '', (string)$storeMain['whatsapp']);
+                    // kalau user input 08..., ubah ke 62...
+                    if (strpos($wa, '0') === 0) $wa = '62' . substr($wa, 1);
+                  ?>
+                    <a class="btn btn-success" target="_blank" href="https://wa.me/<?= e($wa) ?>">
+                      <i class="bi bi-whatsapp me-2"></i>Hubungi via WhatsApp
+                    </a>
+                  <?php endif; ?>
+
+                  <?php if (!empty($storeMain['gmaps_url'])): ?>
+                    <a class="btn btn-outline-primary" target="_blank" href="<?= e($storeMain['gmaps_url']) ?>">
+                      <i class="bi bi-map me-2"></i>Buka Google Maps
+                    </a>
+                  <?php endif; ?>
+                </div>
+
               </div>
             </div>
           </div>
@@ -84,73 +97,92 @@
 
         <div class="col-lg-6">
           <div class="ep-map-card">
-            <div class="ep-map-placeholder">
-              <div class="ep-map-badge">
-                <i class="bi bi-geo-alt-fill me-2"></i>Map Placeholder
+            <?php if (!empty($storeMain['gmaps_url']) && isEmbedUrl($storeMain['gmaps_url'])): ?>
+              <iframe
+                class="store-map"
+                src="<?= e($storeMain['gmaps_url']) ?>"
+                width="100%"
+                height="420"
+                style="border:0;border-radius:14px;"
+                allowfullscreen=""
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"></iframe>
+            <?php else: ?>
+              <div class="ep-map-placeholder" style="border-radius:14px;min-height:420px;">
+                <div class="ep-map-badge">
+                  <i class="bi bi-geo-alt-fill me-2"></i>Map belum di-embed
+                </div>
+                <div class="text-white-50 small mt-2">
+                  Isi kolom <code>gmaps_url</code> dengan link embed (google.com/maps/embed...) supaya map tampil.
+                </div>
               </div>
-              <div class="text-white-50 small mt-2">Embed Google Maps nanti dari backend.</div>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+
+      <?php if (count($stores) > 1): ?>
+        <hr class="my-5">
+
+        <div class="d-flex align-items-end justify-content-between flex-wrap gap-2 mb-3">
+          <div>
+            <div class="ep-eyebrow-sm">Cabang</div>
+            <h2 class="ep-title-sm mb-0">Daftar Toko / Workshop</h2>
+          </div>
+        </div>
+
+        <div class="row g-4">
+          <?php foreach ($stores as $s): ?>
+            <div class="col-12 col-md-6 col-xl-4">
+              <div class="card border-0 shadow-sm h-100" style="border-radius:14px; overflow:hidden;">
+                <?php
+                  $img = !empty($s['thumbnail'])
+                    ? $baseUrl . '/' . ltrim($s['thumbnail'], '/')
+                    : $baseUrl . '/assets/admin/img/photos/unsplash-3.jpg';
+                ?>
+                <div style="height:170px;background:#f1f5f9;">
+                  <img src="<?= e($img) ?>" alt="" style="width:100%;height:100%;object-fit:cover;">
+                </div>
+                <div class="card-body">
+                  <div class="d-flex align-items-center justify-content-between gap-2">
+                    <div class="fw-semibold"><?= e($s['name'] ?? '-') ?></div>
+                    <span class="badge bg-primary"><?= e(labelOfficeType($s['office_type'] ?? 'branch')) ?></span>
+                  </div>
+                  <div class="text-muted small mt-1">
+                    <?= e($s['address'] ?? '-') ?>, <?= e($s['city'] ?? '-') ?>
+                  </div>
+
+                  <div class="d-flex flex-wrap gap-2 mt-3">
+                    <?php if (!empty($s['whatsapp'])):
+                      $wa = preg_replace('/\D+/', '', (string)$s['whatsapp']);
+                      if (strpos($wa, '0') === 0) $wa = '62' . substr($wa, 1);
+                    ?>
+                      <a class="btn btn-sm btn-success" target="_blank" href="https://wa.me/<?= e($wa) ?>">
+                        <i class="bi bi-whatsapp me-1"></i>WA
+                      </a>
+                    <?php endif; ?>
+
+                    <?php if (!empty($s['gmaps_url'])): ?>
+                      <a class="btn btn-sm btn-outline-primary" target="_blank" href="<?= e($s['gmaps_url']) ?>">
+                        <i class="bi bi-map me-1"></i>Maps
+                      </a>
+                    <?php endif; ?>
+
+                    <?php if (!empty($s['phone'])): ?>
+                      <span class="btn btn-sm btn-outline-secondary disabled">
+                        <i class="bi bi-telephone me-1"></i><?= e($s['phone']) ?>
+                      </span>
+                    <?php endif; ?>
+                  </div>
+
+                </div>
+              </div>
             </div>
-          </div>
+          <?php endforeach; ?>
         </div>
-      </div>
-    </div>
-  </main>
+      <?php endif; ?>
 
-  <footer class="ep-footer py-5">
-    <div class="container-fluid px-4">
-      <div class="row g-4">
-        <div class="col-lg-4">
-          <div class="d-flex align-items-center gap-2 mb-2">
-            <div class="ep-brand-mark ep-brand-mark--sm" aria-hidden="true"><i class="bi bi-printer-fill"></i></div>
-            <div class="fw-semibold">EventPrint</div>
-          </div>
-          <div class="text-muted small">
-            Template frontend digital printing (Bootstrap 5). Struktur class/id konsisten untuk di-consume backend.
-          </div>
-        </div>
+    <?php endif; ?>
 
-        <div class="col-6 col-lg-2">
-          <div class="ep-footer-title">Menu</div>
-          <ul class="ep-footer-links list-unstyled">
-            <li><a href="index.html">Home</a></li>
-            <li><a href="products.html">Produk &amp; Layanan</a></li>
-            <li><a href="our-home.html">Our Home</a></li>
-            <li><a href="articles.html">Artikel</a></li>
-            <li><a href="contact.html">Kontak</a></li>
-          </ul>
-        </div>
-
-        <div class="col-6 col-lg-3">
-          <div class="ep-footer-title">Produk Kami</div>
-          <ul class="ep-footer-links list-unstyled" id="epFooterProducts"></ul>
-        </div>
-
-        <div class="col-lg-3">
-          <div class="ep-footer-title">Sosial Media</div>
-          <div class="d-flex gap-2">
-            <a class="ep-social" href="#" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
-            <a class="ep-social" href="#" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
-            <a class="ep-social" href="#" aria-label="TikTok"><i class="bi bi-tiktok"></i></a>
-            <a class="ep-social" href="#" aria-label="YouTube"><i class="bi bi-youtube"></i></a>
-          </div>
-        </div>
-      </div>
-
-      <hr class="my-4">
-
-      <div class="d-flex flex-wrap justify-content-between gap-2 small text-muted">
-        <div>© <span id="epYear"></span> EventPrint by Peace Infinite</div>
-        <div>Frontend-only · Bootstrap 5 · HTML/CSS/JS</div>
-      </div>
-    </div>
-  </footer>
-
-  <a class="ep-wa" id="epWaFloat" href="#" aria-label="WhatsApp">
-    <i class="bi bi-whatsapp"></i>
-  </a>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="assets/js/main.js"></script>
-</body>
-</html>
-<?php require __DIR__ . '/../layout/footer.php'; ?>
-<?php require __DIR__ . '/../layout/scripts.php'; ?>
+  </div>
+</main>

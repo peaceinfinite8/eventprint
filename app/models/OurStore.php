@@ -38,6 +38,41 @@ class OurStore
         return $rows;
     }
 
+    // ============================
+// PUBLIC (FRONTEND)
+// ============================
+
+    public function publicList(int $limit = 50): array
+    {
+        $db    = $this->db();
+        $limit = max(1, (int)$limit);
+
+        $sql = "SELECT *
+                FROM our_store
+                WHERE is_active = 1
+                ORDER BY sort_order ASC, updated_at DESC
+                LIMIT ?";
+
+        $stmt = $db->prepare($sql);
+        if (!$stmt) throw new Exception("Prepare failed: " . $db->error);
+
+        $stmt->bind_param("i", $limit);
+        $stmt->execute();
+
+        $res  = $stmt->get_result();
+        $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+        $stmt->close();
+
+        return $rows;
+    }
+
+    public function publicFirst(): ?array
+    {
+        $rows = $this->publicList(1);
+        return $rows[0] ?? null;
+    }
+
+
     public function getNextSortOrder(): int
     {
         $db  = $this->db();

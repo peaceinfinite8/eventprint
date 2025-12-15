@@ -1,6 +1,22 @@
 <?php
 // app/routes/web.php
 
+// ======================= PUBLIC =======================
+
+// HOME
+$router->get('/', 'HomePublicController@index');
+
+// OUR HOME / STORE
+$router->get('/our-home', 'OurStorePublicController@index');
+
+// CONTACT (page + submit)
+$router->get('/contact', 'ContactPublicController@index');
+$router->post('/contact/send', 'ContactPublicController@send');
+
+// ARTICLES
+$router->get('/articles', 'BlogPublicController@index');
+$router->get('/articles/{slug}', 'BlogPublicController@show'); // article detail by slug
+
 // PUBLIC PAGES
 $router->get('/', 'HomePublicController@index');
 
