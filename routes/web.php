@@ -1,33 +1,35 @@
 <?php
-// app/routes/web.php
+// public/routes/web.php
 
-// ======================= PUBLIC =======================
+// ======================= PUBLIC PAGES =======================
 
-// HOME
+// Home
 $router->get('/', 'HomePublicController@index');
 
-// OUR HOME / STORE
+// Products (page list)
+$router->get('/products', 'ProductPublicController@index');
+
+// Product detail (slug via query: /product-detail?slug=xxx)
+$router->get('/product-detail', 'ProductPublicController@detailBySlug');
+
+// Our Home
 $router->get('/our-home', 'OurStorePublicController@index');
 
-// CONTACT (page + submit)
-$router->get('/contact', 'ContactPublicController@index');
-$router->post('/contact/send', 'ContactPublicController@send');
-
-// ARTICLES
+// Blog (alias biar fleksibel)
+$router->get('/blog',     'BlogPublicController@index');
 $router->get('/articles', 'BlogPublicController@index');
-$router->get('/articles/{slug}', 'BlogPublicController@show'); // article detail by slug
+$router->get('/articles/{slug}', 'BlogPublicController@show');
 
-// PUBLIC PAGES
-$router->get('/', 'HomePublicController@index');
+// Contact
+$router->get('/contact',        'ContactPublicController@index');
+$router->post('/contact/send',  'ContactPublicController@send');
 
-// PRODUCTS PAGES (render view)
-$router->get('/products', 'ProductPublicController@index');
-$router->get('/products/{id}', 'ProductPublicController@show'); // /products/3
-
-// PRODUCTS API (JSON)
-$router->get('/api/products', 'ProductPublicController@apiList');
+// ======================= PUBLIC API (JSON) =======================
+// Ini yang dipakai renderer JS kalau kamu mau mode “data driven”
+$router->get('/api/products',      'ProductPublicController@apiList');
 $router->get('/api/products/{id}', 'ProductPublicController@apiDetail');
+$router->get('/api/products/slug/{slug}', 'ProductPublicController@apiDetailBySlug');
 
-// PRICING (kamu sudah punya calc; options sudah kamu pakai)
-$router->get('/pricing/options', 'PricingController@options'); // kalau belum ada method options, lihat bagian 4
-$router->post('/pricing/calc', 'PricingController@calc');
+// Pricing
+$router->get('/pricing/options', 'PricingController@options');
+$router->post('/pricing/calc',   'PricingController@calc');

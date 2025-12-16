@@ -1,146 +1,121 @@
 <?php
-// app/controllers/HomeController.php
-
+require_once __DIR__ . '/../models/PageContent.php';
 require_once __DIR__ . '/../helpers/Security.php';
-require_once __DIR__ . '/../helpers/Validation.php';
 
 class HomeController extends Controller
 {
-    protected $db;
-
-    public function __construct(array $config = [])
+    public function index(): void
     {
-        parent::__construct($config);
-        $this->db = db();
-    }
-
-    /* ===================== HUB HOME ===================== */
-
-    public function index()
-    {
-        $hero = $this->getHero();
-
         $sections = [
             [
                 'key'         => 'hero',
-                'name'        => 'Hero Section',
-                'description' => 'Judul, subjudul, dan tombol utama di halaman Home.',
-                'summary'     => $hero,
+                'name'        => 'Hero Slides',
+                'description' => 'Kelola slider/slide hero di halaman Home.',
                 'manage_url'  => $this->baseUrl('admin/home/hero'),
             ],
         ];
 
-        $this->renderAdmin('home/index', [
-            'sections' => $sections,
-        ], 'Home');
+        $this->renderAdmin('home/index', ['sections' => $sections], 'Home');
     }
 
-    /* ===================== HERO EDIT ===================== */
-
-    public function editHero()
+    public function heroIndex(): void
     {
-        if (!Auth::isSuperAdmin()) {
-            $this->redirectWithError('admin/home', 'Akses ditolak. Hanya super admin yang boleh mengedit Home.');
+        $pc = new PageContent();
+        $items = $pc->getSectionItems('home', 'hero');
+
+        usort($items, fn($a,$b) => (int)($a['position'] ?? 1) <=> (int)($b['position'] ?? 1));
+
+        // PAKAI FILE YANG SUDAH ADA: views/admin/home/hero_edit.php
+        $this->renderAdmin('home/hero_edit', [
+            'mode'      => 'index',
+            'items'     => $items,
+            'csrfToken' => Security::csrfToken(),
+        ], 'Hero Slides');
+    }
+
+    public function heroCreateForm(): void
+    {
+        $this->renderAdmin('home/hero_edit', [
+            'mode'      => 'create',
+            'item'      => [
+                'item_key'   => '',
+                'title'      => '',
+                'subtitle'   => '',
+                'badge'      => '',
+                'cta_text'   => '',
+                'cta_link'   => '',
+                'image'      => '',
+                'position'   => 1,
+                'is_active'  => 1,
+            ],
+            'csrfToken' => Security::csrfToken(),
+        ], 'Tambah Slide');
+    }
+
+    public function heroStore(): void
+    {
+        Security::requireCsrfToken();
+
+        $pc  = new PageContent();
+        $key = 'slide_' . date('Ymd_His') . '_' . bin2hex(random_bytes(3));
+
+        $pc->saveItemFields('home', 'hero', $key, $this->collectHeroFieldsFromPost());
+
+        $this->redirectWithSuccess('admin/home/hero', 'Slide hero berhasil dibuat.');
+    }
+
+    public function heroEditForm(string $key): void
+    {
+        $pc = new PageContent();
+        $items = $pc->getSectionItems('home', 'hero');
+
+        $item = null;
+        foreach ($items as $it) {
+            if (($it['item_key'] ?? '') === $key) { $item = $it; break; }
         }
 
-        $hero = $this->getHero();
+        if (!$item) {
+            $this->redirectWithError('admin/home/hero', 'Slide tidak ditemukan.');
+        }
 
         $this->renderAdmin('home/hero_edit', [
-            'hero' => $hero,
-        ], 'Edit Hero Home');
+            'mode'      => 'edit',
+            'item'      => $item,
+            'csrfToken' => Security::csrfToken(),
+        ], 'Edit Slide');
     }
 
-    public function updateHero()
+    public function heroUpdate(string $key): void
     {
-        if (!Auth::isSuperAdmin()) {
-            $this->redirectWithError('admin/home', 'Akses ditolak. Hanya super admin yang boleh mengedit Home.');
-        }
+        Security::requireCsrfToken();
 
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo "Method Not Allowed";
-            return;
-        }
+        $pc = new PageContent();
+        $pc->saveItemFields('home', 'hero', $key, $this->collectHeroFieldsFromPost());
 
-        try {
-            Security::requireCsrfToken();
-        } catch (Exception $e) {
-            http_response_code(419);
-            echo "CSRF token tidak valid atau sesi kadaluarsa.";
-            return;
-        }
-
-        $rules = [
-            'title'       => 'required|min:3|max:150',
-            'subtitle'    => 'nullable|max:500',
-            'button_text' => 'nullable|max:100',
-            'button_link' => 'nullable|max:255',
-        ];
-
-        $input = Validation::validateOrRedirect(
-            $_POST,
-            $rules,
-            $this->baseUrl('admin/home/hero')
-        );
-
-        $fields = [
-            'title'       => $input['title'],
-            'subtitle'    => $input['subtitle'] ?? '',
-            'button_text' => $input['button_text'] ?? '',
-            'button_link' => $input['button_link'] ?? '',
-        ];
-
-        foreach ($fields as $field => $value) {
-            $this->upsertPageContent('home', 'hero', $field, $value);
-        }
-
-        $_SESSION['flash_success'] = 'Hero Home berhasil diperbarui.';
-        header('Location: ' . $this->baseUrl('admin/home'));
-        exit;
+        $this->redirectWithSuccess('admin/home/hero', 'Slide hero berhasil diupdate.');
     }
 
-    /* ===================== INTERNAL UTILS ===================== */
-
-    protected function getHero(): array
+    public function heroDelete(string $key): void
     {
-        $sql = "SELECT field, value
-                FROM page_contents
-                WHERE page_slug = 'home'
-                  AND section   = 'hero'";
+        Security::requireCsrfToken();
 
-        $res  = $this->db->query($sql);
-        $hero = [
-            'title'       => '',
-            'subtitle'    => '',
-            'button_text' => '',
-            'button_link' => '',
-        ];
+        $pc = new PageContent();
+        $pc->deleteItem('home','hero',$key);
 
-        if ($res) {
-            while ($row = $res->fetch_assoc()) {
-                $field = $row['field'];
-                if (array_key_exists($field, $hero)) {
-                    $hero[$field] = (string)$row['value'];
-                }
-            }
-        }
-
-        return $hero;
+        $this->redirectWithSuccess('admin/home/hero', 'Slide hero berhasil dihapus.');
     }
 
-    protected function upsertPageContent(string $pageSlug, string $section, string $field, string $value): void
+    private function collectHeroFieldsFromPost(): array
     {
-        $sql = "INSERT INTO page_contents (page_slug, section, field, value)
-                VALUES (?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE value = VALUES(value)";
-
-        $stmt = $this->db->prepare($sql);
-        if (!$stmt) {
-            throw new Exception("Prepare failed: " . $this->db->error);
-        }
-
-        $stmt->bind_param('ssss', $pageSlug, $section, $field, $value);
-        $stmt->execute();
-        $stmt->close();
+        return [
+            'title'     => trim($_POST['title'] ?? ''),
+            'subtitle'  => trim($_POST['subtitle'] ?? ''),
+            'badge'     => trim($_POST['badge'] ?? ''),
+            'cta_text'  => trim($_POST['cta_text'] ?? ''),
+            'cta_link'  => trim($_POST['cta_link'] ?? ''),
+            'image'     => trim($_POST['image'] ?? ''),
+            'position'  => (string)max(1, (int)($_POST['position'] ?? 1)),
+            'is_active' => isset($_POST['is_active']) ? '1' : '0',
+        ];
     }
 }

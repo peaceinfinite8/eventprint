@@ -83,31 +83,27 @@ class HomePublicController extends Controller
     }
 
     public function index()
-    {
-        $hero = $this->getHeroData();
-        $categories = $this->getPublicCategories();
+  {
+    $config = require __DIR__ . '/../config/app.php';
+    $baseUrl = $config['baseUrl'] ?? '';
 
-        $categoryBlocks = [];
-        foreach ($categories as $c) {
-            $cid = (int)($c['id'] ?? 0);
-            $categoryBlocks[] = [
-                'category' => $c,
-                'products' => $cid ? $this->getProductsByCategory($cid, 10) : [],
-            ];
-        }
+    // contoh data dinamis (nanti ambil dari model)
+    $heroSlides = [];
+    $categories = [];
+    $testimonials = [];
+    return $this->view('frontend/home/index', [
+    'title' => 'EventPrint — Home',
+    'baseUrl' => $baseUrl,
+    'page' => 'home',
+    'data' => [
+        'hero' => [],        // slides
+        'categories' => [],  // pills + product list
+        'testimonials' => [],
+        'footerProducts' => []
+    ]
+    ]);
 
-        $stores = [];
-        try { $stores = $this->store->getLatest(1); } catch (\Throwable $e) { $stores = []; }
-        $store = !empty($stores) ? $stores[0] : null;
-
-        $latestPosts = [];
-        try { $latestPosts = $this->post->getLatest(3); } catch (\Throwable $e) { $latestPosts = []; }
-
-        $this->renderFrontend(
-        'home/index',
-        ['baseUrl' => '/eventprint/public', 'page' => 'home'],
-        'EventPrint — Home'
-        );
+  }
 
     }
-}
+

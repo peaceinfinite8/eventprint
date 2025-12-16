@@ -8,6 +8,38 @@ class Product
         return db();
     }
 
+
+    protected mysqli $db;
+
+    public function __construct()
+    {
+        $this->db = db(); // pastikan helper db() mengembalikan mysqli
+    }
+    
+    public function getPublicCategories(): array
+    {
+        $sql = "SELECT id, name, slug FROM product_categories WHERE is_active=1 ORDER BY sort_order ASC, id ASC";
+        $res = $this->db->query($sql);
+        $cats = [];
+
+        // "all" pertama biar sidebar kamu tetap cocok
+        $cats[] = ['id' => 'all', 'name' => 'Semua Produk', 'subcategories' => []];
+
+        if ($res) {
+            while ($r = $res->fetch_assoc()) {
+                $cats[] = [
+                    'id' => $r['slug'],
+                    'name' => $r['name'],
+                    'subcategories' => [] // belum ada subcategory di DB
+                ];
+            }
+        }
+
+        return $cats;
+    }
+
+
+
     public function countAll(): int
     {
         $db  = $this->db();
@@ -141,6 +173,24 @@ public function findPublicBySlug(string $slug): ?array
 
     return $row ?: null;
 }
+
+public function findIdBySlug(string $slug): ?int
+{
+    $db = db(); // asumsi helper db() return mysqli
+
+    $sql = "SELECT id FROM products WHERE slug = ? AND is_active = 1 AND deleted_at IS NULL LIMIT 1";
+    $stmt = $db->prepare($sql);
+    if (!$stmt) return null;
+
+    $stmt->bind_param('s', $slug);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $row = $res ? $res->fetch_assoc() : null;
+    $stmt->close();
+
+    return $row ? (int)$row['id'] : null;
+}
+
 
 /**
  * Alias biar typo lama nggak bikin fatal error lagi.

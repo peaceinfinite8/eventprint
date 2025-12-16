@@ -74,6 +74,41 @@ class Controller
         return $this->baseUrl($pathOrUrl);
     }
 
+    // app/core/Controller.php
+    protected function view(string $view, array $vars = [])
+{
+    // ROOT PROJECT: eventprint/
+    $root = realpath(__DIR__ . '/../..');
+    if (!$root) {
+        http_response_code(500);
+        exit('Project root not found');
+    }
+
+    // view file
+    $viewPath = $root . '/views/' . $view . '.php';
+    if (!file_exists($viewPath)) {
+        http_response_code(500);
+        exit('View not found: ' . $viewPath);
+    }
+
+    // inject baseUrl DARI CONFIG (SATU SUMBER)
+    $vars['baseUrl'] = rtrim($this->config['base_url'], '/');
+    $vars['__viewPath'] = $viewPath;
+
+    // layout frontend
+    $layoutPath = $root . '/views/frontend/layout/main.php';
+    if (!file_exists($layoutPath)) {
+        http_response_code(500);
+        exit('Layout not found: ' . $layoutPath);
+    }
+
+    require $layoutPath;
+}
+
+
+
+
+
     protected function renderAdmin(string $view, array $data = [], string $title = '')
     {
         if ($title !== '') {
@@ -92,27 +127,31 @@ class Controller
 
     // app/core/controller.php
 
-public function renderFrontend(string $viewName, array $vars = [], string $title = 'EventPrint', string $layout = 'layout/main')
+public function renderFrontend(string $viewName, array $vars = [], string $title = 'EventPrint'): void
 {
-    $viewsRoot = realpath(__DIR__ . '/../../views/frontend');
-    if (!$viewsRoot) throw new Exception("Views root tidak ditemukan.");
+    $root = realpath(__DIR__ . '/../..'); // dari app/core ke root project
+    if (!$root) die("Root path tidak ditemukan.");
 
-    $viewFile = $viewsRoot . '/' . trim($viewName, '/') . '.php';
-    if (!is_file($viewFile)) {
-        throw new Exception("View frontend tidak ditemukan: {$viewFile}");
-    }
+    // normalisasi: hilangin .php & slash depan
+    $viewName = ltrim($viewName, '/');
+    $viewName = preg_replace('/\.php$/', '', $viewName);
 
-    $layoutFile = $viewsRoot . '/' . trim($layout, '/') . '.php';
-    if (!is_file($layoutFile)) {
-        throw new Exception("Layout frontend tidak ditemukan: {$layoutFile}");
-    }
+    $layout = $root . '/views/frontend/layout/main.php';
+    $view   = $root . '/views/frontend/' . $viewName . '.php';
 
-    $vars['title'] = $title;
+    if (!file_exists($layout)) die("Layout frontend tidak ditemukan: $layout");
+    if (!file_exists($view))   die("View frontend tidak ditemukan: $view");
 
-    // ini yang bikin layout bisa require $view
-    $view = $viewFile;
+    // baseUrl AUTO (biar ga hardcode)
+    $baseUrl = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/');
+    // contoh: /eventprint/public
+    if ($baseUrl === '') $baseUrl = '';
 
-    require $layoutFile;
+    $vars['baseUrl'] = $vars['baseUrl'] ?? $baseUrl;
+    $vars['title']   = $title;
+    $vars['page']    = $vars['page'] ?? explode('/', $viewName)[0];
+
+    require $layout;
 }
 
 

@@ -13,9 +13,11 @@ class ContactPublicController extends Controller
 
     public function index()
     {
-        $this->renderFrontend('contact/index', [
-            'page' => 'contact',
-        ], 'EventPrint — Kontak');
+        $this->view('frontend/contact/index', [
+            'title' => 'EventPrint — Kontak',
+            'page'  => 'contact',
+            'data'  => null,
+        ]);
     }
 
     public function send()
@@ -25,9 +27,11 @@ class ContactPublicController extends Controller
         $phone   = trim($_POST['phone'] ?? '');
         $message = trim($_POST['message'] ?? '');
 
+        $baseUrl = $this->config['base_url'] ?? ($this->config['baseUrl'] ?? '/eventprint/public');
+
         if ($name === '' || $message === '') {
             $_SESSION['flash_error'] = 'Nama dan pesan wajib diisi.';
-            header('Location: ' . ($this->config['baseUrl'] ?? '/eventprint/public') . '/contact#form');
+            header('Location: ' . rtrim($baseUrl, '/') . '/contact#form');
             exit;
         }
 
@@ -41,7 +45,7 @@ class ContactPublicController extends Controller
         }
 
         $_SESSION['flash_success'] = 'Pesan berhasil dikirim. Kami akan hubungi kamu.';
-        header('Location: ' . ($this->config['baseUrl'] ?? '/eventprint/public') . '/contact#form');
+        header('Location: ' . rtrim($baseUrl, '/') . '/contact#form');
         exit;
     }
 }
