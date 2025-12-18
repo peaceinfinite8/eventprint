@@ -1,0 +1,87 @@
+{
+    "slug": "backwall",
+    "name": "Backwall",
+    "base_price": 12000,
+    "images": {
+        "main": "",
+        "thumbnails": [
+            "",
+            "",
+            ""
+        ]
+    },
+    "materials": [
+        {
+            "id": "flexi-korea",
+            "name": "Flexi Korea",
+            "price_delta": 0
+        },
+        {
+            "id": "ritrama",
+            "name": "Ritrama",
+            "price_delta": 5000
+        },
+        {
+            "id": "tpo-vik",
+            "name": "TPO Vik",
+            "price_delta": 3000
+        }
+    ],
+    "laminations": [
+        {
+            "id": "doff-glossy",
+            "name": "Doff/Glossy",
+            "price_delta": 0
+        },
+        {
+            "id": "laminated",
+            "name": "Laminated",
+            "price_delta": 2000
+        }
+    ],
+    "production_time": {
+        "title": "Lama Pengerjaan",
+        "items": [
+            "Order 1 - 100 Lembar: 1 - 2 Hari",
+            "Order >200 Lembar: 1 - 2 Hari",
+            "Proses Order Bisa Lebih Cepat",
+            "File Sudah Ready to Print.",
+            "Order Jumlah Besar Deadline Konfirmasi."
+        ]
+    },
+    "notes": {
+        "title": "Catatan",
+        "content": "Untuk memastikan cetakan sesuai harapan, pastikan file yang dikirim sudah dalam format siap cetak (CMYK, resolusi tinggi)."
+    },
+    "description": {
+        "title": "Keterangan Produk",
+        "content": "Print Warna A4 Biasa digunakan untuk Poster, Photo Cover Buku, Peta dll. Dicotek menggunakan mesin HP Latex."
+    },
+    "specifications": {
+        "title": "Spesifikasi",
+        "items": [
+            "Area cetak: 84,1 x 118,9 cm",
+            "Laminasi: Doff/Glossy (Laminating Dingin)",
+            "Bahan:",
+            "  - HVS 100",
+            "  - AP 150",
+            "  - AC 230",
+            "Format File: PDF - TIFF"
+        ]
+    },
+    "upload_rules": {
+        "accept": ".pdf,.ai,.psd,.tiff,.jpg,.png",
+        "max_mb": 50,
+        "label": "Upload File Siap Cetak"
+    },
+    "marketplace": {
+        "shopee": {
+            "enabled": true,
+            "url": "https://shopee.co.id/eventprint"
+        },
+        "tokopedia": {
+            "enabled": true,
+            "url": "https://www.tokopedia.com/eventprint"
+        }
+    }
+}
