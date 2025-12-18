@@ -41,7 +41,7 @@ include __DIR__ . '/sidebar.php';
         <div class="alert alert-danger"><?php echo htmlspecialchars($flash['error']); ?></div>
       <?php endif; ?>
 
-      <?php include $view; ?>
+      <?php include $__viewPath; ?>
 
     </div>
   </main>

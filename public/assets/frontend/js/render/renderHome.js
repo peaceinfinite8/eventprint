@@ -1,19 +1,14 @@
-// public/assets/frontend/js/render/renderHome.js
 // ============================================
-// EventPrint - Homepage Renderer (Backend-safe)
+// EventPrint - Homepage Renderer
 // ============================================
 
 let currentSlide = 0;
 let bannerData = [];
 let carouselInterval = null;
 
-function epRoute(path) {
-  const base = (window.EP_BASE_URL || '').replace(/\/+$/, '');
-  if (!path) return base + '/';
-  if (String(path).startsWith('http')) return path;
-  return base + (path.startsWith('/') ? path : '/' + path);
-}
-
+/**
+ * Initialize homepage
+ */
 async function initHomePage() {
   try {
     showLoading('bannerCarousel', 1);
@@ -22,17 +17,16 @@ async function initHomePage() {
     showLoading('printProducts', 4);
     showLoading('mediaProducts', 4);
 
-    const data = (window.EP_DATA_PRELOADED && typeof window.EP_DATA_PRELOADED === 'object')
-      ? window.EP_DATA_PRELOADED
-      : await loadData('data/home.json');
+    const data = await loadData('../data/home.json');
 
-    renderBannerCarousel(data.banners || []);
-    renderTestimonials(data.testimonials || []);
-    renderCategories(data.categories || []);
-    renderProductGrid(data.featuredProducts || [], 'featuredProducts');
-    renderProductGrid(data.printProducts || [], 'printProducts');
-    renderProductGrid(data.mediaProducts || [], 'mediaProducts');
-    renderContactInfo(data.contact || {});
+    renderBannerCarousel(data.banners);
+    renderTestimonials(data.testimonials);
+    renderCategories(data.categories);
+    renderProductGrid(data.featuredProducts, 'featuredProducts');
+    renderProductGrid(data.printProducts, 'printProducts');
+    renderProductGrid(data.mediaProducts, 'mediaProducts');
+    renderWhyChoose(data.whyChoose);
+    renderPromoCarousel(data.infrastructureGallery);
 
   } catch (error) {
     console.error('Error loading home page:', error);
@@ -40,6 +34,9 @@ async function initHomePage() {
   }
 }
 
+/**
+ * Render banner carousel
+ */
 function renderBannerCarousel(banners) {
   const container = document.getElementById('bannerCarousel');
   if (!container || !banners || banners.length === 0) {
@@ -50,65 +47,116 @@ function renderBannerCarousel(banners) {
   bannerData = banners;
   currentSlide = 0;
 
-  container.innerHTML = `
-    <div class="banner-slide"></div>
-    <button class="carousel-arrow left" type="button" onclick="previousSlide()">‹</button>
-    <button class="carousel-arrow right" type="button" onclick="nextSlide()">›</button>
+  const html = `
+    <div class="banner-slide" style="${banners[0].image ? `background-image: url('${banners[0].image}');` : ''}">
+      <div class="hero__inner">
+        <h1 class="banner-title">${banners[0].title}</h1>
+        <p class="banner-subtitle">${banners[0].subtitle}</p>
+        <a href="products.html" class="btn btn-primary">${banners[0].cta}</a>
+      </div>
+    </div>
+    <button class="carousel-arrow left" onclick="previousSlide()">‹</button>
+    <button class="carousel-arrow right" onclick="nextSlide()">›</button>
     ${createCarouselDots(banners.length, 0)}
   `;
 
-  const dots = container.querySelectorAll('.carousel-dot');
-  dots.forEach((dot, index) => dot.addEventListener('click', () => goToSlide(index)));
+  container.innerHTML = html;
 
-  updateCarousel();
+  // Add dot click handlers
+  const dots = container.querySelectorAll('.carousel-dot');
+  dots.forEach((dot, index) => {
+    dot.addEventListener('click', () => goToSlide(index));
+  });
+
+  // Auto-advance carousel
   startCarousel();
 }
 
+/**
+ * Navigate to specific slide
+ */
 function goToSlide(index) {
   currentSlide = index;
   updateCarousel();
-  resetCarousel();
 }
 
+/**
+ * Go to next slide
+ */
 function nextSlide() {
   currentSlide = (currentSlide + 1) % bannerData.length;
   updateCarousel();
   resetCarousel();
 }
 
+/**
+ * Go to previous slide
+ */
 function previousSlide() {
   currentSlide = (currentSlide - 1 + bannerData.length) % bannerData.length;
   updateCarousel();
   resetCarousel();
 }
 
+/**
+ * Update carousel display
+ */
 function updateCarousel() {
   const container = document.getElementById('bannerCarousel');
   if (!container) return;
 
-  const banner = bannerData[currentSlide] || {};
-  const slide = container.querySelector('.banner-slide');
-  if (!slide) return;
+  const banner = bannerData[currentSlide];
+  const slideContent = container.querySelector('.banner-slide');
 
-  slide.innerHTML = `
-    <h1 class="banner-title">${banner.title || ''}</h1>
-    <p class="banner-subtitle">${banner.subtitle || ''}</p>
-    <a href="${epRoute('/products')}" class="btn btn-primary">${banner.cta || 'Lihat Produk'}</a>
-  `;
+  if (slideContent) {
+    if (banner.image) {
+      slideContent.style.backgroundImage = `url('${banner.image}')`;
+    } else {
+      slideContent.style.backgroundImage = '';
+    }
 
+    slideContent.innerHTML = `
+      <div class="hero__inner">
+        <h1 class="banner-title">${banner.title}</h1>
+        <p class="banner-subtitle">${banner.subtitle}</p>
+        <a href="products.html" class="btn btn-primary">${banner.cta}</a>
+      </div>
+    `;
+  }
+
+  // Update dots
   const dots = container.querySelectorAll('.carousel-dot');
-  dots.forEach((dot, i) => dot.classList.toggle('active', i === currentSlide));
+  dots.forEach((dot, index) => {
+    if (index === currentSlide) {
+      dot.classList.add('active');
+    } else {
+      dot.classList.remove('active');
+    }
+  });
 }
 
+/**
+ * Start auto-carousel
+ */
 function startCarousel() {
-  carouselInterval = setInterval(() => nextSlide(), 5000);
+  carouselInterval = setInterval(() => {
+    nextSlide();
+  }, 5000);
 }
 
+/**
+ * Reset carousel timer
+ */
 function resetCarousel() {
-  if (carouselInterval) clearInterval(carouselInterval);
+  if (carouselInterval) {
+    clearInterval(carouselInterval);
+  }
   startCarousel();
 }
 
+/**
+ * Render testimonials
+ */
 function renderTestimonials(testimonials) {
   const container = document.getElementById('testimonials');
   if (!container) return;
@@ -118,28 +166,43 @@ function renderTestimonials(testimonials) {
     return;
   }
 
-  container.innerHTML = testimonials.map(t => `
+  const html = testimonials.map(testimonial => `
     <div class="testimonial-card">
-      <div class="testimonial-stars">${createStars(t.stars || 5)}</div>
-      <p class="testimonial-text">${t.text || ''}</p>
-      <p class="testimonial-author">— ${t.author || 'Customer'}</p>
+      <div class="testimonial-stars">
+        ${createStars(testimonial.stars)}
+      </div>
+      <p class="testimonial-text">${testimonial.text}</p>
+      <p class="testimonial-author">— ${testimonial.author}</p>
     </div>
   `).join('');
+
+  container.innerHTML = html;
 }
 
+/**
+ * Render categories icon row
+ */
 function renderCategories(categories) {
   const container = document.getElementById('categories');
-  if (!container || !categories || categories.length === 0) return;
+  if (!container) return;
 
-  // Klik category -> arahkan ke /products?category=...
-  container.innerHTML = categories.map(c => `
-    <a class="category-item" href="${epRoute(`/products?category=${encodeURIComponent(c.id || '')}`)}">
-      <div class="category-icon">${c.icon || '🖨️'}</div>
-      <div>${c.label || ''}</div>
-    </a>
+  if (!categories || categories.length === 0) {
+    return;
+  }
+
+  const html = categories.map(category => `
+    <div class="category-item" onclick="window.location.href='products.html#${category.id}'">
+      <div class="category-icon">${category.icon}</div>
+      <div>${category.label}</div>
+    </div>
   `).join('');
+
+  container.innerHTML = html;
 }
 
+/**
+ * Render product grid (reusable)
+ */
 function renderProductGrid(products, containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -149,32 +212,71 @@ function renderProductGrid(products, containerId) {
     return;
   }
 
-  container.innerHTML = products.map(p => `
-    <a href="${epRoute(`/product?slug=${encodeURIComponent(p.slug || '')}`)}" class="product-card-link">
+  const html = products.map(product => `
+    <a href="product-detail.html?slug=${product.slug}" class="product-card-link">
       <div class="product-card">
         <div class="product-card-image">
-          ${p.image ? `<img src="${p.image}" alt="${p.name || ''}">` : '<span>Gambar Produk</span>'}
+          ${product.image ? `<img src="${product.image}" alt="${product.name}">` : '<span>Gambar Produk</span>'}
         </div>
         <div class="product-card-info">
-          <h3 class="product-card-name">${p.name || ''}</h3>
-          <p class="product-card-price">${formatPrice(p.price || 0)}</p>
+          <h3 class="product-card-name">${product.name}</h3>
+          <p class="product-card-price">${formatPrice(product.price)}</p>
         </div>
       </div>
     </a>
   `).join('');
+
+  container.innerHTML = html;
 }
 
-function renderContactInfo(contact) {
-  const container = document.getElementById('contactInfo');
-  if (!container) return;
-
-  container.innerHTML = `
-    <div class="contact-detail"><div class="contact-icon">📍</div><div class="contact-text">${contact.address || ''}</div></div>
-    <div class="contact-detail"><div class="contact-icon">✉️</div><div class="contact-text">${contact.email || ''}</div></div>
-    <div class="contact-detail"><div class="contact-icon">💬</div><div class="contact-text">${contact.whatsapp || ''}</div></div>
-  `;
+/**
+ * Render Promo Carousel
+ */
+function renderPromoCarousel(banners) {
+  if (!banners || banners.length === 0) return;
+  // Initialize the carousel class
+  new SmallBannerCarousel('promoCarousel', banners);
 }
 
+/**
+ * Render Why Choose Section
+ */
+function renderWhyChoose(data) {
+  if (!data) return;
+
+  const container = document.getElementById('whyChooseSection');
+  if (container) {
+    container.innerHTML = `
+      <div class="why-choose-row">
+        <div class="why-choose-media">
+          <img src="${data.image}" alt="Why Choose EventPrint" onerror="this.style.display='none';">
+        </div>
+        <div class="why-choose-content">
+          <h2 class="why-choose-title">${data.title}</h2>
+          ${data.subtitle ? `<h3 class="why-choose-subtitle">${data.subtitle}</h3>` : ''}
+          ${data.description.map(p => `<p class="why-choose-text">${p}</p>`).join('')}
+        </div>
+      </div>
+      
+      <!-- Mini Banner Carousel inside the same container section -->
+      <div id="promoCarousel" class="promo-carousel">
+        <!-- Rendered later by renderPromoCarousel -->
+      </div>
+    `;
+
+    // Note: The element #promoCarousel is checked by renderPromoCarousel later. 
+    // Since renderWhyChoose runs first, it recreates the DOM with #promoCarousel.
+    // ensure renderPromoCarousel runs AFTER this.
+  }
+}
+
+// NOTE: We need to ensure renderHome calls this order:
+// 1. renderWhyChoose (creates #promoCarousel)
+// 2. renderPromoCarousel (populates it)
+
+// Cleanup on page unload
 window.addEventListener('beforeunload', () => {
-  if (carouselInterval) clearInterval(carouselInterval);
+  if (carouselInterval) {
+    clearInterval(carouselInterval);
+  }
 });

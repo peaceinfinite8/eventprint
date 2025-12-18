@@ -1,109 +1,296 @@
 <?php
 // app/controllers/HomePublicController.php
 
-require_once __DIR__ . '/../models/OurStore.php';
-require_once __DIR__ . '/../models/Post.php';
+require_once __DIR__ . '/../core/Controller.php';
 
 class HomePublicController extends Controller
 {
     protected mysqli $db;
-    protected OurStore $store;
-    protected Post $post;
 
     public function __construct(array $config = [])
     {
         parent::__construct($config);
-        $this->db    = db();
-        $this->store = new OurStore();
-        $this->post  = new Post();
+        $this->db = db();
     }
 
-    private function getHeroData(): array
+    public function index(): void
     {
-        $sql = "SELECT field, value
-                FROM page_contents
-                WHERE page_slug='home' AND section='hero'";
-        $res = $this->db->query($sql);
+        // Fetch settings for navbar/footer
+        $settingsRow = $this->db->query("SELECT * FROM settings WHERE id=1 LIMIT 1")->fetch_assoc();
+        $settings = $settingsRow ?: [];
 
-        $data = [
-            'title'        => '',
-            'subtitle'     => '',
-            'button_text'  => '',
-            'button_link'  => '',
-            'image'        => '',
-        ];
+        // Fetch hero slides
+        $heroSlides = [];
+        if (
+            $stmt = $this->db->prepare("
+            SELECT title, subtitle, badge, cta_text, cta_link, image
+            FROM hero_slides
+            WHERE page_slug='home' AND is_active=1
+            ORDER BY position ASC
+        ")
+        ) {
+            $stmt->execute();
+            $rs = $stmt->get_result();
+            while ($r = $rs->fetch_assoc()) {
+                $heroSlides[] = $r;
+            }
+            $stmt->close();
+        }
 
+        // Fetch product categories
+        $categories = [];
+        $res = $this->db->query("
+            SELECT id, name, slug, icon
+            FROM product_categories
+            WHERE is_active=1
+            ORDER BY sort_order ASC
+            LIMIT 7
+        ");
         if ($res) {
             while ($r = $res->fetch_assoc()) {
-                $f = (string)($r['field'] ?? '');
-                if (array_key_exists($f, $data)) $data[$f] = (string)($r['value'] ?? '');
+                $categories[] = $r;
             }
         }
 
-        return $data;
+        // Fetch featured products
+        $featuredProducts = [];
+        $res = $this->db->query("
+            SELECT id, name, slug, base_price, thumbnail
+            FROM products
+            WHERE is_active=1 AND is_featured=1 AND deleted_at IS NULL
+            ORDER BY created_at DESC
+            LIMIT 8
+        ");
+        if ($res) {
+            while ($r = $res->fetch_assoc()) {
+                $featuredProducts[] = $r;
+            }
+        }
+
+        // Fetch testimonials (if table exists)
+        $testimonials = [];
+        $tableCheck = $this->db->query("SHOW TABLES LIKE 'testimonials'");
+        if ($tableCheck && $tableCheck->num_rows > 0) {
+            $res = $this->db->query("
+                SELECT name, position, photo, rating, message
+                FROM testimonials
+                WHERE is_active=1
+                ORDER BY sort_order ASC
+                LIMIT 6
+            ");
+            if ($res) {
+                while ($r = $res->fetch_assoc()) {
+                    $testimonials[] = $r;
+                }
+            }
+        }
+
+        // Fetch page content (contact + CTA)
+        $homeContent = [];
+        if (
+            $stmt = $this->db->prepare("
+            SELECT field, value
+            FROM page_contents
+            WHERE page_slug='home' AND section='home_content'
+        ")
+        ) {
+            $stmt->execute();
+            $rs = $stmt->get_result();
+            while ($r = $rs->fetch_assoc()) {
+                $homeContent[(string) $r['field']] = (string) ($r['value'] ?? '');
+            }
+            $stmt->close();
+        }
+
+        $contact = [
+            'address' => (string) ($homeContent['contact_address'] ?? ''),
+            'email' => (string) ($homeContent['contact_email'] ?? ''),
+            'whatsapp' => (string) ($homeContent['contact_whatsapp'] ?? ''),
+        ];
+
+        $cta = [
+            'left_text' => (string) ($homeContent['cta_left_text'] ?? 'Baca Artikel!'),
+            'left_link' => (string) ($homeContent['cta_left_link'] ?? 'blog'),
+            'right_text' => (string) ($homeContent['cta_right_text'] ?? 'Kenapa Pilih Kami?'),
+            'right_link' => (string) ($homeContent['cta_right_link'] ?? 'our-home'),
+        ];
+
+        $this->renderFrontend('pages/home', [
+            'page' => 'home',
+            'title' => 'Home - Digital Printing & Media Promosi',
+            'settings' => $settings,
+            'heroSlides' => $heroSlides,
+            'categories' => $categories,
+            'featuredProducts' => $featuredProducts,
+            'testimonials' => $testimonials,
+            'contact' => $contact,
+            'cta' => $cta,
+        ]);
     }
 
-    private function getPublicCategories(): array
+    // GET /api/home
+    public function apiHome(): void
     {
-        $db = db();
+        header('Content-Type: application/json; charset=utf-8');
 
-        // product_categories kamu memang TIDAK punya deleted_at, jadi jangan dipakai.
-        $sql = "SELECT id, name, slug, description, sort_order
-                FROM product_categories
-                WHERE is_active = 1
-                ORDER BY sort_order ASC, id DESC";
+        $baseUrl = rtrim($this->config['base_url'] ?? '/eventprint/public', '/');
 
-        $res = $db->query($sql);
+        // 1) HERO SLIDES
+        $banners = [];
+        if (
+            $stmt = $this->db->prepare("
+        SELECT id, title, subtitle, badge, cta_text, cta_link, image, position
+        FROM hero_slides
+        WHERE page_slug='home' AND is_active=1
+        ORDER BY position ASC, id ASC
+    ")
+        ) {
+            $stmt->execute();
+            $rs = $stmt->get_result();
+            while ($r = $rs->fetch_assoc()) {
+                $img = trim((string) ($r['image'] ?? ''));
+                if ($img !== '' && !preg_match('#^https?://#i', $img)) {
+                    $img = $baseUrl . '/' . ltrim($img, '/');
+                }
+
+                $banners[] = [
+                    'id' => (int) $r['id'],
+                    'title' => (string) ($r['title'] ?? ''),
+                    'subtitle' => (string) ($r['subtitle'] ?? ''),
+                    'badge' => (string) ($r['badge'] ?? ''),
+                    'cta' => (string) ($r['cta_text'] ?? ''),
+                    'cta_link' => (string) ($r['cta_link'] ?? ''),
+                    'image' => $img,
+                ];
+            }
+            $stmt->close();
+        }
+
+        // 2) HOME CONTENT (contact + CTA + mapping category)
+        $homeContent = [];
+        if (
+            $stmt = $this->db->prepare("
+        SELECT field, value
+        FROM page_contents
+        WHERE page_slug='home' AND section='home_content'
+    ")
+        ) {
+            $stmt->execute();
+            $rs = $stmt->get_result();
+            while ($r = $rs->fetch_assoc()) {
+                $homeContent[(string) $r['field']] = (string) ($r['value'] ?? '');
+            }
+            $stmt->close();
+        }
+
+        $printCatId = (int) ($homeContent['home_print_category_id'] ?? 0);
+        $mediaCatId = (int) ($homeContent['home_media_category_id'] ?? 0);
+
+        // 3) CATEGORIES (FIX: pakai $this->db, bukan $db)
+        $categories = [];
+        $res = $this->db->query("
+        SELECT id, name, slug, icon
+        FROM product_categories
+        WHERE is_active=1
+        ORDER BY sort_order ASC, id ASC
+    ");
+        if ($res) {
+            while ($r = $res->fetch_assoc()) {
+                $categories[] = [
+                    'id' => (int) $r['id'],
+                    'label' => (string) $r['name'],
+                    'slug' => (string) ($r['slug'] ?? ''),
+                    'icon' => (string) ($r['icon'] ?? '🖨️'),
+                ];
+            }
+        }
+
+        // 4) PRODUCTS (lebih aman: pakai method parametrik)
+        $featuredProducts = $this->pickProductsFeatured(8, $baseUrl);
+        $printProducts = ($printCatId > 0) ? $this->pickProductsByCategoryId($printCatId, 8, $baseUrl) : [];
+        $mediaProducts = ($mediaCatId > 0) ? $this->pickProductsByCategoryId($mediaCatId, 8, $baseUrl) : [];
+
+        // 5) CONTACT + CTA
+        $contact = [
+            'address' => (string) ($homeContent['contact_address'] ?? ''),
+            'email' => (string) ($homeContent['contact_email'] ?? ''),
+            'whatsapp' => (string) ($homeContent['contact_whatsapp'] ?? ''),
+        ];
+
+        $cta = [
+            'left_text' => (string) ($homeContent['cta_left_text'] ?? 'Baca Artikel!'),
+            'left_link' => (string) ($homeContent['cta_left_link'] ?? ($baseUrl . '/blog')),
+            'right_text' => (string) ($homeContent['cta_right_text'] ?? 'Kenapa Pilih Kami?'),
+            'right_link' => (string) ($homeContent['cta_right_link'] ?? ($baseUrl . '/our-home')),
+        ];
+
+        echo json_encode([
+            'ok' => true,
+            'data' => [
+                'banners' => $banners,
+                'categories' => $categories,
+                'featuredProducts' => $featuredProducts,
+                'printProducts' => $printProducts,
+                'mediaProducts' => $mediaProducts,
+                'testimonials' => [],
+                'contact' => $contact,
+                'cta' => $cta,
+            ],
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    // Wrapper biar call lama tetap jalan
+    private function pickProductsFeatured(int $limit, string $baseUrl): array
+    {
+        return $this->pickProducts("is_featured=1", $limit, $baseUrl);
+    }
+
+    private function pickProductsByCategoryId(int $categoryId, int $limit, string $baseUrl): array
+    {
+        $categoryId = (int) $categoryId;
+        if ($categoryId <= 0)
+            return [];
+        return $this->pickProducts("category_id={$categoryId}", $limit, $baseUrl);
+    }
+
+    // Core helper (WAJIB ada)
+    private function pickProducts(string $where, int $limit, string $baseUrl): array
+    {
+        $limit = max(1, (int) $limit);
+
+        $sql = "
+        SELECT id, name, slug, base_price, thumbnail
+        FROM products
+        WHERE is_active=1
+          AND deleted_at IS NULL
+          AND {$where}
+        ORDER BY created_at DESC
+        LIMIT {$limit}
+    ";
+
         $rows = [];
-        if ($res) while ($r = $res->fetch_assoc()) $rows[] = $r;
+        $res = $this->db->query($sql);
+        if (!$res)
+            return $rows;
+
+        while ($r = $res->fetch_assoc()) {
+            $img = trim((string) ($r['thumbnail'] ?? ''));
+            if ($img !== '' && !preg_match('#^https?://#i', $img)) {
+                $img = $baseUrl . '/' . ltrim($img, '/');
+            }
+
+            $rows[] = [
+                'id' => (int) $r['id'],
+                'name' => (string) ($r['name'] ?? ''),
+                'slug' => (string) ($r['slug'] ?? ''),
+                'price' => (float) ($r['base_price'] ?? 0),
+                'image' => $img,
+            ];
+        }
 
         return $rows;
     }
 
-    private function getProductsByCategory(int $categoryId, int $limit = 10): array
-    {
-        $limit = max(1, (int)$limit);
 
-        // products kamu sudah pakai deleted_at (karena sebelumnya kamu memang punya konsep soft delete)
-        $sql = "SELECT id, name, slug, short_description, base_price, thumbnail, is_featured
-                FROM products
-                WHERE category_id=? AND is_active=1 AND deleted_at IS NULL
-                ORDER BY is_featured DESC, created_at DESC
-                LIMIT ?";
-        $stmt = $this->db->prepare($sql);
-        if (!$stmt) return [];
 
-        $stmt->bind_param('ii', $categoryId, $limit);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
-        $stmt->close();
-
-        return $rows;
-    }
-
-    public function index()
-  {
-    $config = require __DIR__ . '/../config/app.php';
-    $baseUrl = $config['baseUrl'] ?? '';
-
-    // contoh data dinamis (nanti ambil dari model)
-    $heroSlides = [];
-    $categories = [];
-    $testimonials = [];
-    return $this->view('frontend/home/index', [
-    'title' => 'EventPrint — Home',
-    'baseUrl' => $baseUrl,
-    'page' => 'home',
-    'data' => [
-        'hero' => [],        // slides
-        'categories' => [],  // pills + product list
-        'testimonials' => [],
-        'footerProducts' => []
-    ]
-    ]);
-
-  }
-
-    }
-
+}

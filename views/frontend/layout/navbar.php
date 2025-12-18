@@ -1,34 +1,66 @@
 <?php
-// app/views/frontend/layout/navbar.php
 $baseUrl = rtrim(($vars['baseUrl'] ?? '/eventprint/public'), '/');
+
+// ambil data menu dari site.json (optional tapi rapi)
+$site = [
+  'brand' => ['logoText' => 'EventPrint'],
+  'nav' => [
+    ['label'=>'Home','href'=>'/'],
+    ['label'=>'All Product','href'=>'/products'],
+    ['label'=>'Our Home','href'=>'/our-home'],
+    ['label'=>'Blog','href'=>'/blog'],
+    ['label'=>'Contact','href'=>'/contact'],
+  ],
+];
+
+$siteJsonPath = realpath(__DIR__ . '/../../../public/assets/frontend/data/site.json');
+if ($siteJsonPath && file_exists($siteJsonPath)) {
+  $json = json_decode(file_get_contents($siteJsonPath), true);
+  if (is_array($json)) $site = array_replace_recursive($site, $json);
+}
+
+// hitung current path relatif terhadap baseUrl
+$uriPath  = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
+$basePath = parse_url($baseUrl, PHP_URL_PATH) ?: '';
+$basePath = rtrim($basePath, '/');
+
+$current = $uriPath;
+if ($basePath !== '' && strpos($current, $basePath) === 0) {
+  $current = substr($current, strlen($basePath));
+}
+$current = '/' . trim($current, '/');
+if ($current === '/') $current = '/';
+
+function ep_nav_active(string $current, string $href): bool {
+  $href = '/' . trim($href, '/');
+  if ($href === '//') $href = '/';
+  if ($href === '/') return $current === '/';
+  return strpos($current, $href) === 0;
+}
 ?>
-<nav class="navbar navbar-expand-lg bg-white sticky-top ep-navbar shadow-sm">
-  <div class="container-fluid px-4">
-    <a class="navbar-brand d-flex align-items-center gap-2" href="<?= $baseUrl ?>/" aria-label="EventPrint">
-      <div class="ep-brand-mark"><i class="bi bi-printer-fill"></i></div>
-      <div class="lh-1">
-        <div class="ep-brand-name">EventPrint</div>
-        <div class="ep-brand-sub">Online</div>
-      </div>
+
+<nav class="navbar">
+  <div class="container">
+    <a href="<?= htmlspecialchars($baseUrl) ?>/" class="navbar-brand">
+      <?= htmlspecialchars($site['brand']['logoText'] ?? 'EventPrint') ?>
     </a>
 
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#epNavMenu">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-
-      <ul class="navbar-nav mx-auto mb-2 mb-lg-0 ep-navlinks" id="epNavLinks">
-        <li class="nav-item"><a class="nav-link" data-nav="home" href="<?= $baseUrl ?>/">Home</a></li>
-        <li class="nav-item"><a class="nav-link" data-nav="products" href="<?= $baseUrl ?>/products">Produk &amp; Layanan</a></li>
-        <li class="nav-item"><a class="nav-link" data-nav="our-home" href="<?= $baseUrl ?>/our-home">Our Home</a></li>
-        <li class="nav-item"><a class="nav-link" data-nav="articles" href="<?= $baseUrl ?>/articles">Artikel</a></li>
-        <li class="nav-item"><a class="nav-link" data-nav="contact" href="<?= $baseUrl ?>/contact">Kontak</a></li>
-      </ul>
-
-      <div class="d-flex align-items-center gap-2">
-        <a class="btn btn-primary ep-cta" href="<?= $baseUrl ?>/contact#order">
-          <i class="bi bi-lightning-charge-fill me-1"></i>Order Sekarang
-        </a>
-      </div>
-    </div>
+    <ul class="navbar-nav">
+      <?php foreach (($site['nav'] ?? []) as $item): ?>
+        <?php
+          $href = $item['href'] ?? '/';
+          if (!preg_match('#^https?://#i', $href)) {
+            $href = $baseUrl . (str_starts_with($href, '/') ? $href : '/' . $href);
+          }
+          $rawHref = $item['href'] ?? '/';
+          $active = ep_nav_active($current, $rawHref);
+        ?>
+        <li>
+          <a class="nav-link <?= $active ? 'active' : '' ?>" href="<?= htmlspecialchars($href) ?>">
+            <?= htmlspecialchars($item['label'] ?? '-') ?>
+          </a>
+        </li>
+      <?php endforeach; ?>
+    </ul>
   </div>
 </nav>

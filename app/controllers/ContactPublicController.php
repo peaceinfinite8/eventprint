@@ -1,6 +1,8 @@
 <?php
 // app/controllers/ContactPublicController.php
 
+require_once __DIR__ . '/../core/Controller.php';
+
 class ContactPublicController extends Controller
 {
     protected mysqli $db;
@@ -11,41 +13,84 @@ class ContactPublicController extends Controller
         $this->db = db();
     }
 
-    public function index()
+    public function index(): void
     {
-        $this->view('frontend/contact/index', [
-            'title' => 'EventPrint — Kontak',
-            'page'  => 'contact',
-            'data'  => null,
+        // Fetch settings
+        $settingsRow = $this->db->query("SELECT * FROM settings WHERE id=1 LIMIT 1")->fetch_assoc();
+        $settings = $settingsRow ?: [];
+
+        // Get pre-filled product name from query string (if redirected from product page)
+        $productName = $_GET['product'] ?? '';
+
+        $this->renderFrontend('pages/contact', [
+            'page' => 'contact',
+            'title' => 'Contact Us',
+            'settings' => $settings,
+            'productName' => $productName,
         ]);
     }
 
-    public function send()
+    public function send(): void
     {
-        $name    = trim($_POST['name'] ?? '');
-        $email   = trim($_POST['email'] ?? '');
-        $phone   = trim($_POST['phone'] ?? '');
+        // Validate CSRF token (if implemented)
+        // For now, simple validation
+
+        $name = trim($_POST['name'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $phone = trim($_POST['phone'] ?? '');
+        $subject = trim($_POST['subject'] ?? '');
         $message = trim($_POST['message'] ?? '');
 
-        $baseUrl = $this->config['base_url'] ?? ($this->config['baseUrl'] ?? '/eventprint/public');
+        // Validation
+        $errors = [];
 
-        if ($name === '' || $message === '') {
-            $_SESSION['flash_error'] = 'Nama dan pesan wajib diisi.';
-            header('Location: ' . rtrim($baseUrl, '/') . '/contact#form');
-            exit;
+        if (empty($name)) {
+            $errors[] = 'Nama wajib diisi';
         }
 
-        $sql = "INSERT INTO contact_messages (name, email, phone, message, is_read, created_at)
-                VALUES (?, ?, ?, ?, 0, NOW())";
-        $stmt = $this->db->prepare($sql);
-        if ($stmt) {
-            $stmt->bind_param('ssss', $name, $email, $phone, $message);
-            $stmt->execute();
+        if (empty($email)) {
+            $errors[] = 'Email wajib diisi';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = 'Email tidak valid';
+        }
+
+        if (empty($message)) {
+            $errors[] = 'Pesan wajib diisi';
+        }
+
+        if (!empty($errors)) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'errors' => $errors
+            ]);
+            return;
+        }
+
+        // Save to database
+        $stmt = $this->db->prepare("
+            INSERT INTO contact_messages (name, email, phone, subject, message, is_read)
+            VALUES (?, ?, ?, ?, ?, 0)
+        ");
+
+        $stmt->bind_param('sssss', $name, $email, $phone, $subject, $message);
+
+        if ($stmt->execute()) {
             $stmt->close();
-        }
 
-        $_SESSION['flash_success'] = 'Pesan berhasil dikirim. Kami akan hubungi kamu.';
-        header('Location: ' . rtrim($baseUrl, '/') . '/contact#form');
-        exit;
+            // Return success response
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'message' => 'Pesan Anda berhasil terkirim! Kami akan segera menghubungi Anda.'
+            ]);
+        } else {
+            header('Content-Type: application/json');
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'errors' => ['Terjadi kesalahan saat menyimpan pesan. Silakan coba lagi.']
+            ]);
+        }
     }
 }

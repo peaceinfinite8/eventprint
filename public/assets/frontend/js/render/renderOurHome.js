@@ -21,6 +21,7 @@ async function initOurHomePage() {
     }
 
     renderStores(data.stores);
+    renderMachineGallery(data.machineGallery);
 
   } catch (error) {
     console.error('Error loading our home page:', error);
@@ -103,4 +104,25 @@ function renderStores(stores) {
 
   container.innerHTML = html;
   container.className = 'stores-grid';
+}
+
+/**
+ * Render Machine Gallery
+ */
+function renderMachineGallery(gallery) {
+  const container = document.getElementById('galleryGrid');
+  if (!container || !gallery) return;
+
+  const html = gallery.map(item => `
+    <div class="gallery-item" onclick="alert('${item.title} - ${item.caption}')">
+      ${item.type ? `<div class="gallery-badge">${item.type}</div>` : ''}
+      <img src="${item.image}" alt="${item.title}" loading="lazy">
+      <div class="gallery-overlay">
+        <div class="gallery-item-title">${item.title}</div>
+        <div class="gallery-item-caption">${item.caption}</div>
+      </div>
+    </div>
+  `).join('');
+
+  container.innerHTML = html;
 }

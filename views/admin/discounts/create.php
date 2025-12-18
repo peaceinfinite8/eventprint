@@ -38,10 +38,6 @@ $csrfToken = $csrfToken ?? '';
           <input class="form-control" type="number" step="0.01" min="0" name="discount_value" required>
         </div>
 
-        <div class="col-md-3">
-          <label class="form-label">Kuota Diskon *</label>
-          <input class="form-control" type="number" min="1" name="qty_total" required>
-        </div>
 
         <div class="col-md-4">
           <label class="form-label">Mulai</label>

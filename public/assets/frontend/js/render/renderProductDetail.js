@@ -1,304 +1,502 @@
-// public/assets/frontend/js/render/renderProductDetail.js
-(() => {
-  'use strict';
+// ============================================
+// EventPrint - Product Detail Page Renderer
+// ============================================
 
-  if (window.__EP_PRODUCT_DETAIL_LOADED__) return;
-  window.__EP_PRODUCT_DETAIL_LOADED__ = true;
+let productData = null;
+let selectedMaterialId = null;
+let selectedLaminationId = null;
+let quantity = 1;
+let uploadedFileName = null;
+let currentNote = '';
 
-  let productData = null;
-  let quantity = 1;
-  let uploadedFileName = null;
-  let currentNote = '';
+/**
+ * Initialize Product Detail page
+ */
+async function initProductDetailPage() {
+  try {
+    const slug = getProductSlugFromURL();
 
-  function epBase() {
-    return (window.EP_BASE_URL || '').replace(/\/+$/, '');
-  }
-
-  function epUrl(path) {
-    const base = epBase();
-    if (!path) return base + '/';
-    if (String(path).startsWith('http')) return path;
-    return base + (String(path).startsWith('/') ? path : '/' + path);
-  }
-
-  function fmtPrice(n) {
-    if (typeof window.formatPrice === 'function') return window.formatPrice(n);
-    const x = Number(n || 0);
-    try {
-      return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(x);
-    } catch {
-      return 'Rp ' + x.toLocaleString('id-ID');
+    if (!slug) {
+      renderProductNotFound('Produk tidak ditemukan. URL tidak valid.');
+      return;
     }
-  }
 
-  async function fetchJSON(path) {
-    const url = epUrl(path);
-    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-    const data = await res.json().catch(() => null);
-    return data;
-  }
+    // Show loading
+    showLoading('productDetailContent', 1);
 
-  function imgUrl(src) {
-    if (!src) return '';
-    const s = String(src);
-    if (s.startsWith('http')) return s;
-    return epBase() + '/' + s.replace(/^\/+/, '');
-  }
+    // Simulate loading delay
+    await new Promise(resolve => setTimeout(resolve, 400));
 
-  function getIdFromPath() {
-    // contoh: /eventprint/public/products/3
-    const parts = window.location.pathname.split('/').filter(Boolean);
-    const last = parts[parts.length - 1];
-    const id = parseInt(last, 10);
-    return Number.isFinite(id) ? id : null;
-  }
+    // Load all products from products.json
+    // PATH REVISED: From /views/product-detail.html to /data/products.json is ../data/products.json
+    const productsData = await loadData('../data/products.json');
 
-  function getIdFromDom() {
-    const el = document.getElementById('productDetailContent');
-    if (!el) return null;
-    const v = el.getAttribute('data-product-id');
-    const id = parseInt(v, 10);
-    return Number.isFinite(id) ? id : null;
-  }
-
-  function ensureToast() {
-    let toast = document.getElementById('toast');
-    if (!toast) {
-      toast = document.createElement('div');
-      toast.id = 'toast';
-      toast.className = 'toast';
-      document.body.appendChild(toast);
+    if (!productsData || !productsData.products) {
+      console.error('Failed to load products data structure');
+      renderProductNotFound('Gagal memuat data produk (System Error).');
+      return;
     }
-    return toast;
+
+    console.log(`[ProductDetail] Searching for slug: "${slug}"`);
+    console.log(`[ProductDetail] Available products:`, productsData.products.length);
+
+    // Find product by slug
+    const product = productsData.products.find(p => p.slug === slug);
+
+    if (!product) {
+      console.warn(`[ProductDetail] Product not found for slug: ${slug}`);
+      renderProductNotFound(`Produk dengan slug "${slug}" tidak ditemukan.`);
+      return;
+    }
+
+    productData = product;
+
+    // Set default selections based on enabled options
+    if (product.options.materials.enabled && product.options.materials.items.length > 0) {
+      selectedMaterialId = product.options.materials.items[0].id;
+    } else {
+      selectedMaterialId = null;
+    }
+
+    if (product.options.laminations.enabled && product.options.laminations.items.length > 0) {
+      selectedLaminationId = product.options.laminations.items[0].id;
+    } else {
+      selectedLaminationId = null;
+    }
+
+    quantity = 1;
+
+    // Render page
+    renderProductDetail();
+
+  } catch (error) {
+    console.error('Error loading product detail:', error);
+    renderProductNotFound('Gagal memuat produk. Silakan coba lagi.');
   }
+}
 
-  function showToast(message) {
-    const toast = ensureToast();
-    toast.textContent = message;
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 3000);
-  }
+/**
+ * Get product slug from URL query string
+ */
+function getProductSlugFromURL() {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get('slug');
+}
 
-  function renderProductNotFound(message) {
-    const container = document.getElementById('productDetailContent');
-    if (!container) return;
+/**
+ * Render product not found state
+ */
+function renderProductNotFound(message) {
+  const container = document.getElementById('productDetailContent');
+  container.innerHTML = `
+    <div class="product-not-found">
+      <h2>Produk Tidak Ditemukan</h2>
+      <p>${message}</p>
+      <a href="products.html" class="btn btn-primary">Kembali ke All Product</a>
+    </div>
+  `;
+}
 
-    container.innerHTML = `
-      <div class="product-not-found">
-        <h2>Produk Tidak Ditemukan</h2>
-        <p>${message}</p>
-        <a href="${epUrl('/products')}" class="btn btn-primary">Kembali ke All Product</a>
+/**
+ * Render complete product detail page
+ */
+function renderProductDetail() {
+  const container = document.getElementById('productDetailContent');
+
+  const html = `
+    <!-- 3 Column Layout -->
+    <div class="product-detail-container">
+      <!-- Column 1: Gallery -->
+      <div class="gallery-section">
+        <div id="mainImage" class="main-image">
+          ${productData.images[0] ? `<img src="${productData.images[0]}" alt="${productData.name}">` : '<span>Gambar Produk</span>'}
+        </div>
+        <div class="thumbnail-list">
+          ${productData.images.slice(1, 4).map((img, index) => `
+            <div class="thumbnail ${index === 0 ? 'active' : ''}" onclick="switchMainImage(${index + 1})" data-index="${index + 1}">
+              ${img ? `<img src="${img}" alt="Thumbnail ${index + 1}">` : '<span>Gambar Produk</span>'}
+            </div>
+          `).join('')}
+        </div>
       </div>
-    `;
-  }
-
-  function calculateUnitPrice() {
-    // versi DB basic: pakai base_price saja
-    // (kalau nanti kamu mau support opsi dari DB, baru dikembangkan)
-    return Number(productData?.base_price ?? productData?.basePrice ?? 0);
-  }
-
-  function updatePriceAndSubtotal() {
-    const unitPrice = calculateUnitPrice();
-    const subtotal = unitPrice * quantity;
-
-    const priceEl = document.getElementById('displayPrice');
-    const subEl = document.getElementById('subtotalValue');
-    const qtyEl = document.getElementById('quantityValue');
-
-    if (priceEl) priceEl.textContent = fmtPrice(unitPrice);
-    if (subEl) subEl.textContent = fmtPrice(subtotal);
-    if (qtyEl) qtyEl.textContent = String(quantity);
-  }
-
-  function wireDetailEvents() {
-    // thumbnails
-    document.querySelectorAll('.thumbnail').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = Number(btn.getAttribute('data-index'));
-        const images = Array.isArray(productData.images) ? productData.images : [];
-        const img = images[idx] || '';
-        const mainImage = document.getElementById('mainImage');
-        if (mainImage) {
-          mainImage.innerHTML = img ? `<img src="${imgUrl(img)}" alt="${productData.name || 'Produk'}">` : '<span>Gambar Produk</span>';
-        }
-        document.querySelectorAll('.thumbnail').forEach((t, i) => t.classList.toggle('active', i === idx));
-      });
-    });
-
-    // note
-    const note = document.getElementById('productNote');
-    if (note) note.addEventListener('input', () => (currentNote = note.value || ''));
-
-    // qty
-    const minus = document.getElementById('qtyMinus');
-    const plus = document.getElementById('qtyPlus');
-
-    if (minus) minus.addEventListener('click', () => {
-      if (quantity > 1) quantity--;
-      updatePriceAndSubtotal();
-    });
-    if (plus) plus.addEventListener('click', () => {
-      quantity++;
-      updatePriceAndSubtotal();
-    });
-
-    // upload
-    const input = document.getElementById('printFileInput');
-    if (input) {
-      input.addEventListener('change', (event) => {
-        const file = event.target.files && event.target.files[0];
-        const statusEl = document.getElementById('fileStatus');
-        if (!statusEl) return;
-
-        if (!file) {
-          statusEl.innerHTML = '';
-          uploadedFileName = null;
-          return;
-        }
-
-        uploadedFileName = file.name;
-        statusEl.innerHTML = `<div class="file-name">✓ ${file.name}</div>`;
-      });
-    }
-
-    // checkout draft
-    const checkoutBtn = document.getElementById('checkoutBtn');
-    if (checkoutBtn) {
-      checkoutBtn.addEventListener('click', () => {
-        const unitPrice = calculateUnitPrice();
-        const subtotal = unitPrice * quantity;
-
-        const draft = {
-          product_id: productData.id,
-          product_name: productData.name,
-          quantity,
-          note: currentNote,
-          subtotal,
-          unit_price: unitPrice,
-          file_name: uploadedFileName,
-          timestamp: new Date().toISOString()
-        };
-
-        try {
-          localStorage.setItem('eventprint_checkout_draft', JSON.stringify(draft));
-          showToast('✓ Draft pesanan tersimpan!');
-        } catch (e) {
-          console.error(e);
-          showToast('❌ Gagal menyimpan draft');
-        }
-      });
-    }
-  }
-
-  function normalizeImages(p) {
-    // dukung thumbnail/images
-    const imgs = Array.isArray(p.images) ? p.images.filter(Boolean) : [];
-    if (imgs.length) return imgs;
-
-    const thumb = p.thumbnail || p.thumb || p.image || p.image_url || '';
-    if (thumb) return [thumb];
-
-    return [];
-  }
-
-  function renderProductDetail() {
-    const container = document.getElementById('productDetailContent');
-    if (!container) return;
-
-    const images = normalizeImages(productData);
-    const mainImg = images[0] || '';
-
-    container.innerHTML = `
-      <div class="product-detail-container">
-        <div class="gallery-section">
-          <div id="mainImage" class="main-image">
-            ${mainImg ? `<img src="${imgUrl(mainImg)}" alt="${productData.name || 'Produk'}">` : '<span>Gambar Produk</span>'}
-          </div>
-
-          <div class="thumbnail-list">
-            ${images.slice(0, 4).map((img, idx) => `
-              <button class="thumbnail ${idx === 0 ? 'active' : ''}" type="button" data-index="${idx}">
-                ${img ? `<img src="${imgUrl(img)}" alt="Thumbnail ${idx + 1}">` : '<span>Gambar</span>'}
+      
+      <!-- Column 2: Options -->
+      <div class="options-section">
+        <h1>${productData.name}</h1>
+        <div class="price-display" id="displayPrice">${formatPrice(productData.base_price)}</div>
+        
+        ${renderMarketplaceCTAs(productData.marketplace)}
+        
+        ${productData.options.materials.enabled ? `
+        <!-- Material Selection -->
+        <div class="option-group">
+          <label class="option-label">Pilih Bahan</label>
+          <div class="chips-container">
+            ${productData.options.materials.items.map(material => `
+              <button class="chip ${material.id === selectedMaterialId ? 'active' : ''}" 
+                      onclick="selectMaterial('${material.id}')">
+                ${material.name}
               </button>
             `).join('')}
           </div>
         </div>
-
-        <div class="options-section">
-          <h1>${productData.name || 'Produk'}</h1>
-          <div class="price-display" id="displayPrice">${fmtPrice(calculateUnitPrice())}</div>
-
-          ${productData.short_description ? `<p class="product-short-desc">${productData.short_description}</p>` : ''}
-
-          <div class="option-group">
-            <label class="option-label">Keterangan (Opsional)</label>
-            <textarea class="note-textarea" id="productNote" placeholder="Tambahkan catatan..."></textarea>
+        ` : ''}
+        
+        ${productData.options.laminations.enabled ? `
+        <!-- Lamination Selection -->
+        <div class="option-group">
+          <label class="option-label">Pilih Laminasi</label>
+          <div class="chips-container">
+            ${productData.options.laminations.items.map(lam => `
+              <button class="chip ${lam.id === selectedLaminationId ? 'active' : ''}" 
+                      onclick="selectLamination('${lam.id}')">
+                ${lam.name}
+              </button>
+            `).join('')}
           </div>
-
-          <div class="option-group">
-            <label class="option-label">Upload File Siap Cetak</label>
-            <div class="file-upload-wrapper">
-              <label class="file-upload-btn">
-                <span>📁 Pilih File</span>
-                <input id="printFileInput" type="file">
-              </label>
-              <div id="fileStatus"></div>
-            </div>
-          </div>
-
-          ${productData.description ? `
-            <div class="product-long-desc">
-              ${String(productData.description).trim() ? `<p>${productData.description}</p>` : ''}
-            </div>
-          ` : ''}
         </div>
-
-        <div class="checkout-box">
-          <h3 class="checkout-title">Atur Jumlah dan Catatan</h3>
-
-          <div class="quantity-stepper">
-            <span class="quantity-label">Quantity :</span>
-            <div class="stepper-controls">
-              <button class="stepper-btn" type="button" id="qtyMinus">-</button>
-              <span class="quantity-value" id="quantityValue">1</span>
-              <button class="stepper-btn" type="button" id="qtyPlus">+</button>
-            </div>
+        ` : ''}
+        
+        <!-- Note Textarea -->
+        <div class="option-group">
+          <label class="option-label">Keterangan (Opsional)</label>
+          <textarea class="note-textarea" 
+                    id="productNote" 
+                    placeholder="Tambahkan catatan untuk pesanan Anda..."
+                    oninput="updateNote(this.value)"></textarea>
+        </div>
+        
+        <!-- File Upload -->
+        <div class="option-group">
+          <label class="option-label">Upload File Siap Cetak</label>
+          <div class="file-upload-wrapper">
+            <label class="file-upload-btn">
+              <span>📁 Pilih File</span>
+              <input type="file" 
+                     accept="${productData.upload_rules.accept.join(',')}" 
+                     onchange="handleFileUpload(event)">
+            </label>
+            <div id="fileStatus"></div>
           </div>
-
-          <div class="subtotal-row">
-            <span class="subtotal-label">Subtotal</span>
-            <span class="subtotal-value" id="subtotalValue">${fmtPrice(calculateUnitPrice())}</span>
-          </div>
-
-          <button class="checkout-btn" type="button" id="checkoutBtn">Beli Sekarang</button>
         </div>
       </div>
-    `;
+      
+      <!-- Column 3: Checkout Box -->
+      <div class="checkout-box">
+        <h3 class="checkout-title">Atur Jumlah dan Catatan</h3>
+        
+        <div class="quantity-stepper">
+          <span class="quantity-label">Quantity :</span>
+          <div class="stepper-controls">
+            <button class="stepper-btn" onclick="decreaseQuantity()">-</button>
+            <span class="quantity-value" id="quantityValue">1</span>
+            <button class="stepper-btn" onclick="increaseQuantity()">+</button>
+          </div>
+        </div>
+        
+        <div class="subtotal-row">
+          <span class="subtotal-label">Subtotal</span>
+          <span class="subtotal-value" id="subtotalValue">${formatPrice(productData.base_price)}</span>
+        </div>
+        
+        <button class="checkout-btn" onclick="handleCheckout()">Beli Sekarang</button>
+      </div>
+    </div>
+    
+    <!-- Info Sections Below -->
+    <div class="info-sections">
+      <!-- Production Time -->
+      ${productData.work_time && productData.work_time.length > 0 ? `
+        <div class="info-section">
+          <h3>Lama Pengerjaan</h3>
+          <ul>
+            ${productData.work_time.map(item => `<li>${item}</li>`).join('')}
+          </ul>
+        </div>
+      ` : ''}
+      
+      <!-- Notes -->
+      ${productData.notes && productData.notes.length > 0 ? `
+        <div class="info-section">
+          <h3>Catatan</h3>
+          <ul>
+            ${productData.notes.map(item => `<li>${item}</li>`).join('')}
+          </ul>
+        </div>
+      ` : ''}
+      
+      <!-- Product Description -->
+      ${productData.description && productData.description.length > 0 ? `
+        <div class="info-section">
+          <h3>Keterangan Produk</h3>
+          ${productData.description.map(p => `<p>${p}</p>`).join('')}
+        </div>
+      ` : ''}
+      
+      <!-- Specifications -->
+      ${productData.specs && productData.specs.length > 0 ? `
+        <div class="info-section">
+          <h3>Spesifikasi</h3>
+          <ul>
+            ${productData.specs.map(item => `<li>${item}</li>`).join('')}
+          </ul>
+        </div>
+      ` : ''}
+    </div>
+  `;
 
-    wireDetailEvents();
-    updatePriceAndSubtotal();
+  container.innerHTML = html;
+}
+
+/**
+ * Render marketplace CTAs (Shopee, Tokopedia)
+ */
+function renderMarketplaceCTAs(marketplace) {
+  if (!marketplace) return '';
+
+  const buttons = [];
+
+  // Shopee button
+  if (marketplace.shopee && marketplace.shopee.enabled && marketplace.shopee.url) {
+    buttons.push(`
+      <a href="${marketplace.shopee.url}" 
+         target="_blank" 
+         rel="noopener noreferrer"
+         class="marketplace-btn shopee">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M21 8c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2s.9-2 2-2h14c1.1 0 2 .9 2 2zM3 11v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7"/>
+        </svg>
+        Shopee
+      </a>
+    `);
   }
 
-  window.initProductDetailPage = async function initProductDetailPage() {
-    try {
-      const id = getIdFromPath() || getIdFromDom();
-      if (!id) return renderProductNotFound('ID produk tidak ditemukan.');
+  // Tokopedia button
+  if (marketplace.tokopedia && marketplace.tokopedia.enabled && marketplace.tokopedia.url) {
+    buttons.push(`
+      <a href="${marketplace.tokopedia.url}" 
+         target="_blank" 
+         rel="noopener noreferrer"
+         class="marketplace-btn tokopedia">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M21 8c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2s.9-2 2-2h14c1.1 0 2 .9 2 2zM3 11v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7"/>
+        </svg>
+        Tokopedia
+      </a>
+    `);
+  }
 
-      if (typeof window.showLoading === 'function') window.showLoading('productDetailContent', 1);
+  if (buttons.length === 0) return '';
 
-      const res = await fetchJSON(`/api/products/${id}`);
-      if (!res?.ok || !res?.item) return renderProductNotFound('Produk tidak ditemukan.');
+  return `
+    <div class="marketplace-ctas">
+      ${buttons.join('')}
+    </div>
+  `;
+}
 
-      productData = res.item;
-      quantity = 1;
-      uploadedFileName = null;
-      currentNote = '';
+/**
+ * Switch main image when thumbnail clicked
+ */
+function switchMainImage(index) {
+  const mainImage = document.getElementById('mainImage');
+  const thumbnails = document.querySelectorAll('.thumbnail');
 
-      renderProductDetail();
-    } catch (e) {
-      console.error(e);
-      renderProductNotFound('Gagal memuat produk dari server.');
+  // Update active thumbnail
+  thumbnails.forEach((thumb, i) => {
+    if (i === index) {
+      thumb.classList.add('active');
+    } else {
+      thumb.classList.remove('active');
     }
+  });
+
+  // Update main image
+  const thumbImg = productData.images[index];
+  mainImage.innerHTML = thumbImg
+    ? `<img src="${thumbImg}" alt="${productData.name}">`
+    : '<span>Gambar Produk</span>';
+}
+
+/**
+ * Select material
+ */
+function selectMaterial(materialId) {
+  selectedMaterialId = materialId;
+
+  // Update UI
+  const chips = document.querySelectorAll('.option-group .chip');
+  chips.forEach(chip => {
+    const btnText = chip.textContent.trim();
+    const material = productData.options.materials.items.find(m => m.name === btnText);
+    if (material && material.id === materialId) {
+      chip.classList.add('active');
+    } else {
+      chip.classList.remove('active');
+    }
+  });
+
+  updatePriceAndSubtotal();
+}
+
+/**
+ * Select lamination
+ */
+function selectLamination(laminationId) {
+  selectedLaminationId = laminationId;
+
+  // Update UI
+  const chips = document.querySelectorAll('.option-group .chip');
+  chips.forEach(chip => {
+    const btnText = chip.textContent.trim();
+    const lam = productData.options.laminations.items.find(l => l.name === btnText);
+    if (lam && lam.id === laminationId) {
+      chip.classList.add('active');
+    } else {
+      chip.classList.remove('active');
+    }
+  });
+
+  updatePriceAndSubtotal();
+}
+
+/**
+ * Calculate unit price based on selections
+ */
+function calculateUnitPrice() {
+  let materialDelta = 0;
+  let laminationDelta = 0;
+
+  if (selectedMaterialId && productData.options.materials.enabled) {
+    const material = productData.options.materials.items.find(m => m.id === selectedMaterialId);
+    materialDelta = material ? material.price_delta : 0;
+  }
+
+  if (selectedLaminationId && productData.options.laminations.enabled) {
+    const lamination = productData.options.laminations.items.find(l => l.id === selectedLaminationId);
+    laminationDelta = lamination ? lamination.price_delta : 0;
+  }
+
+  return productData.base_price + materialDelta + laminationDelta;
+}
+
+/**
+ * Update displayed price and subtotal
+ */
+function updatePriceAndSubtotal() {
+  const unitPrice = calculateUnitPrice();
+  const subtotal = unitPrice * quantity;
+
+  // Update display
+  document.getElementById('displayPrice').textContent = formatPrice(unitPrice);
+  document.getElementById('subtotalValue').textContent = formatPrice(subtotal);
+}
+
+/**
+ * Increase quantity
+ */
+function increaseQuantity() {
+  quantity++;
+  document.getElementById('quantityValue').textContent = quantity;
+  updatePriceAndSubtotal();
+}
+
+/**
+ * Decrease quantity
+ */
+function decreaseQuantity() {
+  if (quantity > 1) {
+    quantity--;
+    document.getElementById('quantityValue').textContent = quantity;
+    updatePriceAndSubtotal();
+  }
+}
+
+/**
+ * Update note text
+ */
+function updateNote(value) {
+  currentNote = value;
+}
+
+/**
+ * Handle file upload
+ */
+function handleFileUpload(event) {
+  const file = event.target.files[0];
+  const statusEl = document.getElementById('fileStatus');
+
+  if (!file) {
+    statusEl.innerHTML = '';
+    uploadedFileName = null;
+    return;
+  }
+
+  // Validate file extension
+  const fileName = file.name;
+  const fileExt = '.' + fileName.split('.').pop().toLowerCase();
+  const allowedExts = productData.upload_rules.accept.split(',');
+
+  if (!allowedExts.includes(fileExt)) {
+    statusEl.innerHTML = `<div class="file-error">❌ Format file tidak didukung. Gunakan: ${productData.upload_rules.accept}</div>`;
+    uploadedFileName = null;
+    return;
+  }
+
+  // Validate file size
+  const fileSizeMB = file.size / (1024 * 1024);
+  if (fileSizeMB > productData.upload_rules.max_mb) {
+    statusEl.innerHTML = `<div class="file-error">❌ Ukuran file terlalu besar. Maksimal ${productData.upload_rules.max_mb}MB</div>`;
+    uploadedFileName = null;
+    return;
+  }
+
+  // Valid file
+  uploadedFileName = fileName;
+  statusEl.innerHTML = `<div class="file-name">✓ ${fileName} (${fileSizeMB.toFixed(2)}MB)</div>`;
+}
+
+/**
+ * Handle checkout button click
+ */
+function handleCheckout() {
+  const unitPrice = calculateUnitPrice();
+  const subtotal = unitPrice * quantity;
+
+  const checkoutDraft = {
+    product_id: productData.slug,
+    slug: productData.slug,
+    product_name: productData.name,
+    material_id: selectedMaterialId,
+    lamination_id: selectedLaminationId,
+    quantity: quantity,
+    note: currentNote,
+    subtotal: subtotal,
+    unit_price: unitPrice,
+    file_name: uploadedFileName,
+    timestamp: new Date().toISOString()
   };
-})();
+
+  // Save to localStorage
+  try {
+    localStorage.setItem('eventprint_checkout_draft', JSON.stringify(checkoutDraft));
+    showToast('✓ Draft pesanan tersimpan!');
+    console.log('Checkout draft saved:', checkoutDraft);
+  } catch (error) {
+    console.error('Error saving to localStorage:', error);
+    showToast('❌ Gagal menyimpan draft');
+  }
+}
+
+/**
+ * Show toast notification
+ */
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.add('show');
+
+  setTimeout(() => {
+    toast.classList.remove('show');
+  }, 3000);
+}

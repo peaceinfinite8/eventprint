@@ -18,7 +18,10 @@ class Product
     
     public function getPublicCategories(): array
     {
-        $sql = "SELECT id, name, slug FROM product_categories WHERE is_active=1 ORDER BY sort_order ASC, id ASC";
+        $sql = "SELECT id, name, slug, icon, sort_order
+            FROM product_categories
+            WHERE is_active=1
+            ORDER BY sort_order ASC, id ASC";
         $res = $this->db->query($sql);
         $cats = [];
 

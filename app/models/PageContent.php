@@ -81,46 +81,67 @@ class PageContent
        MULTI ITEM (hero slides)
        ========================= */
 
+
+
     public function getSectionItems(string $pageSlug, string $section): array
     {
-        $db = $this->db();
+        $db = db(); // mysqli
 
-        if (!$this->hasItemKey()) {
-            // fallback: anggap cuma 1 item
-            $sql = "SELECT field, value FROM page_contents
-                    WHERE page_slug=? AND section=?";
-            $stmt = $db->prepare($sql);
-            $stmt->bind_param('ss', $pageSlug, $section);
-            $stmt->execute();
-            $res = $stmt->get_result();
+        $sql = "
+            SELECT item_key, field, value
+            FROM page_contents
+            WHERE page_slug = ?
+              AND section   = ?
+              AND item_key IS NOT NULL
+              AND item_key <> ''
+            ORDER BY item_key ASC
+        ";
 
-            $item = ['item_key' => 'default'];
-            while ($row = $res->fetch_assoc()) {
-                $item[$row['field']] = $row['value'];
-            }
-            $stmt->close();
-            return [$item];
-        }
-
-        $sql = "SELECT item_key, field, value
-                FROM page_contents
-                WHERE page_slug=? AND section=?
-                ORDER BY item_key ASC";
         $stmt = $db->prepare($sql);
+        if (!$stmt) return [];
+
         $stmt->bind_param('ss', $pageSlug, $section);
         $stmt->execute();
         $res = $stmt->get_result();
 
         $items = [];
-        while ($row = $res->fetch_assoc()) {
-            $k = $row['item_key'];
-            if (!isset($items[$k])) $items[$k] = ['item_key' => $k];
-            $items[$k][$row['field']] = $row['value'];
+        if ($res) {
+            while ($r = $res->fetch_assoc()) {
+                $key = (string)($r['item_key'] ?? '');
+                $field = (string)($r['field'] ?? '');
+                $value = (string)($r['value'] ?? '');
+
+                if ($key === '') continue;
+
+                if (!isset($items[$key])) $items[$key] = ['item_key' => $key];
+                $items[$key][$field] = $value;
+            }
         }
+
         $stmt->close();
 
+        // jadi array numerik
         return array_values($items);
     }
+
+    public function deleteItem(string $pageSlug, string $section, string $itemKey): bool
+    {
+        $db = db();
+
+        $sql = "DELETE FROM page_contents WHERE page_slug=? AND section=? AND item_key=?";
+        $stmt = $db->prepare($sql);
+        if (!$stmt) return false;
+
+        $stmt->bind_param('sss', $pageSlug, $section, $itemKey);
+        $stmt->execute();
+
+        $ok = ($stmt->affected_rows >= 1);
+        $stmt->close();
+
+        return $ok;
+    }
+
+
 
     public function saveItemFields(string $pageSlug, string $section, string $itemKey, array $data): void
     {
@@ -148,15 +169,5 @@ class PageContent
         $stmt->close();
     }
 
-    public function deleteItem(string $pageSlug, string $section, string $itemKey): void
-    {
-        if (!$this->hasItemKey()) return;
-
-        $db = $this->db();
-        $sql = "DELETE FROM page_contents WHERE page_slug=? AND section=? AND item_key=?";
-        $stmt = $db->prepare($sql);
-        $stmt->bind_param('sss', $pageSlug, $section, $itemKey);
-        $stmt->execute();
-        $stmt->close();
-    }
 }
+

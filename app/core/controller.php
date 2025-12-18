@@ -1,5 +1,4 @@
 <?php
-// app/core/Controller.php
 
 class Controller
 {
@@ -8,33 +7,25 @@ class Controller
     public function __construct(array $config = [])
     {
         $this->config = $config;
-
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        if (session_status() === PHP_SESSION_NONE) session_start();
     }
 
     protected function baseUrl(string $path = ''): string
     {
-        $base = rtrim($this->config['base_url'] ?? '', '/');
+        $base = rtrim($this->config['base_url'] ?? '/eventprint/public', '/');
         return $base . '/' . ltrim($path, '/');
     }
 
     protected function setFlash(string $type, string $message): void
     {
-        if (!isset($_SESSION['flash'])) {
-            $_SESSION['flash'] = ['success' => null, 'error' => null];
-        }
+        $_SESSION['flash'] ??= ['success' => null, 'error' => null];
         if ($type === 'success') $_SESSION['flash']['success'] = $message;
-        if ($type === 'error')   $_SESSION['flash']['error'] = $message;
+        if ($type === 'error')   $_SESSION['flash']['error']   = $message;
     }
 
     protected function pullFlash(): array
     {
-        // dukung format baru
         $flash = $_SESSION['flash'] ?? ['success' => null, 'error' => null];
-
-        // dukung format lama (yang lu pakai di banyak file)
         if (!empty($_SESSION['flash_success'])) $flash['success'] = $_SESSION['flash_success'];
         if (!empty($_SESSION['flash_error']))   $flash['error']   = $_SESSION['flash_error'];
 
@@ -46,6 +37,16 @@ class Controller
     {
         header('Location: ' . $url);
         exit;
+    }
+
+    protected function normalizeUrl(string $pathOrUrl): string
+    {
+        if (preg_match('#^https?://#i', $pathOrUrl)) return $pathOrUrl;
+
+        $base = rtrim($this->config['base_url'] ?? '/eventprint/public', '/');
+
+        if (str_starts_with($pathOrUrl, '/')) return $base . $pathOrUrl;
+        return $base . '/' . ltrim($pathOrUrl, '/');
     }
 
     protected function redirectWithSuccess(string $pathOrUrl, string $message): void
@@ -60,99 +61,55 @@ class Controller
         $this->redirect($this->normalizeUrl($pathOrUrl));
     }
 
-    private function normalizeUrl(string $pathOrUrl): string
+    // ==========================================================
+    // FRONTEND RENDER (SATU-SATUNYA pintu untuk frontend)
+    // ==========================================================
+    public function renderFrontend(string $viewName, array $vars = [], string $title = 'EventPrint'): void
     {
-        // kalau sudah full url, biarkan
-        if (preg_match('#^https?://#i', $pathOrUrl)) return $pathOrUrl;
+        $root = realpath(__DIR__ . '/../..');
+        if (!$root) { http_response_code(500); exit('Project root not found'); }
 
-        // kalau sudah diawali /eventprint/public..., biarkan
-        if (str_starts_with($pathOrUrl, '/')) {
-            return rtrim($this->config['base_url'] ?? '', '/') . $pathOrUrl;
-        }
+        $viewName = ltrim(preg_replace('/\.php$/', '', $viewName), '/');
 
-        // kalau cuma "admin/users" dll
-        return $this->baseUrl($pathOrUrl);
+        $layoutPath = $root . '/views/frontend/layout/main.php';
+        $viewPath   = $root . '/views/frontend/' . $viewName . '.php';
+
+        if (!file_exists($layoutPath)) { http_response_code(500); exit('Layout not found: ' . $layoutPath); }
+        if (!file_exists($viewPath))   { http_response_code(404); exit('View not found: ' . $viewPath); }
+
+        $baseUrl = rtrim($this->config['base_url'] ?? '/eventprint/public', '/');
+
+        $vars = array_merge($vars, [
+            'baseUrl'     => $baseUrl,
+            'title'       => $title,
+            'page'        => $vars['page'] ?? explode('/', $viewName)[0],
+            '__viewPath'  => $viewPath,
+            'flash'       => $this->pullFlash(),
+        ]);
+
+        // layout membaca $vars
+        require $layoutPath;
     }
 
-    // app/core/Controller.php
-    protected function view(string $view, array $vars = [])
-{
-    // ROOT PROJECT: eventprint/
-    $root = realpath(__DIR__ . '/../..');
-    if (!$root) {
-        http_response_code(500);
-        exit('Project root not found');
-    }
-
-    // view file
-    $viewPath = $root . '/views/' . $view . '.php';
-    if (!file_exists($viewPath)) {
-        http_response_code(500);
-        exit('View not found: ' . $viewPath);
-    }
-
-    // inject baseUrl DARI CONFIG (SATU SUMBER)
-    $vars['baseUrl'] = rtrim($this->config['base_url'], '/');
-    $vars['__viewPath'] = $viewPath;
-
-    // layout frontend
-    $layoutPath = $root . '/views/frontend/layout/main.php';
-    if (!file_exists($layoutPath)) {
-        http_response_code(500);
-        exit('Layout not found: ' . $layoutPath);
-    }
-
-    require $layoutPath;
-}
-
-
-
-
-
-    protected function renderAdmin(string $view, array $data = [], string $title = '')
+    // ==========================================================
+    // ADMIN RENDER (pintu admin)
+    // ==========================================================
+    protected function renderAdmin(string $view, array $data = [], string $title = ''): void
     {
-        if ($title !== '') {
-            $data['title'] = $title;
-        }
+        if ($title !== '') $data['title'] = $title;
 
         $data['baseUrl'] = rtrim($this->config['base_url'] ?? '/eventprint/public', '/');
-        $data['flash']   = $this->pullFlash(); // <-- penting: ambil flash dari session
+        $data['flash']   = $this->pullFlash();
 
         $viewFile = __DIR__ . '/../../views/admin/' . $view . '.php';
-        $view     = $viewFile;
-        $vars     = $data;
+        if (!file_exists($viewFile)) { http_response_code(500); exit('Admin view not found: ' . $viewFile); }
 
-        require __DIR__ . '/../../views/admin/layout/main.php';
+        $vars = $data;
+        $vars['__viewPath'] = $viewFile;
+
+        $layout = __DIR__ . '/../../views/admin/layout/main.php';
+        if (!file_exists($layout)) { http_response_code(500); exit('Admin layout not found: ' . $layout); }
+
+        require $layout;
     }
-
-    // app/core/controller.php
-
-public function renderFrontend(string $viewName, array $vars = [], string $title = 'EventPrint'): void
-{
-    $root = realpath(__DIR__ . '/../..'); // dari app/core ke root project
-    if (!$root) die("Root path tidak ditemukan.");
-
-    // normalisasi: hilangin .php & slash depan
-    $viewName = ltrim($viewName, '/');
-    $viewName = preg_replace('/\.php$/', '', $viewName);
-
-    $layout = $root . '/views/frontend/layout/main.php';
-    $view   = $root . '/views/frontend/' . $viewName . '.php';
-
-    if (!file_exists($layout)) die("Layout frontend tidak ditemukan: $layout");
-    if (!file_exists($view))   die("View frontend tidak ditemukan: $view");
-
-    // baseUrl AUTO (biar ga hardcode)
-    $baseUrl = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/');
-    // contoh: /eventprint/public
-    if ($baseUrl === '') $baseUrl = '';
-
-    $vars['baseUrl'] = $vars['baseUrl'] ?? $baseUrl;
-    $vars['title']   = $title;
-    $vars['page']    = $vars['page'] ?? explode('/', $viewName)[0];
-
-    require $layout;
-}
-
-
 }

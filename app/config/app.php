@@ -1,8 +1,8 @@
 <?php
-// eventprint/app/config/app.php
+// app/config/app.php
 return [
-    'name'      => 'EventPrint',
-    'base_url'  => 'http://localhost/eventprint/public', // SESUAIKAN
-    'env'       => 'local',
-    'debug'     => true,
+    'name' => 'EventPrint',
+    'base_url' => 'http://localhost/eventprint/public', // CLEAN PATH!
+    'env' => 'local',
+    'debug' => true,
 ];

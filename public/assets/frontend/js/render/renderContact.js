@@ -1,75 +1,78 @@
-// public/assets/frontend/js/render/renderOurHome.js
 // ============================================
-// EventPrint - Our Home Page Renderer (Backend-safe)
+// EventPrint - Contact Page Renderer
 // ============================================
 
-async function initOurHomePage() {
-  try {
-    showLoading('storesGrid', 8);
+/**
+ * Initialize Contact page
+ */
+async function initContactPage() {
+    try {
+        const data = await loadData('../data/contact.json');
 
-    const data = (window.EP_DATA_PRELOADED && typeof window.EP_DATA_PRELOADED === 'object')
-      ? window.EP_DATA_PRELOADED
-      : await loadData('data/ourhome.json');
+        renderContactDetails(data.contact);
+        renderSocialIcons(data.contact.socials);
 
-    if (!data || !data.stores || data.stores.length === 0) {
-      showEmpty('storesGrid', 'Data lokasi belum tersedia');
-      return;
+    } catch (error) {
+        console.error('Error loading contact page:', error);
     }
-
-    renderStores(data.stores);
-
-  } catch (error) {
-    console.error('Error loading our home page:', error);
-    showError('storesGrid', 'Gagal memuat data. Silakan refresh halaman.');
-  }
 }
 
-function renderStores(stores) {
-  const container = document.getElementById('storesGrid');
-  if (!container) return;
+/**
+ * Render contact details
+ */
+function renderContactDetails(contact) {
+    const container = document.getElementById('contactDetails');
+    if (!container) return;
 
-  container.innerHTML = stores.map(store => `
-    <div class="store-card">
-      <div class="store-image">
-        ${store.image ? `<img src="${store.image}" alt="${store.title || ''}">` : '<span>Gambar</span>'}
-        <div class="store-label">EventPrint Tempat</div>
-      </div>
-
-      <div class="store-info">
-        <div class="info-row">
-          <div class="info-icon">📍</div>
-          <div class="info-content">
-            <div class="info-label">Alamat</div>
-            <div class="info-text">${store.address || ''}</div>
-          </div>
-        </div>
-
-        <div class="info-row">
-          <div class="info-icon">✉️</div>
-          <div class="info-content">
-            <div class="info-label">Email</div>
-            <div class="info-text">${store.email || ''}</div>
-          </div>
-        </div>
-
-        <div class="info-row">
-          <div class="info-icon">💬</div>
-          <div class="info-content">
-            <div class="info-label">WhatsApp</div>
-            <div class="info-text">${store.whatsapp || ''}</div>
-          </div>
-        </div>
-
-        <div class="info-row">
-          <div class="info-icon">🕒</div>
-          <div class="info-content">
-            <div class="info-label">Jam Kerja</div>
-            <div class="info-text">${Array.isArray(store.hours) ? store.hours.join('<br>') : (store.hours || '')}</div>
-          </div>
-        </div>
-      </div>
+    const html = `
+    <div class="contact-detail mb-2">
+      <div class="contact-icon">📍</div>
+      <div class="contact-text">${contact.address}</div>
     </div>
+    
+    <div class="contact-detail mb-2">
+      <div class="contact-icon">✉️</div>
+      <div class="contact-text">${contact.email}</div>
+    </div>
+    
+    <div class="contact-detail mb-2">
+      <div class="contact-icon">💬</div>
+      <div class="contact-text">${contact.whatsapp}</div>
+    </div>
+  `;
+
+    container.innerHTML = html;
+}
+
+/**
+ * Render social media icons
+ */
+function renderSocialIcons(socials) {
+    const container = document.getElementById('socialIcons');
+    if (!container) return;
+
+    if (!socials || socials.length === 0) return;
+
+    const html = socials.map(platform => `
+    <a href="#" class="social-icon" title="${platform}" aria-label="${platform}">
+      ${getSocialIcon(platform)}
+    </a>
   `).join('');
 
-  container.className = 'stores-grid';
+    container.innerHTML = html;
+}
+
+/**
+ * Handle contact form submission
+ */
+function handleContactSubmit(event) {
+    event.preventDefault();
+
+    // In production, this would send to API
+    alert('Terima kasih! Pesan Anda telah dikirim. Kami akan segera menghubungi Anda.');
+
+    // Reset form
+    event.target.reset();
+
+    return false;
 }

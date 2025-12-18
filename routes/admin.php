@@ -76,14 +76,29 @@ $router->get('/admin/contact/{id}',     'ContactController@adminShow',     ['Aut
 $router->post('/admin/contact/{id}/delete', 'ContactController@adminDelete', ['AuthRequired', 'SuperAdminOnly']);
 
 // ======================= HOME CONTENT =======================
-$router->get('/admin/home', 'HomeController@index', ['AuthRequired','AdminOnly']);
+$router->get('/admin/home', 'HomeController@index', ['AuthRequired','SuperAdminOnly']);
 
+// HERO SLIDES
 $router->get('/admin/home/hero',        'HomeController@heroIndex',      ['AuthRequired','SuperAdminOnly']);
 $router->get('/admin/home/hero/create', 'HomeController@heroCreateForm', ['AuthRequired','SuperAdminOnly']);
 $router->post('/admin/home/hero/store', 'HomeController@heroStore',      ['AuthRequired','SuperAdminOnly']);
-$router->get('/admin/home/hero/edit/{id}',   'HomeController@heroEditForm', ['AuthRequired','SuperAdminOnly']);
+$router->get('/admin/home/hero/edit/{id}',    'HomeController@heroEditForm', ['AuthRequired','SuperAdminOnly']);
 $router->post('/admin/home/hero/update/{id}', 'HomeController@heroUpdate',   ['AuthRequired','SuperAdminOnly']);
 $router->post('/admin/home/hero/delete/{id}', 'HomeController@heroDelete',   ['AuthRequired','SuperAdminOnly']);
+
+
+// ✅ EDIT HOME CONTENT (CTA + Contact + Category mapping)
+$router->get('/admin/home/content',         'HomeController@content',       ['AuthRequired','SuperAdminOnly']);
+$router->post('/admin/home/content/update','HomeController@contentUpdate', ['AuthRequired','SuperAdminOnly']);
+$router->post('/admin/home/category-map',  'HomeController@updateHomeCategoryMap', ['AuthRequired','SuperAdminOnly']);
+
+// ======================= HOME BUILDER (page_contents) =======================
+$router->get('/admin/home/content',  'HomeController@content',     ['AuthRequired','SuperAdminOnly']);
+$router->post('/admin/home/content', 'HomeController@saveContent', ['AuthRequired','SuperAdminOnly']);
+$router->get('/admin/home/content',          'HomeController@content',       ['AuthRequired','SuperAdminOnly']);
+$router->post('/admin/home/content/update',  'HomeController@contentUpdate', ['AuthRequired','SuperAdminOnly']);
+$router->post('/admin/home/category-map',    'HomeController@updateHomeCategoryMap', ['AuthRequired','SuperAdminOnly']);
+
 
 // ======================= SETTINGS =======================
 $router->get('/admin/settings',        'SettingsController@index',  ['AuthRequired', 'SuperAdminOnly']);

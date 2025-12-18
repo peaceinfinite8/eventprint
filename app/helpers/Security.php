@@ -3,49 +3,36 @@
 
 class Security
 {
-    // Satu sumber kebenaran untuk nama key di session
-    private const SESSION_KEY = '_csrf_token';
+    private const KEY = '_csrf_token';
 
-    /**
-     * Ambil CSRF token saat ini (atau generate kalau belum ada).
-     */
     public static function csrfToken(): string
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
             session_start();
         }
 
-        if (empty($_SESSION[self::SESSION_KEY])) {
-            $_SESSION[self::SESSION_KEY] = bin2hex(random_bytes(32));
+        if (empty($_SESSION[self::KEY]) || !is_string($_SESSION[self::KEY])) {
+            $_SESSION[self::KEY] = bin2hex(random_bytes(32));
         }
 
-        return $_SESSION[self::SESSION_KEY];
+        return $_SESSION[self::KEY];
     }
 
-    /**
-     * Validasi CSRF token untuk request POST.
-     * Lempar Exception kalau token tidak valid / kosong.
-     */
     public static function requireCsrfToken(): void
-    {
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            session_start();
-        }
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            // cuma jaga POST, GET dibiarkan
-            return;
-        }
-
-        $sessionToken = $_SESSION[self::SESSION_KEY] ?? '';
-        $postedToken  = $_POST['_token'] ?? '';
-
-        // gagal kalau:
-        // - session token kosong
-        // - token dari form kosong
-        // - atau tidak sama
-        if (!$sessionToken || !$postedToken || !hash_equals($sessionToken, $postedToken)) {
-            throw new Exception('CSRF token tidak valid atau sesi kadaluarsa.');
-        }
+{
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        session_start();
     }
+
+    $sessionToken = $_SESSION[self::KEY] ?? '';
+    $postedToken  = $_POST['csrf_token'] ?? ($_POST['_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''));
+
+    $sessionToken = is_string($sessionToken) ? $sessionToken : '';
+    $postedToken  = is_string($postedToken)  ? $postedToken  : '';
+
+    if ($sessionToken === '' || $postedToken === '' || !hash_equals($sessionToken, $postedToken)) {
+        throw new Exception('CSRF token tidak valid atau sesi kadaluarsa.');
+    }
+}
+
 }

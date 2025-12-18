@@ -1,13 +1,18 @@
 <IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteBase /eventprint/public/
+RewriteEngine On
+RewriteBase /eventprint/public/
 
+# STOP routing untuk folder static (bypass total)
+RewriteRule ^assets/ - [L]
+RewriteRule ^uploads/ - [L]
+RewriteRule ^data/ - [L]
 
+# kalau file/folder beneran ada, serve langsung
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
 
-    # Kalau file / folder fisik ada, serve langsung
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-
-    # Selain itu, lempar ke index.php
-    RewriteRule ^ index.php [L]
+# sisanya baru ke index.php
+RewriteRule ^ index.php [QSA,L]
 </IfModule>
+AddType application/json .json

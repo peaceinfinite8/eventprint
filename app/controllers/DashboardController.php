@@ -1,94 +1,115 @@
 <?php
 // app/controllers/DashboardController.php
 
-require_once __DIR__ . '/../models/Product.php';
-require_once __DIR__ . '/../models/OurStore.php';
-require_once __DIR__ . '/../models/Post.php';
-require_once __DIR__ . '/../models/ContactMessage.php';
+require_once __DIR__ . '/../core/Controller.php';
 
 class DashboardController extends Controller
 {
-    protected Product $product;
-    protected OurStore $store;
-    protected Post $post;
-    protected ContactMessage $message;
+    protected mysqli $db;
 
     public function __construct(array $config = [])
     {
         parent::__construct($config);
-
-        $this->product = new Product();
-        $this->store   = new OurStore();
-        $this->post    = new Post();
-        $this->message = new ContactMessage();
+        $this->db = db();
     }
 
-    public function index()
+    private function tableExists(string $table): bool
     {
-        $stats = [
-            'products'       => $this->product->countAll(),
-            'our_store'      => $this->store->countAll(),
-            'blog'           => $this->post->countPublished(),
-            'contact_unread' => $this->message->countUnread(),
-        ];
-
-        // ====== Produk terbaru + diskon + pagination (10 per page)
-        $prodPage    = max(1, (int)($_GET['prod_page'] ?? 1));
-        $prodPerPage = 12;
-        $latestProductsResult = $this->product->getLatestWithDiscountsPaginated($prodPage, $prodPerPage);
-
-        $latestStores   = $this->store->getLatest(2);
-        $latestPosts    = $this->post->getLatest(5);
-        $latestContacts = $this->message->getLatest(5);
-        $hero           = $this->getHeroData();
-
-        $this->renderAdmin('dashboard/index', [
-            'stats' => [
-                'products'       => $stats['products'],
-                'stores'         => $stats['our_store'], // biar view lama nggak rusak
-                'blog'           => $stats['blog'],
-                'contact_unread' => $stats['contact_unread'],
-            ],
-
-            'latestProducts'   => $latestProductsResult['items'],
-            'latestProductsPg' => [
-                'total'    => $latestProductsResult['total'],
-                'page'     => $latestProductsResult['page'],
-                'per_page' => $latestProductsResult['per_page'],
-            ],
-
-            'latestStores'     => $latestStores,
-            'latestPosts'      => $latestPosts,
-            'latestContacts'   => $latestContacts,
-            'hero'             => $hero,
-        ], 'Dashboard');
+        $t = $this->db->real_escape_string($table);
+        $res = $this->db->query("SHOW TABLES LIKE '{$t}'");
+        return $res && $res->num_rows > 0;
     }
 
-    protected function getHeroData(): array
+    private function colExists(string $table, string $col): bool
     {
-        $db  = db();
-        $sql = "SELECT field, value
-                FROM page_contents
-                WHERE page_slug = 'home'
-                  AND section   = 'hero'";
-        $res = $db->query($sql);
+        $t = $this->db->real_escape_string($table);
+        $c = $this->db->real_escape_string($col);
+        $res = $this->db->query("SHOW COLUMNS FROM `{$t}` LIKE '{$c}'");
+        return $res && $res->num_rows > 0;
+    }
 
-        $data = [
-            'title'       => '',
-            'subtitle'    => '',
-            'button_text' => '',
-            'button_link' => '',
-        ];
+    private function scalar(string $sql, $default = 0)
+    {
+        $res = $this->db->query($sql);
+        if (!$res) return $default;
+        $row = $res->fetch_row();
+        return $row ? $row[0] : $default;
+    }
 
-        if ($res) {
-            while ($row = $res->fetch_assoc()) {
-                $field = $row['field'];
-                if (array_key_exists($field, $data)) {
-                    $data[$field] = (string)$row['value'];
-                }
+    public function index(): void
+    {
+        $baseUrl = rtrim($this->config['base_url'] ?? '/eventprint/public', '/');
+
+        // ====== COUNTS ======
+        $productsActive = $this->tableExists('products')
+            ? (int)$this->scalar("SELECT COUNT(*) FROM products WHERE is_active=1 AND deleted_at IS NULL", 0)
+            : 0;
+
+        $categoriesActive = $this->tableExists('product_categories')
+            ? (int)$this->scalar("SELECT COUNT(*) FROM product_categories WHERE is_active=1", 0)
+            : 0;
+
+        $heroActive = $this->tableExists('hero_slides')
+            ? (int)$this->scalar("SELECT COUNT(*) FROM hero_slides WHERE page_slug='home' AND is_active=1", 0)
+            : 0;
+
+        // Pesan: sesuaikan tabel kamu. Aku bikin fallback.
+        $messagesTotal = 0;
+        $messagesUnread = 0;
+
+        if ($this->tableExists('contact_messages')) {
+            $messagesTotal = (int)$this->scalar("SELECT COUNT(*) FROM contact_messages", 0);
+
+            if ($this->colExists('contact_messages', 'is_read')) {
+                $messagesUnread = (int)$this->scalar("SELECT COUNT(*) FROM contact_messages WHERE is_read=0", 0);
+            } elseif ($this->colExists('contact_messages', 'status')) {
+                // fallback: status='unread'
+                $messagesUnread = (int)$this->scalar("SELECT COUNT(*) FROM contact_messages WHERE status='unread'", 0);
             }
         }
 
-        return $data;
+        // ====== LATEST ======
+        $latestProducts = [];
+        if ($this->tableExists('products')) {
+            $res = $this->db->query("
+                SELECT id, name, created_at, is_active
+                FROM products
+                WHERE deleted_at IS NULL
+                ORDER BY id DESC
+                LIMIT 5
+            ");
+            if ($res) while ($r = $res->fetch_assoc()) $latestProducts[] = $r;
+        }
+
+        $latestMessages = [];
+        if ($this->tableExists('contact_messages')) {
+            // kolom umum: name/email/message/created_at
+            $res = $this->db->query("
+                SELECT id,
+                       COALESCE(name,'') AS name,
+                       COALESCE(email,'') AS email,
+                       COALESCE(message,'') AS message,
+                       COALESCE(created_at, NOW()) AS created_at
+                FROM contact_messages
+                ORDER BY id DESC
+                LIMIT 5
+            ");
+            if ($res) while ($r = $res->fetch_assoc()) $latestMessages[] = $r;
+        }
+
+        $stats = [
+            'products_active'   => $productsActive,
+            'categories_active' => $categoriesActive,
+            'hero_active'       => $heroActive,
+            'messages_total'    => $messagesTotal,
+            'messages_unread'   => $messagesUnread,
+        ];
+
+        $this->renderAdmin('dashboard/index', [
+            'baseUrl'         => $baseUrl,
+            'stats'           => $stats,
+            'latestProducts'  => $latestProducts,
+            'latestMessages'  => $latestMessages,
+        ], 'Dashboard');
     }
 }

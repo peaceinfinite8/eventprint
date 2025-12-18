@@ -1,111 +1,213 @@
 <?php
 // app/controllers/ProductPublicController.php
 
+require_once __DIR__ . '/../core/Controller.php';
 require_once __DIR__ . '/../models/Product.php';
+require_once __DIR__ . '/../models/ProductCategory.php';
 
 class ProductPublicController extends Controller
 {
-    public function index()
+    protected mysqli $db;
+
+    public function __construct(array $config = [])
     {
-        $this->view('frontend/product/index', [
-            'title' => 'Produk - EventPrint',
-            'page'  => 'products',
-        ]);
+        parent::__construct($config);
+        $this->db = db();
     }
 
-    public function show($id)
-{
-    $id = (int)$id;
-    if ($id <= 0) {
-        http_response_code(404);
-        $this->view('frontend/errors/404', [
-            'title' => 'Produk tidak ditemukan',
-            'page'  => 'product_detail', // ✅
-        ]);
-        return;
-    }
-
-    $m = new Product();
-    $product = $m->findPublicById($id);
-
-    if (!$product) {
-        http_response_code(404);
-        $this->view('frontend/errors/404', [
-            'title' => 'Produk tidak ditemukan',
-            'page'  => 'product_detail', // ✅
-        ]);
-        return;
-    }
-
-    $this->view('frontend/product/show', [
-        'title'     => 'Detail Produk - EventPrint',
-        'page'      => 'product_detail', // ✅
-        'productId' => $id,              // ✅ penting buat data-product-id
-    ]);
-}
-
-
-    // /product-detail?slug=xxx (PAGE)
-    public function detailBySlug()
+    public function index(): void
     {
-        $slug = trim($_GET['slug'] ?? '');
-        if ($slug === '') {
+        // Fetch settings for navbar/footer
+        $settingsRow = $this->db->query("SELECT * FROM settings WHERE id=1 LIMIT 1")->fetch_assoc();
+        $settings = $settingsRow ?: [];
+
+        // Get category filter from query string
+        $categorySlug = $_GET['category'] ?? null;
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $perPage = 12;
+        $offset = ($page - 1) * $perPage;
+
+        // Fetch all categories for sidebar
+        $categories = [];
+        $res = $this->db->query("
+            SELECT id, name, slug
+            FROM product_categories
+            WHERE is_active=1
+            ORDER BY sort_order ASC, name ASC
+        ");
+        if ($res) {
+            while ($r = $res->fetch_assoc()) {
+                $categories[] = $r;
+            }
+        }
+
+        // Build query based on category filter
+        $whereClause = "p.is_active=1 AND p.deleted_at IS NULL";
+        $categoryId = null;
+
+        if ($categorySlug) {
+            // Get category ID from slug
+            $stmt = $this->db->prepare("SELECT id FROM product_categories WHERE slug=? AND is_active=1 LIMIT 1");
+            $stmt->bind_param('s', $categorySlug);
+            $stmt->execute();
+            $catResult = $stmt->get_result();
+            $catRow = $catResult->fetch_assoc();
+            $stmt->close();
+
+            if ($catRow) {
+                $categoryId = $catRow['id'];
+                $whereClause .= " AND p.category_id=" . (int) $categoryId;
+            }
+        }
+
+        // Count total products
+        $countResult = $this->db->query("SELECT COUNT(*) as total FROM products p WHERE $whereClause");
+        $totalProducts = $countResult->fetch_assoc()['total'];
+        $totalPages = ceil($totalProducts / $perPage);
+
+        // Fetch products
+        $products = [];
+        $productSql = "
+            SELECT p.id, p.name, p.slug, p.base_price, p.thumbnail, pc.name as category_name
+            FROM products p
+            LEFT JOIN product_categories pc ON p.category_id = pc.id
+            WHERE $whereClause
+            ORDER BY p.created_at DESC
+            LIMIT $perPage OFFSET $offset
+        ";
+
+        $result = $this->db->query($productSql);
+        while ($r = $result->fetch_assoc()) {
+            $products[] = $r;
+        }
+
+        $this->renderFrontend('pages/products', [
+            'page' => 'products',
+            'title' => 'All Products',
+            'settings' => $settings,
+            'categories' => $categories,
+            'products' => $products,
+            'currentCategory' => $categorySlug,
+            'currentPage' => $page,
+            'totalPages' => $totalPages,
+            'totalProducts' => $totalProducts,
+        ]);
+    }
+
+    public function show($slug): void
+    {
+        // Fetch settings
+        $settingsRow = $this->db->query("SELECT * FROM settings WHERE id=1 LIMIT 1")->fetch_assoc();
+        $settings = $settingsRow ?: [];
+
+        // Fetch product by slug
+        $stmt = $this->db->prepare("
+            SELECT p.*, pc.name as category_name, pc.slug as category_slug
+            FROM products p
+            LEFT JOIN product_categories pc ON p.category_id = pc.id
+            WHERE p.slug=? AND p.is_active=1 AND p.deleted_at IS NULL
+        ");
+        $stmt->bind_param('s', $slug);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $product = $result->fetch_assoc();
+        $stmt->close();
+
+        if (!$product) {
             http_response_code(404);
-            $this->view('frontend/errors/404', [
-                'title' => 'Produk tidak ditemukan',
-                'page'  => 'product_detail',
+            $this->renderFrontend('errors/404', [
+                'settings' => $settings,
+                'title' => 'Product Not Found'
             ]);
             return;
         }
 
-        // halaman show tetap dirender oleh JS (ambil detail dari API)
-        $this->view('frontend/product/show', [
-            'title' => 'Detail Produk - EventPrint',
-            'page'  => 'product_detail',
-            'slug'  => $slug,
+        // Fetch product gallery
+        $gallery = [];
+        $stmt = $this->db->prepare("
+            SELECT image_path
+            FROM product_images
+            WHERE product_id=?
+            ORDER BY sort_order ASC
+        ");
+        $stmt->bind_param('i', $product['id']);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        while ($r = $result->fetch_assoc()) {
+            $gallery[] = $r['image_path'];
+        }
+        $stmt->close();
+
+        // Fetch product options
+        $optionGroups = [];
+        $stmt = $this->db->prepare("
+            SELECT id, name, input_type, is_required
+            FROM product_option_groups
+            WHERE product_id=? AND is_active=1
+            ORDER BY sort_order ASC
+        ");
+        $stmt->bind_param('i', $product['id']);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        while ($group = $result->fetch_assoc()) {
+            // Fetch values for this group
+            $stmt2 = $this->db->prepare("
+                SELECT id, label, price_type, price_value
+                FROM product_option_values
+                WHERE group_id=? AND is_active=1
+                ORDER BY sort_order ASC
+            ");
+            $stmt2->bind_param('i', $group['id']);
+            $stmt2->execute();
+            $valuesResult = $stmt2->get_result();
+            $values = [];
+            while ($v = $valuesResult->fetch_assoc()) {
+                $values[] = $v;
+            }
+            $stmt2->close();
+
+            $group['values'] = $values;
+            $optionGroups[] = $group;
+        }
+        $stmt->close();
+
+        // Fetch active discount
+        $discount = null;
+        $stmt = $this->db->prepare("
+            SELECT discount_type, discount_value
+            FROM product_discounts
+            WHERE product_id=? AND is_active=1
+              AND (start_at IS NULL OR start_at <= NOW())
+              AND (end_at IS NULL OR end_at >= NOW())
+            ORDER BY created_at DESC
+            LIMIT 1
+        ");
+        $stmt->bind_param('i', $product['id']);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $discount = $result->fetch_assoc();
+        $stmt->close();
+
+        $this->renderFrontend('pages/product_detail', [
+            'page' => 'product_detail',
+            'title' => e($product['name']) . ' - Products',
+            'settings' => $settings,
+            'product' => $product,
+            'gallery' => $gallery,
+            'optionGroups' => $optionGroups,
+            'discount' => $discount,
         ]);
     }
 
-    // API LIST
-    public function apiList()
+    // API endpoints (keep for backward compatibility)
+    public function detailBySlug(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
-        try {
-            $m = new Product();
-            $items = $m->getPublicList();
-            $categories = $m->getPublicCategories();
-
-            echo json_encode([
-                'ok' => true,
-                'categories' => $categories,
-                'items' => $items,
-            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-
-        } catch (\Throwable $e) {
-            http_response_code(500);
-            echo json_encode(['ok' => false, 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
-        }
-    }
-
-    // API DETAIL BY SLUG
-    public function apiDetailBySlug($slug)
-    {
-        header('Content-Type: application/json; charset=utf-8');
-
-        $slug = trim((string)$slug);
-        if ($slug === '') {
+        $slug = trim($_GET['slug'] ?? '');
+        if ($slug) {
+            $this->show($slug);
+        } else {
             http_response_code(404);
-            echo json_encode(['ok' => false, 'message' => 'Slug tidak valid'], JSON_UNESCAPED_UNICODE);
-            return;
+            echo "Product not found";
         }
-
-        $item = (new Product())->findPublicBySlug($slug);
-        if (!$item) {
-            http_response_code(404);
-            echo json_encode(['ok' => false, 'message' => 'Produk tidak ditemukan'], JSON_UNESCAPED_UNICODE);
-            return;
-        }
-
-        echo json_encode(['ok' => true, 'item' => $item], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 }

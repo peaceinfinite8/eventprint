@@ -1,37 +1,43 @@
 <?php
 // app/controllers/OurStorePublicController.php
 
-require_once __DIR__ . '/../models/OurStore.php';
+require_once __DIR__ . '/../core/Controller.php';
 
 class OurStorePublicController extends Controller
 {
-    protected OurStore $store;
+    protected mysqli $db;
 
     public function __construct(array $config = [])
     {
         parent::__construct($config);
-        $this->store = new OurStore();
+        $this->db = db();
     }
 
-    public function index()
+    public function index(): void
     {
-        // ambil semua store aktif untuk public
-        $stores = $this->store->publicList(200);
+        // Fetch settings
+        $settingsRow = $this->db->query("SELECT * FROM settings WHERE id=1 LIMIT 1")->fetch_assoc();
+        $settings = $settingsRow ?: [];
 
-        // pilih store utama: HQ kalau ada, kalau tidak ambil yang pertama
-        $main = null;
-        foreach ($stores as $s) {
-            if (($s['office_type'] ?? '') === 'hq') {
-                $main = $s;
-                break;
+        // Fetch all stores
+        $stores = [];
+        $res = $this->db->query("
+            SELECT id, name, slug, office_type, address, city, phone, whatsapp, gmaps_url, thumbnail
+            FROM our_store
+            WHERE is_active=1
+            ORDER BY sort_order ASC, name ASC
+        ");
+        if ($res) {
+            while ($r = $res->fetch_assoc()) {
+                $stores[] = $r;
             }
         }
-        if (!$main) $main = $stores[0] ?? null;
 
-        $this->renderFrontend('our_store/index', [
-            'page'      => 'our-home',
-            'stores'    => $stores,
-            'storeMain' => $main,
-        ], 'Our Home');
+        $this->renderFrontend('pages/our_home', [
+            'page' => 'our_home',
+            'title' => 'Our Home - Lokasi Toko',
+            'settings' => $settings,
+            'stores' => $stores,
+        ]);
     }
 }

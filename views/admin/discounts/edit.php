@@ -47,12 +47,6 @@ function dtLocal(?string $dt): string {
                  value="<?php echo htmlspecialchars((string)$item['discount_value']); ?>">
         </div>
 
-        <div class="col-md-3">
-          <label class="form-label">Kuota Diskon *</label>
-          <input class="form-control" type="number" min="1" name="qty_total" required
-                 value="<?php echo (int)$item['qty_total']; ?>">
-          <div class="form-text">Terpakai: <?php echo (int)$item['qty_used']; ?></div>
-        </div>
 
         <div class="col-md-4">
           <label class="form-label">Mulai</label>

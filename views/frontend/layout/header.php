@@ -1,23 +1,19 @@
 <?php
-$baseUrl = $vars['baseUrl'];
+$baseUrl = rtrim(($vars['baseUrl'] ?? '/eventprint/public'), '/');
 $title   = $vars['title'] ?? 'EventPrint';
 $page    = $vars['page'] ?? 'home';
+$metaDescription = $vars['metaDescription']
+  ?? 'EventPrint - Solusi cetak digital berkualitas untuk kebutuhan event dan promosi Anda.';
 ?>
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title><?= htmlspecialchars($title) ?></title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="<?= htmlspecialchars($metaDescription, ENT_QUOTES, 'UTF-8') ?>">
+  <title><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-
-  <!-- FRONTEND CSS -->
-  <link rel="stylesheet" href="<?= $baseUrl ?>/assets/frontend/css/main.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="<?= htmlspecialchars($baseUrl, ENT_QUOTES, 'UTF-8') ?>/assets/frontend/css/main.css">
 </head>
-<body data-page="<?= htmlspecialchars($page) ?>">
+<body data-page="<?= htmlspecialchars($page, ENT_QUOTES, 'UTF-8') ?>">

@@ -1,16 +1,18 @@
 <?php
-$baseUrl   = $baseUrl ?? '/eventprint/public';
-$csrfToken = $csrfToken ?? Security::csrfToken();
+// views/admin/home/hero_edit.php
 
-$mode  = $mode ?? 'index';   // index | create | edit
-$items = $items ?? [];
-$item  = $item  ?? [];
+$baseUrl   = $vars['baseUrl'] ?? '/eventprint/public';
+$csrfToken = $vars['csrfToken'] ?? ''; // WAJIB dikirim dari controller
+
+$mode  = $vars['mode']  ?? 'index';   // index | create | edit
+$items = $vars['items'] ?? [];
+$item  = $vars['item']  ?? [];
 
 $isForm = in_array($mode, ['create','edit'], true);
 
+$action = '';
 if ($isForm) {
   $key = (string)($item['item_key'] ?? '');
-
   $action = ($mode === 'edit')
     ? $baseUrl . '/admin/home/hero/update/' . urlencode($key)
     : $baseUrl . '/admin/home/hero/store';
@@ -57,12 +59,13 @@ if ($isForm) {
                    href="<?= $baseUrl ?>/admin/home/hero/edit/<?= urlencode($k) ?>">Edit</a>
 
                 <form method="post"
-                      action="<?= $baseUrl ?>/admin/home/hero/delete/<?= urlencode($k) ?>"
-                      class="d-inline"
-                      onsubmit="return confirm('Hapus slide ini?')">
-                  <input type="hidden" name="_token" value="<?= htmlspecialchars($csrfToken) ?>">
-                  <button class="btn btn-sm btn-outline-danger">Hapus</button>
-                </form>
+          action="<?= $baseUrl ?>/admin/home/hero/delete/<?= urlencode($k) ?>"
+          class="d-inline"
+          onsubmit="return confirm('Hapus slide ini?')">
+      <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+      <button class="btn btn-sm btn-outline-danger">Hapus</button>
+    </form>
+
               </td>
             </tr>
           <?php endforeach; ?>
@@ -80,8 +83,8 @@ if ($isForm) {
 
   <div class="card">
     <div class="card-body">
-      <form method="post" action="<?= htmlspecialchars($action) ?>">
-        <input type="hidden" name="_token" value="<?= htmlspecialchars($csrfToken) ?>">
+      <form method="post" action="<?= htmlspecialchars($action, ENT_QUOTES, 'UTF-8') ?>">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
         <div class="mb-3">
           <label class="form-label">Judul</label>
@@ -135,7 +138,7 @@ if ($isForm) {
         </div>
 
         <div class="mt-4 d-flex gap-2">
-          <button class="btn btn-primary">Simpan</button>
+          <button class="btn btn-primary" type="submit">Simpan</button>
           <a class="btn btn-secondary" href="<?= $baseUrl ?>/admin/home/hero">Kembali</a>
         </div>
       </form>

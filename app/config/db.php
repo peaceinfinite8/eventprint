@@ -6,7 +6,7 @@ $config = require __DIR__ . '/app.php';
 $host = 'localhost';
 $user = 'root';
 $pass = '';
-$db   = 'digital_printing_cms';
+$db   = 'eventprint';
 
 $mysqli = new mysqli($host, $user, $pass, $db);
 

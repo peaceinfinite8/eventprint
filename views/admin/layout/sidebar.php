@@ -1,72 +1,120 @@
 <?php
+// views/admin/layout/sidebar.php
+
 $baseUrl = $vars['baseUrl'] ?? '/eventprint/public';
+$baseUrl = rtrim($baseUrl, '/');
 
 require_once __DIR__ . '/../../../app/core/Auth.php';
 $authUser = Auth::user();
 
-$role = strtolower((string)($authUser['role'] ?? ($_SESSION['user']['role'] ?? '')));
+$role = strtolower((string) ($authUser['role'] ?? ($_SESSION['user']['role'] ?? '')));
 $isAdmin = ($role === 'admin');
 $isSuper = ($role === 'super_admin');
 
-// teks kecil biar orang awam ngerti
 $roleLabel = $isSuper ? 'Super Admin' : ($isAdmin ? 'Admin' : ucfirst($role));
+
+/**
+ * ===== Active state helper =====
+ * Cocok buat MVC kamu yang pakai baseUrl /eventprint/public
+ */
+$reqUri = $_SERVER['REQUEST_URI'] ?? '/';
+$reqPath = parse_url($reqUri, PHP_URL_PATH) ?: '/';
+
+// ambil path base (misal /eventprint/public)
+$basePath = parse_url($baseUrl, PHP_URL_PATH) ?: '';
+$basePath = rtrim($basePath, '/');
+
+// normalisasi current path tanpa basePath
+$current = $reqPath;
+if ($basePath && str_starts_with($current, $basePath)) {
+  $current = substr($current, strlen($basePath));
+}
+$current = '/' . ltrim($current, '/');
+$current = rtrim($current, '/') ?: '/';
+
+// Note: isActive() function is now defined in app/helpers/url.php
+
+/**
+ * ===== Unread badge =====
+ * Aman kalau table/kolom belum ada.
+ */
+$unreadCount = 0;
+try {
+  $db = db();
+  $t = $db->query("SHOW TABLES LIKE 'contact_messages'");
+  if ($t && $t->num_rows > 0) {
+    $colIsRead = $db->query("SHOW COLUMNS FROM contact_messages LIKE 'is_read'");
+    if ($colIsRead && $colIsRead->num_rows > 0) {
+      $r = $db->query("SELECT COUNT(*) AS c FROM contact_messages WHERE is_read=0");
+      if ($r)
+        $unreadCount = (int) ($r->fetch_assoc()['c'] ?? 0);
+    } else {
+      $colStatus = $db->query("SHOW COLUMNS FROM contact_messages LIKE 'status'");
+      if ($colStatus && $colStatus->num_rows > 0) {
+        $r = $db->query("SELECT COUNT(*) AS c FROM contact_messages WHERE status='unread'");
+        if ($r)
+          $unreadCount = (int) ($r->fetch_assoc()['c'] ?? 0);
+      }
+    }
+  }
+} catch (Throwable $e) {
+  $unreadCount = 0;
+}
 ?>
 
 <nav id="sidebar" class="sidebar js-sidebar">
   <div class="sidebar-content js-simplebar">
 
-    <!-- BRAND -->
-    <a class="sidebar-brand d-flex align-items-center" href="<?php echo $baseUrl; ?>/admin/dashboard">
+    <a class="sidebar-brand d-flex align-items-center" href="<?= $baseUrl; ?>/admin/dashboard">
       <span class="align-middle sidebar-text">Event Print Admin</span>
     </a>
 
-    <!-- INFO ROLE (biar awam paham dia login sebagai apa) -->
     <div class="px-3 pb-3" style="opacity:.9;">
       <div style="font-size:.8rem; color:#94a3b8;">Login sebagai</div>
-      <div style="font-weight:700; color:#e2e8f0; line-height:1.1;"><?php echo htmlspecialchars($roleLabel); ?></div>
+      <div style="font-weight:700; color:#e2e8f0; line-height:1.1;"><?= htmlspecialchars($roleLabel) ?></div>
       <?php if (!empty($authUser['name'])): ?>
-        <div style="font-size:.85rem; color:#cbd5e1;"><?php echo htmlspecialchars($authUser['name']); ?></div>
+        <div style="font-size:.85rem; color:#cbd5e1;"><?= htmlspecialchars($authUser['name']) ?></div>
       <?php endif; ?>
     </div>
 
     <ul class="sidebar-nav">
 
-      <!-- DASHBOARD -->
-      <li class="sidebar-item">
-        <a class="sidebar-link" href="<?php echo $baseUrl; ?>/admin/dashboard">
+      <li class="sidebar-item <?= isActive('/admin/dashboard') ? 'active' : '' ?>">
+        <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/dashboard">
           <i class="align-middle" data-feather="home"></i>
           <span class="align-middle sidebar-text">Dashboard</span>
         </a>
       </li>
 
-      <!-- ===================== ADMIN (ARTIKEL ONLY) ===================== -->
       <?php if ($isAdmin): ?>
-
         <li class="sidebar-header">Kelola Konten</li>
 
-        <li class="sidebar-item">
-          <a class="sidebar-link" href="<?php echo $baseUrl; ?>/admin/blog">
+        <li class="sidebar-item <?= isActive('/admin/blog') ? 'active' : '' ?>">
+          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/blog">
             <i class="align-middle" data-feather="file-text"></i>
             <span class="align-middle sidebar-text">Artikel</span>
           </a>
         </li>
 
-        <li class="sidebar-item">
-          <a class="sidebar-link" href="<?php echo $baseUrl; ?>/admin/contact">
-            <i class="align-middle" data-feather="mail"></i>
-            <span class="align-middle sidebar-text">Pesan Masuk</span>
+        <li class="sidebar-item <?= isActive('/admin/contact') ? 'active' : '' ?>">
+          <a class="sidebar-link d-flex align-items-center justify-content-between" href="<?= $baseUrl; ?>/admin/contact">
+            <span class="d-flex align-items-center gap-2">
+              <i class="align-middle" data-feather="mail"></i>
+              <span class="align-middle sidebar-text">Pesan Masuk</span>
+            </span>
+
+            <?php if ($unreadCount > 0): ?>
+              <span class="badge bg-danger" style="font-size:.7rem;"><?= (int) $unreadCount ?></span>
+            <?php endif; ?>
           </a>
         </li>
-
       <?php endif; ?>
 
-      <!-- ===================== SUPER ADMIN (FULL) ===================== -->
       <?php if ($isSuper): ?>
-
         <li class="sidebar-header">Kelola Website</li>
 
-        <li class="sidebar-item">
-          <a class="sidebar-link" href="<?php echo $baseUrl; ?>/admin/home">
+        <li class="sidebar-item <?= isActive('/admin/home') ? 'active' : '' ?>">
+          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/home">
             <i class="align-middle" data-feather="layout"></i>
             <span class="align-middle sidebar-text">Konten Beranda</span>
           </a>
@@ -74,29 +122,29 @@ $roleLabel = $isSuper ? 'Super Admin' : ($isAdmin ? 'Admin' : ucfirst($role));
 
         <li class="sidebar-header">Katalog Produk</li>
 
-        <li class="sidebar-item">
-          <a class="sidebar-link" href="<?php echo $baseUrl; ?>/admin/products">
+        <li class="sidebar-item <?= isActive('/admin/products') ? 'active' : '' ?>">
+          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/products">
             <i class="align-middle" data-feather="box"></i>
             <span class="align-middle sidebar-text">Produk</span>
           </a>
         </li>
 
-        <li class="sidebar-item">
-          <a class="sidebar-link" href="<?php echo $baseUrl; ?>/admin/product-categories">
+        <li class="sidebar-item <?= isActive('/admin/product-categories') ? 'active' : '' ?>">
+          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/product-categories">
             <i class="align-middle" data-feather="tag"></i>
             <span class="align-middle sidebar-text">Kategori Produk</span>
           </a>
         </li>
 
-        <li class="sidebar-item">
-          <a class="sidebar-link" href="<?php echo $baseUrl; ?>/admin/discounts">
+        <li class="sidebar-item <?= isActive('/admin/discounts') ? 'active' : '' ?>">
+          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/discounts">
             <i class="align-middle" data-feather="percent"></i>
             <span class="align-middle sidebar-text">Diskon</span>
           </a>
         </li>
 
-        <li class="sidebar-item">
-          <a class="sidebar-link" href="<?php echo $baseUrl; ?>/admin/our-store">
+        <li class="sidebar-item <?= isActive('/admin/our-store') ? 'active' : '' ?>">
+          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/our-store">
             <i class="align-middle" data-feather="map-pin"></i>
             <span class="align-middle sidebar-text">Lokasi / Our Store</span>
           </a>
@@ -104,43 +152,45 @@ $roleLabel = $isSuper ? 'Super Admin' : ($isAdmin ? 'Admin' : ucfirst($role));
 
         <li class="sidebar-header">Konten & Komunikasi</li>
 
-        <li class="sidebar-item">
-          <a class="sidebar-link" href="<?php echo $baseUrl; ?>/admin/blog">
+        <li class="sidebar-item <?= isActive('/admin/blog') ? 'active' : '' ?>">
+          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/blog">
             <i class="align-middle" data-feather="file-text"></i>
             <span class="align-middle sidebar-text">Artikel</span>
           </a>
         </li>
 
-        <li class="sidebar-item">
-          <a class="sidebar-link" href="<?php echo $baseUrl; ?>/admin/contact">
-            <i class="align-middle" data-feather="mail"></i>
-            <span class="align-middle sidebar-text">Pesan Masuk</span>
+        <li class="sidebar-item <?= isActive('/admin/contact') ? 'active' : '' ?>">
+          <a class="sidebar-link d-flex align-items-center justify-content-between" href="<?= $baseUrl; ?>/admin/contact">
+            <span class="d-flex align-items-center gap-2">
+              <i class="align-middle" data-feather="mail"></i>
+              <span class="align-middle sidebar-text">Pesan Masuk</span>
+            </span>
+
+            <?php if ($unreadCount > 0): ?>
+              <span class="badge bg-danger" style="font-size:.7rem;"><?= (int) $unreadCount ?></span>
+            <?php endif; ?>
           </a>
         </li>
 
         <li class="sidebar-header">Pengaturan</li>
 
-        <li class="sidebar-item">
-          <a class="sidebar-link" href="<?php echo $baseUrl; ?>/admin/settings">
+        <li class="sidebar-item <?= isActive('/admin/settings') ? 'active' : '' ?>">
+          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/settings">
             <i class="align-middle" data-feather="settings"></i>
             <span class="align-middle sidebar-text">General Settings</span>
           </a>
         </li>
 
-        <li class="sidebar-item">
-          <a class="sidebar-link" href="<?php echo $baseUrl; ?>/admin/users">
+        <li class="sidebar-item <?= isActive('/admin/users') ? 'active' : '' ?>">
+          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/users">
             <i class="align-middle" data-feather="users"></i>
             <span class="align-middle sidebar-text">Users</span>
           </a>
         </li>
-
       <?php endif; ?>
 
-      <!-- LOGOUT (SEMUA ROLE) -->
       <li class="sidebar-item">
-        <a class="sidebar-link"
-           href="<?php echo $baseUrl; ?>/admin/logout"
-           onclick="return confirm('Yakin ingin logout?');">
+        <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/logout" onclick="return confirm('Yakin ingin logout?');">
           <i class="align-middle" data-feather="log-out"></i>
           <span class="align-middle sidebar-text">Logout</span>
         </a>
