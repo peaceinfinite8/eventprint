@@ -8,11 +8,17 @@
     extract($vars, EXTR_SKIP);
   }
   ?>
+
+  <!-- Base URL for JavaScript -->
+  <script>
+    window.EP_BASE_URL = '<?= $baseUrl ?? '' ?>';
+  </script>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description"
     content="<?= e($metaDescription ?? 'EventPrint - Solusi cetak digital berkualitas untuk kebutuhan event dan promosi Anda') ?>">
-  <title><?= e($title ?? 'EventPrint') ?> | EventPrint</title>
+  <title><?= e($title ?? 'EventPrint') ?> | <?= e($settings['site_name'] ?? 'EventPrint') ?></title>
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="<?= assetUrl('frontend/images/favicon.png') ?>">
@@ -48,8 +54,14 @@
   <!-- Footer -->
   <?php include __DIR__ . '/../partials/footer.php'; ?>
 
+  <!-- FAB Navigation (Mobile) -->
+  <?php include __DIR__ . '/../partials/fab_nav.php'; ?>
+
   <!-- Core Scripts -->
   <script src="<?= assetUrl('frontend/js/utils.js') ?>"></script>
+  <script src="<?= assetUrl('frontend/js/lib/dataClient.js') ?>"></script>
+  <script src="<?= assetUrl('frontend/js/components/navSearch.js') ?>"></script>
+  <script src="<?= assetUrl('frontend/js/imageFallback.js') ?>"></script>
   <script src="<?= assetUrl('frontend/js/app.js') ?>"></script>
 
   <!-- Additional JS -->

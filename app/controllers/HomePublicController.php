@@ -15,9 +15,7 @@ class HomePublicController extends Controller
 
     public function index(): void
     {
-        // Fetch settings for navbar/footer
-        $settingsRow = $this->db->query("SELECT * FROM settings WHERE id=1 LIMIT 1")->fetch_assoc();
-        $settings = $settingsRow ?: [];
+        // Settings auto-injected by base Controller
 
         // Fetch hero slides
         $heroSlides = [];
@@ -57,7 +55,7 @@ class HomePublicController extends Controller
         $res = $this->db->query("
             SELECT id, name, slug, base_price, thumbnail
             FROM products
-            WHERE is_active=1 AND is_featured=1 AND deleted_at IS NULL
+            WHERE is_active=1 AND is_featured=1
             ORDER BY created_at DESC
             LIMIT 8
         ");
@@ -115,16 +113,20 @@ class HomePublicController extends Controller
             'right_link' => (string) ($homeContent['cta_right_link'] ?? 'our-home'),
         ];
 
-        $this->renderFrontend('pages/home', [
+        $this->renderFrontend('home/index', [
             'page' => 'home',
             'title' => 'Home - Digital Printing & Media Promosi',
-            'settings' => $settings,
+            // settings auto-injected
             'heroSlides' => $heroSlides,
             'categories' => $categories,
             'featuredProducts' => $featuredProducts,
             'testimonials' => $testimonials,
             'contact' => $contact,
             'cta' => $cta,
+            'additionalJs' => [
+                'frontend/js/smallCarousel.js',
+                'frontend/js/render/renderHome.js'
+            ]
         ]);
     }
 
@@ -262,7 +264,7 @@ class HomePublicController extends Controller
         SELECT id, name, slug, base_price, thumbnail
         FROM products
         WHERE is_active=1
-          AND deleted_at IS NULL
+         
           AND {$where}
         ORDER BY created_at DESC
         LIMIT {$limit}

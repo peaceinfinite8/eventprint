@@ -1,188 +1,180 @@
 <?php
-$baseUrl   = $vars['baseUrl'] ?? '/eventprint/public';
-$stores    = $stores ?? ($vars['stores'] ?? []);
-$storeMain = $storeMain ?? ($vars['storeMain'] ?? null);
-
-function e($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
-
-function labelOfficeType($t){
-  return ($t === 'hq') ? 'Head Office' : 'Branch';
-}
-
-// Kalau gmaps_url bukan embed link, kita tampilkan tombol "Buka Maps"
-function isEmbedUrl($url){
-  $url = (string)$url;
-  return $url !== '' && (strpos($url, 'google.com/maps/embed') !== false || strpos($url, '/maps/embed') !== false);
-}
+// views/frontend/our_store/index.php
+$baseUrl = $baseUrl ?? '/eventprint/public';
 ?>
 
-<main class="ep-section py-5 ep-bg-soft">
-  <div class="container-fluid px-4">
+<style>
+  /* Our Home Page Specific Styles */
+  body {
+    /* Default background */
+  }
 
-    <?php if (!$storeMain): ?>
-      <div class="alert alert-warning mb-0">
-        Data toko belum tersedia. Pastikan ada record di tabel <b>our_store</b> dengan <b>is_active = 1</b>.
-      </div>
-    <?php else: ?>
+  .our-home-section {
+    padding: 40px 0 60px;
+  }
 
-      <div class="row g-4 align-items-center">
-        <div class="col-lg-6">
-          <div class="ep-eyebrow">Our Home</div>
-          <h1 class="ep-title" style="font-size:clamp(1.6rem,2.6vw,2.4rem)">Alamat toko & jam operasional</h1>
-          <p class="ep-subtitle mb-0">
-            Data diambil dari database (<code>our_store</code>).
-          </p>
+  .our-home-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 18px;
+    color: var(--gray-900);
+  }
 
-          <div class="ep-store-card p-4 mt-3">
-            <div class="d-flex align-items-start gap-3">
-              <div class="ep-store-icon"><i class="bi bi-shop-window"></i></div>
+  .stores-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
 
-              <div class="flex-grow-1">
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                  <div class="fw-semibold" id="epStoreName"><?= e($storeMain['name'] ?? '-') ?></div>
-                  <span class="badge bg-primary">
-                    <?= e(labelOfficeType($storeMain['office_type'] ?? 'branch')) ?>
-                  </span>
-                </div>
+  .store-card {
+    background: var(--white);
+    border: 1px solid #E5E7EB;
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 16px;
+  }
 
-                <div class="text-muted" id="epStoreAddress">
-                  <?= e($storeMain['address'] ?? '-') ?>, <?= e($storeMain['city'] ?? '-') ?>
-                </div>
+  .store-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
 
-                <div class="row g-3 mt-3">
-                  <div class="col-6">
-                    <div class="small text-muted">Telepon</div>
-                    <div class="fw-semibold" id="epStorePhone"><?= e($storeMain['phone'] ?? '-') ?></div>
-                  </div>
-                  <div class="col-6">
-                    <div class="small text-muted">WhatsApp</div>
-                    <div class="fw-semibold"><?= e($storeMain['whatsapp'] ?? '-') ?></div>
-                  </div>
-                </div>
+  .store-image {
+    width: 160px;
+    height: 160px;
+    background: #E5E7EB;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9CA3AF;
+    font-size: 0.9rem;
+    font-weight: 500;
+    position: relative;
+    overflow: hidden;
+  }
 
-                <div class="d-flex flex-wrap gap-2 mt-3" id="epStoreBadges">
-                  <?php if (!empty($storeMain['city'])): ?>
-                    <span class="badge bg-light text-dark border"><i class="bi bi-geo-alt me-1"></i><?= e($storeMain['city']) ?></span>
-                  <?php endif; ?>
-                  <?php if (!empty($storeMain['phone'])): ?>
-                    <span class="badge bg-light text-dark border"><i class="bi bi-telephone me-1"></i><?= e($storeMain['phone']) ?></span>
-                  <?php endif; ?>
-                  <?php if (!empty($storeMain['whatsapp'])): ?>
-                    <span class="badge bg-success"><i class="bi bi-whatsapp me-1"></i><?= e($storeMain['whatsapp']) ?></span>
-                  <?php endif; ?>
-                </div>
+  .store-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 
-                <div class="d-flex flex-wrap gap-2 mt-3">
-                  <?php if (!empty($storeMain['whatsapp'])):
-                    $wa = preg_replace('/\D+/', '', (string)$storeMain['whatsapp']);
-                    // kalau user input 08..., ubah ke 62...
-                    if (strpos($wa, '0') === 0) $wa = '62' . substr($wa, 1);
-                  ?>
-                    <a class="btn btn-success" target="_blank" href="https://wa.me/<?= e($wa) ?>">
-                      <i class="bi bi-whatsapp me-2"></i>Hubungi via WhatsApp
-                    </a>
-                  <?php endif; ?>
+  .store-label {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
 
-                  <?php if (!empty($storeMain['gmaps_url'])): ?>
-                    <a class="btn btn-outline-primary" target="_blank" href="<?= e($storeMain['gmaps_url']) ?>">
-                      <i class="bi bi-map me-2"></i>Buka Google Maps
-                    </a>
-                  <?php endif; ?>
-                </div>
+  .store-info {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
 
-              </div>
-            </div>
-          </div>
-        </div>
+  .info-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
 
-        <div class="col-lg-6">
-          <div class="ep-map-card">
-            <?php if (!empty($storeMain['gmaps_url']) && isEmbedUrl($storeMain['gmaps_url'])): ?>
-              <iframe
-                class="store-map"
-                src="<?= e($storeMain['gmaps_url']) ?>"
-                width="100%"
-                height="420"
-                style="border:0;border-radius:14px;"
-                allowfullscreen=""
-                loading="lazy"
-                referrerpolicy="no-referrer-when-downgrade"></iframe>
-            <?php else: ?>
-              <div class="ep-map-placeholder" style="border-radius:14px;min-height:420px;">
-                <div class="ep-map-badge">
-                  <i class="bi bi-geo-alt-fill me-2"></i>Map belum di-embed
-                </div>
-                <div class="text-white-50 small mt-2">
-                  Isi kolom <code>gmaps_url</code> dengan link embed (google.com/maps/embed...) supaya map tampil.
-                </div>
-              </div>
-            <?php endif; ?>
-          </div>
-        </div>
-      </div>
+  .info-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    color: var(--primary-cyan);
+    margin-top: 2px;
+  }
 
-      <?php if (count($stores) > 1): ?>
-        <hr class="my-5">
+  .info-icon svg {
+    width: 100%;
+    height: 100%;
+  }
 
-        <div class="d-flex align-items-end justify-content-between flex-wrap gap-2 mb-3">
-          <div>
-            <div class="ep-eyebrow-sm">Cabang</div>
-            <h2 class="ep-title-sm mb-0">Daftar Toko / Workshop</h2>
-          </div>
-        </div>
+  .info-content {
+    flex: 1;
+  }
 
-        <div class="row g-4">
-          <?php foreach ($stores as $s): ?>
-            <div class="col-12 col-md-6 col-xl-4">
-              <div class="card border-0 shadow-sm h-100" style="border-radius:14px; overflow:hidden;">
-                <?php
-                  $img = !empty($s['thumbnail'])
-                    ? $baseUrl . '/' . ltrim($s['thumbnail'], '/')
-                    : $baseUrl . '/assets/admin/img/photos/unsplash-3.jpg';
-                ?>
-                <div style="height:170px;background:#f1f5f9;">
-                  <img src="<?= e($img) ?>" alt="" style="width:100%;height:100%;object-fit:cover;">
-                </div>
-                <div class="card-body">
-                  <div class="d-flex align-items-center justify-content-between gap-2">
-                    <div class="fw-semibold"><?= e($s['name'] ?? '-') ?></div>
-                    <span class="badge bg-primary"><?= e(labelOfficeType($s['office_type'] ?? 'branch')) ?></span>
-                  </div>
-                  <div class="text-muted small mt-1">
-                    <?= e($s['address'] ?? '-') ?>, <?= e($s['city'] ?? '-') ?>
-                  </div>
+  .info-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin-bottom: 2px;
+  }
 
-                  <div class="d-flex flex-wrap gap-2 mt-3">
-                    <?php if (!empty($s['whatsapp'])):
-                      $wa = preg_replace('/\D+/', '', (string)$s['whatsapp']);
-                      if (strpos($wa, '0') === 0) $wa = '62' . substr($wa, 1);
-                    ?>
-                      <a class="btn btn-sm btn-success" target="_blank" href="https://wa.me/<?= e($wa) ?>">
-                        <i class="bi bi-whatsapp me-1"></i>WA
-                      </a>
-                    <?php endif; ?>
+  .info-text {
+    font-size: 0.8rem;
+    color: var(--gray-600);
+    line-height: 1.4;
+  }
 
-                    <?php if (!empty($s['gmaps_url'])): ?>
-                      <a class="btn btn-sm btn-outline-primary" target="_blank" href="<?= e($s['gmaps_url']) ?>">
-                        <i class="bi bi-map me-1"></i>Maps
-                      </a>
-                    <?php endif; ?>
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .stores-grid {
+      gap: 16px;
+    }
 
-                    <?php if (!empty($s['phone'])): ?>
-                      <span class="btn btn-sm btn-outline-secondary disabled">
-                        <i class="bi bi-telephone me-1"></i><?= e($s['phone']) ?>
-                      </span>
-                    <?php endif; ?>
-                  </div>
+    .store-card {
+      padding: 14px;
+    }
 
-                </div>
-              </div>
-            </div>
-          <?php endforeach; ?>
-        </div>
-      <?php endif; ?>
+    .store-image {
+      width: 140px;
+      height: 140px;
+    }
+  }
 
-    <?php endif; ?>
+  @media (max-width: 768px) {
+    .stores-grid {
+      grid-template-columns: 1fr;
+    }
 
+    .store-card {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .store-image {
+      width: 100%;
+      height: 180px;
+    }
+
+    .our-home-title {
+      font-size: 1.5rem;
+    }
+  }
+</style>
+
+<!-- Our Home Content -->
+<section class="our-home-section">
+  <div class="container">
+    <h1 class="our-home-title">Our Home</h1>
+    <div id="storesGrid">
+      <!-- Rendered by JS -->
+    </div>
   </div>
-</main>
+</section>
+
+<!-- Machine Gallery Section -->
+<section class="machine-gallery-section">
+  <div class="container">
+    <div class="gallery-header">
+      <h2 class="gallery-title">Galeri Mesin Produksi</h2>
+      <p class="gallery-subtitle">Lihat mesin yang kami gunakan untuk menjaga kualitas & kecepatan produksi
+      </p>
+    </div>
+    <div id="galleryGrid" class="gallery-grid">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+</section>

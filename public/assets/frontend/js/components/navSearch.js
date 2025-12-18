@@ -26,8 +26,10 @@ function initNavSearch() {
     // Load products data
     if (window.DataClient) {
         DataClient.getProducts().then(data => {
-            // Handle structure { categories: [], products: [] }
-            if (data && data.products) {
+            // Handle API response format
+            if (data && data.success && data.products) {
+                products = data.products;
+            } else if (data && data.products) {
                 products = data.products;
             } else if (Array.isArray(data)) {
                 products = data;
@@ -72,11 +74,12 @@ function initNavSearch() {
         }
 
         // Render results
+        const baseUrl = window.EP_BASE_URL || '';
         dropdown.innerHTML = filtered.map(p => `
-      <div class="search-item" onclick="window.location.href='product-detail.html?slug=${p.slug}'">
+      <div class="search-item" onclick="window.location.href='${baseUrl}/products/${p.slug || p.id}'">
         <div class="search-item-info">
           <div class="search-item-name">${p.name}</div>
-          ${p.base_price ? `<div class="search-item-price">Rp ${p.base_price.toLocaleString('id-ID')}</div>` : ''}
+          ${p.base_price || p.price ? `<div class="search-item-price">Rp ${(p.base_price || p.price).toLocaleString('id-ID')}</div>` : ''}
         </div>
       </div>
     `).join('');

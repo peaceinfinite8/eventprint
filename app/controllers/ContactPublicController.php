@@ -15,18 +15,19 @@ class ContactPublicController extends Controller
 
     public function index(): void
     {
-        // Fetch settings
-        $settingsRow = $this->db->query("SELECT * FROM settings WHERE id=1 LIMIT 1")->fetch_assoc();
-        $settings = $settingsRow ?: [];
+        // Settings auto-injected
 
         // Get pre-filled product name from query string (if redirected from product page)
         $productName = $_GET['product'] ?? '';
 
-        $this->renderFrontend('pages/contact', [
+        $this->renderFrontend('contact/index', [
             'page' => 'contact',
             'title' => 'Contact Us',
-            'settings' => $settings,
+            // settings auto-injected
             'productName' => $productName,
+            'additionalJs' => [
+                'frontend/js/render/renderContact.js'
+            ]
         ]);
     }
 
@@ -92,5 +93,19 @@ class ContactPublicController extends Controller
                 'errors' => ['Terjadi kesalahan saat menyimpan pesan. Silakan coba lagi.']
             ]);
         }
+    }
+
+    public function apiContact(): void
+    {
+        header('Content-Type: application/json');
+
+        // Get settings
+        $res = $this->db->query("SELECT * FROM settings WHERE id=1 LIMIT 1");
+        $settings = $res ? $res->fetch_assoc() : [];
+
+        echo json_encode([
+            'success' => true,
+            'settings' => $settings
+        ]);
     }
 }

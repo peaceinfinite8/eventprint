@@ -29,7 +29,7 @@ class BlogPublicController extends Controller
         $res = $this->db->query("
             SELECT id, title, slug, excerpt, thumbnail, published_at
             FROM posts
-            WHERE is_published=1 AND is_featured=1 AND deleted_at IS NULL
+            WHERE is_published=1 AND is_featured=1
             ORDER BY published_at DESC
             LIMIT 4
         ");
@@ -43,7 +43,7 @@ class BlogPublicController extends Controller
         $countResult = $this->db->query("
             SELECT COUNT(*) as total
             FROM posts
-            WHERE is_published=1 AND deleted_at IS NULL
+            WHERE is_published=1
         ");
         $totalPosts = $countResult->fetch_assoc()['total'];
         $totalPages = ceil($totalPosts / $perPage);
@@ -53,7 +53,7 @@ class BlogPublicController extends Controller
         $res = $this->db->query("
             SELECT id, title, slug, excerpt, thumbnail, published_at
             FROM posts
-            WHERE is_published=1 AND deleted_at IS NULL
+            WHERE is_published=1
             ORDER BY published_at DESC
             LIMIT $perPage OFFSET $offset
         ");
@@ -63,7 +63,7 @@ class BlogPublicController extends Controller
             }
         }
 
-        $this->renderFrontend('pages/blog', [
+        $this->renderFrontend('blog/index', [
             'page' => 'blog',
             'title' => 'Blog & Artikel',
             'settings' => $settings,
@@ -71,6 +71,9 @@ class BlogPublicController extends Controller
             'posts' => $posts,
             'currentPage' => $page,
             'totalPages' => $totalPages,
+            'additionalJs' => [
+                'frontend/js/render/renderBlog.js'
+            ]
         ]);
     }
 
@@ -84,7 +87,7 @@ class BlogPublicController extends Controller
         $stmt = $this->db->prepare("
             SELECT id, title, slug, content, thumbnail, published_at
             FROM posts
-            WHERE slug=? AND is_published=1 AND deleted_at IS NULL
+            WHERE slug=? AND is_published=1
         ");
         $stmt->bind_param('s', $slug);
         $stmt->execute();
@@ -106,7 +109,7 @@ class BlogPublicController extends Controller
         $res = $this->db->query("
             SELECT id, title, slug, thumbnail, published_at
             FROM posts
-            WHERE is_published=1 AND deleted_at IS NULL AND id != {$post['id']}
+            WHERE is_published=1 AND id != {$post['id']}
             ORDER BY published_at DESC
             LIMIT 3
         ");
@@ -122,6 +125,47 @@ class BlogPublicController extends Controller
             'settings' => $settings,
             'post' => $post,
             'relatedPosts' => $relatedPosts,
+        ]);
+    }
+
+    public function apiBlog(): void
+    {
+        header('Content-Type: application/json');
+
+        // Fetch featured posts
+        $featuredPosts = [];
+        $res = $this->db->query("
+            SELECT id, title, slug, excerpt, thumbnail, published_at
+            FROM posts
+            WHERE is_published=1 AND is_featured=1
+            ORDER BY published_at DESC
+            LIMIT 4
+        ");
+        if ($res) {
+            while ($r = $res->fetch_assoc()) {
+                $featuredPosts[] = $r;
+            }
+        }
+
+        // Fetch recent posts
+        $recentPosts = [];
+        $res = $this->db->query("
+            SELECT id, title, slug, excerpt, thumbnail, published_at
+            FROM posts
+            WHERE is_published=1
+            ORDER BY published_at DESC
+            LIMIT 10
+        ");
+        if ($res) {
+            while ($r = $res->fetch_assoc()) {
+                $recentPosts[] = $r;
+            }
+        }
+
+        echo json_encode([
+            'success' => true,
+            'featured' => $featuredPosts,
+            'recent' => $recentPosts
         ]);
     }
 }

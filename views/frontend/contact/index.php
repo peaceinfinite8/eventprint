@@ -1,73 +1,56 @@
 <?php
-$baseUrl = $vars['baseUrl'] ?? '/eventprint/public';
-$success = $_SESSION['flash_success'] ?? null;
-$error   = $_SESSION['flash_error'] ?? null;
-unset($_SESSION['flash_success'], $_SESSION['flash_error']);
+// views/frontend/contact/index.php
+$baseUrl = $baseUrl ?? '/eventprint/public';
 ?>
 
-<section class="ep-section py-5">
-  <div class="container-fluid px-4">
-    <div class="ep-section-head d-flex align-items-end justify-content-between gap-3 flex-wrap mb-4">
+<!-- Contact Content -->
+<section class="section">
+  <div class="container">
+    <div class="contact-row">
+      <!-- Get in Touch -->
       <div>
-        <div class="ep-eyebrow-sm">Kontak</div>
-        <h1 class="ep-title-sm">Hubungi Kami</h1>
+        <h2 class="mb-3">Get in Touch</h2>
+        <div id="contactDetails">
+          <!-- Rendered by JS -->
+        </div>
+
+        <h4 class="mt-3 mb-2">Ikuti Kami</h4>
+        <div id="socialIcons" class="social-icons">
+          <!-- Rendered by JS -->
+        </div>
       </div>
-      <a class="btn btn-outline-secondary" href="<?= $baseUrl ?>/products">Lihat Produk</a>
+
+      <!-- Contact Form -->
+      <div class="contact-form-box">
+        <h3 class="mb-3">Kirim Pesan</h3>
+        <form id="contactForm" onsubmit="handleContactSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Nama</label>
+            <input type="text" class="form-input" placeholder="Nama Anda" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">No.Telepon/WhatsApp</label>
+            <input type="tel" class="form-input" placeholder="08123456789" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Isi Pesan</label>
+            <textarea class="form-textarea" placeholder="Tulis pesan Anda..." required></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-secondary">Kirim sekarang</button>
+        </form>
+      </div>
     </div>
+  </div>
+</section>
 
-    <?php if ($success): ?>
-      <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
-    <?php endif; ?>
-    <?php if ($error): ?>
-      <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
-    <?php endif; ?>
-
-    <div class="row g-4">
-      <div class="col-lg-6">
-        <div class="card shadow-sm border-0">
-          <div class="card-body">
-            <h5 class="fw-bold mb-3" id="form">Kirim Pesan</h5>
-
-            <form method="post" action="<?= $baseUrl ?>/contact/send">
-              <div class="mb-3">
-                <label class="form-label">Nama *</label>
-                <input class="form-control" name="name" required>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label">Email</label>
-                <input class="form-control" type="email" name="email">
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label">WhatsApp / Telepon</label>
-                <input class="form-control" name="phone">
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label">Pesan *</label>
-                <textarea class="form-control" name="message" rows="5" required></textarea>
-              </div>
-
-              <button class="btn btn-primary" type="submit">
-                <i class="bi bi-send-fill me-2"></i>Kirim
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-lg-6" id="order">
-        <div class="card shadow-sm border-0">
-          <div class="card-body">
-            <h5 class="fw-bold mb-2">Order / Quotation</h5>
-            <p class="text-muted mb-3">Pilih produk dulu, lalu hitung harga di detail produk.</p>
-            <a class="btn btn-success w-100" href="https://wa.me/6281234567890" target="_blank" rel="noopener">
-              <i class="bi bi-whatsapp me-2"></i>Chat WhatsApp
-            </a>
-          </div>
-        </div>
-      </div>
+<!-- Map Section -->
+<section class="section">
+  <div class="container">
+    <div id="mapPlaceholder" class="contact-box" style="height: 400px;">
+      <span>Gambar GMaps</span>
     </div>
   </div>
 </section>

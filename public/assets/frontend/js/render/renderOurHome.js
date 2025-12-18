@@ -1,5 +1,5 @@
 // ============================================
-// EventPrint - Our Home Page Renderer
+// EventPrint - Our Home Page Renderer (PHP API Version)
 // ============================================
 
 /**
@@ -7,21 +7,16 @@
  */
 async function initOurHomePage() {
   try {
-    // Show loading
-    showLoading('storesGrid', 8);
+    showLoading('storesGrid', 4);
 
-    // Simulate loading delay
-    await new Promise(resolve => setTimeout(resolve, 400));
+    const data = await loadData('/api/our-home');
 
-    const data = await loadData('../data/ourhome.json');
-
-    if (!data || !data.stores || data.stores.length === 0) {
+    if (!data || !data.success || !data.stores || data.stores.length === 0) {
       showEmpty('storesGrid', 'Data lokasi belum tersedia');
       return;
     }
 
     renderStores(data.stores);
-    renderMachineGallery(data.machineGallery);
 
   } catch (error) {
     console.error('Error loading our home page:', error);
@@ -39,8 +34,10 @@ function renderStores(stores) {
   const html = stores.map(store => `
     <div class="store-card">
       <div class="store-image">
-        ${store.image ? `<img src="${store.image}" alt="${store.title}">` : '<span>Gambar</span>'}
-        <div class="store-label">EventPrint Tempat</div>
+        ${store.thumbnail ?
+      `<img src="${store.thumbnail}" alt="${store.name}">` :
+      '<span>Gambar</span>'}
+        <div class="store-label">${store.office_type || 'EventPrint'}</div>
       </div>
       
       <div class="store-info">
@@ -54,25 +51,27 @@ function renderStores(stores) {
           </div>
           <div class="info-content">
             <div class="info-label">Alamat</div>
-            <div class="info-text">${store.address}</div>
+            <div class="info-text">${store.address || ''}, ${store.city || ''}</div>
           </div>
         </div>
 
-        <!-- Email -->
+        <!-- Phone -->
+        ${store.phone ? `
         <div class="info-row">
           <div class="info-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="5" width="18" height="14" rx="2"></rect>
-              <path d="M3 7l9 6 9-6"></path>
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
             </svg>
           </div>
           <div class="info-content">
-            <div class="info-label">Email</div>
-            <div class="info-text">${store.email}</div>
+            <div class="info-label">Telepon</div>
+            <div class="info-text">${store.phone}</div>
           </div>
         </div>
+        ` : ''}
 
         <!-- WhatsApp -->
+        ${store.whatsapp ? `
         <div class="info-row">
           <div class="info-icon">
             <svg viewBox="0 0 24 24" fill="currentColor">
@@ -84,45 +83,28 @@ function renderStores(stores) {
             <div class="info-text">${store.whatsapp}</div>
           </div>
         </div>
+        ` : ''}
 
-        <!-- Operating Hours -->
+        <!-- Google Maps -->
+        ${store.gmaps_url ? `
         <div class="info-row">
           <div class="info-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"></circle>
-              <path d="M12 6v6l4 2"></path>
+              <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+              <path d="M2 12h20"></path>
             </svg>
           </div>
           <div class="info-content">
-            <div class="info-label">Jam Kerja</div>
-            <div class="info-text">${Array.isArray(store.hours) ? store.hours.join('<br>') : store.hours}</div>
+            <div class="info-label">Lokasi</div>
+            <div class="info-text"><a href="${store.gmaps_url}" target="_blank">Lihat di Google Maps</a></div>
           </div>
         </div>
+        ` : ''}
       </div>
     </div>
   `).join('');
 
   container.innerHTML = html;
   container.className = 'stores-grid';
-}
-
-/**
- * Render Machine Gallery
- */
-function renderMachineGallery(gallery) {
-  const container = document.getElementById('galleryGrid');
-  if (!container || !gallery) return;
-
-  const html = gallery.map(item => `
-    <div class="gallery-item" onclick="alert('${item.title} - ${item.caption}')">
-      ${item.type ? `<div class="gallery-badge">${item.type}</div>` : ''}
-      <img src="${item.image}" alt="${item.title}" loading="lazy">
-      <div class="gallery-overlay">
-        <div class="gallery-item-title">${item.title}</div>
-        <div class="gallery-item-caption">${item.caption}</div>
-      </div>
-    </div>
-  `).join('');
-
-  container.innerHTML = html;
 }

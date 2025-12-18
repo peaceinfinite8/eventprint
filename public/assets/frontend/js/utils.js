@@ -63,19 +63,26 @@ function showError(containerId, message = 'Gagal memuat data. Coba lagi.') {
 }
 
 /**
- * Load JSON data from file
- * @param {string} jsonPath - Path to JSON file
+ * Load JSON data from API or file
+ * @param {string} path - Path to JSON file or API endpoint
  * @returns {Promise<Object>} Parsed JSON data
  */
-async function loadData(jsonPath) {
+async function loadData(path) {
   try {
-    const response = await fetch(jsonPath);
+    // Prepend base URL if path starts with /api/
+    let fullPath = path;
+    if (path.startsWith('/api/')) {
+      const baseUrl = window.EP_BASE_URL || '';
+      fullPath = baseUrl + path;
+    }
+
+    const response = await fetch(fullPath);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     return await response.json();
   } catch (error) {
-    console.log('Note: Could not load', jsonPath, '- this is expected in PHP mode');
+    console.error('Error loading data:', error);
     throw error;
   }
 }

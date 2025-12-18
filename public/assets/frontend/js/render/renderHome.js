@@ -1,5 +1,5 @@
 // ============================================
-// EventPrint - Homepage Renderer
+// EventPrint - Homepage Renderer (PHP API Version)
 // ============================================
 
 let currentSlide = 0;
@@ -12,21 +12,26 @@ let carouselInterval = null;
 async function initHomePage() {
   try {
     showLoading('bannerCarousel', 1);
-    showLoading('testimonials', 4);
+    showLoading('categories', 3);
     showLoading('featuredProducts', 4);
     showLoading('printProducts', 4);
     showLoading('mediaProducts', 4);
 
-    const data = await loadData('../data/home.json');
+    // Load data from PHP API
+    const homeData = await loadData('/api/home');
+    const categoriesData = await loadData('/api/categories');
 
-    renderBannerCarousel(data.banners);
-    renderTestimonials(data.testimonials);
-    renderCategories(data.categories);
-    renderProductGrid(data.featuredProducts, 'featuredProducts');
-    renderProductGrid(data.printProducts, 'printProducts');
-    renderProductGrid(data.mediaProducts, 'mediaProducts');
-    renderWhyChoose(data.whyChoose);
-    renderPromoCarousel(data.infrastructureGallery);
+    if (homeData && homeData.success) {
+      renderBannerCarousel(homeData.banners || []);
+      renderProductGrid(homeData.featuredProducts || [], 'featuredProducts');
+      renderProductGrid(homeData.printProducts || [], 'printProducts');
+      renderProductGrid(homeData.mediaProducts || [], 'mediaProducts');
+      renderWhyChoose(homeData.whyChoose);
+    }
+
+    if (categoriesData && categoriesData.success) {
+      renderCategories(categoriesData.categories || []);
+    }
 
   } catch (error) {
     console.error('Error loading home page:', error);
@@ -39,7 +44,9 @@ async function initHomePage() {
  */
 function renderBannerCarousel(banners) {
   const container = document.getElementById('bannerCarousel');
-  if (!container || !banners || banners.length === 0) {
+  if (!container) return;
+
+  if (!banners || banners.length === 0) {
     showEmpty('bannerCarousel', 'Banner tidak tersedia');
     return;
   }
@@ -47,12 +54,16 @@ function renderBannerCarousel(banners) {
   bannerData = banners;
   currentSlide = 0;
 
+  const baseUrl = window.EP_BASE_URL || '';
+  const firstBanner = banners[0];
+  const bgImage = firstBanner.image_url || firstBanner.image || '';
+
   const html = `
-    <div class="banner-slide" style="${banners[0].image ? `background-image: url('${banners[0].image}');` : ''}">
+    <div class="banner-slide" style="${bgImage ? `background-image: url('${bgImage}');` : ''}">
       <div class="hero__inner">
-        <h1 class="banner-title">${banners[0].title}</h1>
-        <p class="banner-subtitle">${banners[0].subtitle}</p>
-        <a href="products.html" class="btn btn-primary">${banners[0].cta}</a>
+        <h1 class="banner-title">${firstBanner.title || ''}</h1>
+        <p class="banner-subtitle">${firstBanner.subtitle || firstBanner.description || ''}</p>
+        <a href="${baseUrl}/products" class="btn btn-primary">${firstBanner.button_text || 'Lihat Produk'}</a>
       </div>
     </div>
     <button class="carousel-arrow left" onclick="previousSlide()">‹</button>
@@ -62,121 +73,67 @@ function renderBannerCarousel(banners) {
 
   container.innerHTML = html;
 
-  // Add dot click handlers
   const dots = container.querySelectorAll('.carousel-dot');
   dots.forEach((dot, index) => {
     dot.addEventListener('click', () => goToSlide(index));
   });
 
-  // Auto-advance carousel
-  startCarousel();
+  if (banners.length > 1) {
+    startCarousel();
+  }
 }
 
-/**
- * Navigate to specific slide
- */
 function goToSlide(index) {
   currentSlide = index;
   updateCarousel();
 }
 
-/**
- * Go to next slide
- */
 function nextSlide() {
   currentSlide = (currentSlide + 1) % bannerData.length;
   updateCarousel();
   resetCarousel();
 }
 
-/**
- * Go to previous slide
- */
 function previousSlide() {
   currentSlide = (currentSlide - 1 + bannerData.length) % bannerData.length;
   updateCarousel();
   resetCarousel();
 }
 
-/**
- * Update carousel display
- */
 function updateCarousel() {
   const container = document.getElementById('bannerCarousel');
   if (!container) return;
 
   const banner = bannerData[currentSlide];
   const slideContent = container.querySelector('.banner-slide');
+  const baseUrl = window.EP_BASE_URL || '';
 
   if (slideContent) {
-    if (banner.image) {
-      slideContent.style.backgroundImage = `url('${banner.image}')`;
-    } else {
-      slideContent.style.backgroundImage = '';
-    }
+    const bgImage = banner.image_url || banner.image || '';
+    slideContent.style.backgroundImage = bgImage ? `url('${bgImage}')` : '';
 
     slideContent.innerHTML = `
       <div class="hero__inner">
-        <h1 class="banner-title">${banner.title}</h1>
-        <p class="banner-subtitle">${banner.subtitle}</p>
-        <a href="products.html" class="btn btn-primary">${banner.cta}</a>
+        <h1 class="banner-title">${banner.title || ''}</h1>
+        <p class="banner-subtitle">${banner.subtitle || banner.description || ''}</p>
+        <a href="${baseUrl}/products" class="btn btn-primary">${banner.button_text || 'Lihat Produk'}</a>
       </div>
     `;
   }
 
-  // Update dots
   const dots = container.querySelectorAll('.carousel-dot');
   dots.forEach((dot, index) => {
-    if (index === currentSlide) {
-      dot.classList.add('active');
-    } else {
-      dot.classList.remove('active');
-    }
+    dot.classList.toggle('active', index === currentSlide);
   });
 }
 
-/**
- * Start auto-carousel
- */
 function startCarousel() {
-  carouselInterval = setInterval(() => {
-    nextSlide();
-  }, 5000);
+  carouselInterval = setInterval(() => nextSlide(), 5000);
 }
 
-/**
- * Reset carousel timer
- */
 function resetCarousel() {
-  if (carouselInterval) {
-    clearInterval(carouselInterval);
-  }
+  if (carouselInterval) clearInterval(carouselInterval);
   startCarousel();
-}
-
-/**
- * Render testimonials
- */
-function renderTestimonials(testimonials) {
-  const container = document.getElementById('testimonials');
-  if (!container) return;
-
-  if (!testimonials || testimonials.length === 0) {
-    showEmpty('testimonials', 'Testimoni belum tersedia');
-    return;
-  }
-
-  const html = testimonials.map(testimonial => `
-    <div class="testimonial-card">
-      <div class="testimonial-stars">
-        ${createStars(testimonial.stars)}
-      </div>
-      <p class="testimonial-text">${testimonial.text}</p>
-      <p class="testimonial-author">— ${testimonial.author}</p>
-    </div>
-  `).join('');
-
-  container.innerHTML = html;
 }
 
 /**
@@ -190,18 +147,47 @@ function renderCategories(categories) {
     return;
   }
 
+  const baseUrl = window.EP_BASE_URL || '';
   const html = categories.map(category => `
-    <div class="category-item" onclick="window.location.href='products.html#${category.id}'">
-      <div class="category-icon">${category.icon}</div>
-      <div>${category.label}</div>
+    <div class="category-item" onclick="window.location.href='${baseUrl}/products?category=${category.slug || category.id}'">
+      <div class="category-icon">${category.icon || '📦'}</div>
+      <div class="category-name">${category.name}</div>
     </div>
   `).join('');
 
   container.innerHTML = html;
+  setupServicesCarousel();
+}
+
+function setupServicesCarousel() {
+  const track = document.querySelector('[data-services-track]');
+  const prevBtn = document.getElementById('servPrev');
+  const nextBtn = document.getElementById('servNext');
+
+  if (!track || !prevBtn || !nextBtn) return;
+
+  const getStep = () => track.clientWidth * 0.7;
+
+  nextBtn.addEventListener('click', () => {
+    track.scrollBy({ left: getStep(), behavior: 'smooth' });
+  });
+
+  prevBtn.addEventListener('click', () => {
+    track.scrollBy({ left: -getStep(), behavior: 'smooth' });
+  });
+
+  const updateButtons = () => {
+    prevBtn.disabled = track.scrollLeft <= 5;
+    const maxScroll = track.scrollWidth - track.clientWidth;
+    nextBtn.disabled = track.scrollLeft >= maxScroll - 5;
+  };
+
+  track.addEventListener('scroll', updateButtons);
+  setTimeout(updateButtons, 100);
 }
 
 /**
- * Render product grid (reusable)
+ * Render product grid
  */
 function renderProductGrid(products, containerId) {
   const container = document.getElementById(containerId);
@@ -212,15 +198,18 @@ function renderProductGrid(products, containerId) {
     return;
   }
 
+  const baseUrl = window.EP_BASE_URL || '';
   const html = products.map(product => `
-    <a href="product-detail.html?slug=${product.slug}" class="product-card-link">
+    <a href="${baseUrl}/products/${product.slug || product.id}" class="product-card-link">
       <div class="product-card">
         <div class="product-card-image">
-          ${product.image ? `<img src="${product.image}" alt="${product.name}">` : '<span>Gambar Produk</span>'}
+          ${product.main_image || product.image ?
+      `<img src="${product.main_image || product.image}" alt="${product.name}">` :
+      '<span>Gambar Produk</span>'}
         </div>
         <div class="product-card-info">
           <h3 class="product-card-name">${product.name}</h3>
-          <p class="product-card-price">${formatPrice(product.price)}</p>
+          <p class="product-card-price">${formatPrice(product.base_price || product.price || 0)}</p>
         </div>
       </div>
     </a>
@@ -230,53 +219,30 @@ function renderProductGrid(products, containerId) {
 }
 
 /**
- * Render Promo Carousel
- */
-function renderPromoCarousel(banners) {
-  if (!banners || banners.length === 0) return;
-  // Initialize the carousel class
-  new SmallBannerCarousel('promoCarousel', banners);
-}
-
-/**
  * Render Why Choose Section
  */
 function renderWhyChoose(data) {
   if (!data) return;
 
   const container = document.getElementById('whyChooseSection');
-  if (container) {
-    container.innerHTML = `
-      <div class="why-choose-row">
-        <div class="why-choose-media">
-          <img src="${data.image}" alt="Why Choose EventPrint" onerror="this.style.display='none';">
-        </div>
-        <div class="why-choose-content">
-          <h2 class="why-choose-title">${data.title}</h2>
-          ${data.subtitle ? `<h3 class="why-choose-subtitle">${data.subtitle}</h3>` : ''}
-          ${data.description.map(p => `<p class="why-choose-text">${p}</p>`).join('')}
-        </div>
-      </div>
-      
-      <!-- Mini Banner Carousel inside the same container section -->
-      <div id="promoCarousel" class="promo-carousel">
-        <!-- Rendered later by renderPromoCarousel -->
-      </div>
-    `;
+  if (!container) return;
 
-    // Note: The element #promoCarousel is checked by renderPromoCarousel later. 
-    // Since renderWhyChoose runs first, it recreates the DOM with #promoCarousel.
-    // ensure renderPromoCarousel runs AFTER this.
-  }
+  container.innerHTML = `
+    <div class="why-choose-row">
+      <div class="why-choose-media">
+        <img src="${data.image || ''}" alt="Why Choose EventPrint" onerror="this.style.display='none';">
+      </div>
+      <div class="why-choose-content">
+        <h2 class="why-choose-title">${data.title || 'Mengapa Memilih Kami?'}</h2>
+        ${data.subtitle ? `<h3 class="why-choose-subtitle">${data.subtitle}</h3>` : ''}
+        ${Array.isArray(data.description) ?
+      data.description.map(p => `<p class="why-choose-text">${p}</p>`).join('') :
+      `<p class="why-choose-text">${data.description || ''}</p>`}
+      </div>
+    </div>
+  `;
 }
 
-// NOTE: We need to ensure renderHome calls this order:
-// 1. renderWhyChoose (creates #promoCarousel)
-// 2. renderPromoCarousel (populates it)
-
-// Cleanup on page unload
 window.addEventListener('beforeunload', () => {
-  if (carouselInterval) {
-    clearInterval(carouselInterval);
-  }
+  if (carouselInterval) clearInterval(carouselInterval);
 });

@@ -1,30 +1,233 @@
 <?php
-$vars = $vars ?? [];
-$vars['title']   = $vars['title'] ?? 'Produk - EventPrint';
-$vars['page']    = 'products';
-$vars['baseUrl'] = $vars['baseUrl'] ?? '/eventprint/public';
+// views/frontend/product/index.php
+$baseUrl = $baseUrl ?? '/eventprint/public';
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?= htmlspecialchars($vars['title']) ?></title>
-  <link rel="stylesheet" href="<?= rtrim($vars['baseUrl'],'/') ?>/assets/frontend/css/main.css">
-</head>
-<body>
 
-<div class="container py-4">
-  <h1 id="pageTitle" class="mb-3">Product</h1>
+<style>
+  /* Products Page Specific Styles */
+  body {
+    background-color: #F8FAFC;
+  }
 
-  <div class="row">
-    <div class="col-lg-3">
-      <ul id="categorySidebar" class="list-unstyled"></ul>
-    </div>
-    <div class="col-lg-9">
-      <div id="productGrid" class="grid grid-3"></div>
-    </div>
+  .products-section {
+    padding: 40px 0 80px;
+  }
+
+  .products-layout {
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+  }
+
+  /* --- SIDEBAR CONTAINER --- */
+  .products-sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+    position: sticky;
+    top: 100px;
+    height: fit-content;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    display: block;
+  }
+
+  .sidebar-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 24px;
+    color: var(--gray-900);
+    padding-left: 4px;
+  }
+
+  /* --- SIDEBAR GROUP --- */
+  .category-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .sidebar-group {
+    display: block;
+    margin-bottom: 8px;
+    width: 100%;
+  }
+
+  /* --- HEADER BUTTON --- */
+  .sidebar-head {
+    appearance: none;
+    background: transparent;
+    border: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    color: var(--gray-600);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+  }
+
+  .sidebar-head:hover {
+    color: var(--primary-cyan);
+    background: #F9FAFB;
+  }
+
+  .sidebar-head.active {
+    color: var(--gray-900);
+    font-weight: 700;
+  }
+
+  /* Icon Rotation */
+  .category-icon {
+    width: 20px;
+    height: 20px;
+    color: #9CA3AF;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .sidebar-head[aria-expanded="true"] .category-icon {
+    transform: rotate(180deg);
+    color: var(--gray-900);
+  }
+
+  /* --- SUBMENU BODY (Flow Layout) --- */
+  .sidebar-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px 0 6px 0;
+    margin-left: 0;
+    width: 100%;
+    position: static;
+  }
+
+  .sidebar-body[hidden] {
+    display: none;
+  }
+
+  /* --- SUBMENU ITEM (Button) --- */
+  .sidebar-item {
+    appearance: none;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 38px;
+    padding: 0 12px 0 32px;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: var(--gray-500);
+    text-align: left;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+
+  .sidebar-item:hover {
+    color: var(--primary-cyan);
+    background: #F0F9FF;
+  }
+
+  .sidebar-item.active {
+    background: #F3F4F6;
+    color: var(--gray-900);
+    font-weight: 600;
+  }
+
+  /* products content */
+  .products-content {
+    flex: 1;
+  }
+
+  .products-header {
+    margin-bottom: 24px;
+  }
+
+  .breadcrumbs {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--gray-900);
+  }
+
+  .current-category-name {
+    color: var(--primary-cyan);
+  }
+
+  .products-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .products-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .products-sidebar {
+      width: 240px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .products-layout {
+      flex-direction: column;
+    }
+
+    .products-sidebar {
+      width: 100%;
+      position: static;
+      margin-bottom: 24px;
+      max-height: none;
+    }
+
+    .products-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<!-- Main Content -->
+<div class="container">
+  <div class="products-layout">
+
+    <!-- Sidebar -->
+    <aside class="products-sidebar">
+      <h2 class="sidebar-title">Kategori</h2>
+      <ul id="categorySidebar" class="category-list">
+        <!-- Data Driven Sidebar -->
+        <li class="skeleton-text" style="height: 40px; margin-bottom: 10px;"></li>
+        <li class="skeleton-text" style="height: 40px; margin-bottom: 10px;"></li>
+      </ul>
+    </aside>
+
+    <!-- Product Grid -->
+    <main class="products-content">
+      <div class="products-header">
+        <div id="pageTitle" class="breadcrumbs">
+          Product
+        </div>
+      </div>
+
+      <div id="productGrid" class="products-grid">
+        <!-- Data Driven Products -->
+      </div>
+    </main>
   </div>
 </div>
-
-<?php require __DIR__ . '/../layout/script.php'; ?>

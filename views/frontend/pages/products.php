@@ -1,110 +1,122 @@
 <?php
 /**
- * Products List Page
- * Display products with category filter and pagination
+ * Products Listing Page (1:1 with Frontend Reference)
+ * Includes: Breadcrumbs, Sidebar, Product Grid
  */
-
-// Ensure variables are defined
-$currentCategory = $currentCategory ?? null;
 ?>
 
-<div class="products-page">
-    <div class="container products-container">
-        <!-- Sidebar Filter -->
-        <aside class="products-sidebar">
-            <h3 class="sidebar-title">Kategori</h3>
-            <ul class="category-filter">
-                <li>
-                    <a href="<?= baseUrl('/products') ?>"
-                        class="category-link <?= empty($currentCategory) ? 'active' : '' ?>">
-                        Semua Produk
-                        <span class="count">(<?= $totalProducts ?>)</span>
-                    </a>
-                </li>
-                <?php foreach ($categories as $cat): ?>
-                    <li>
-                        <a href="<?= baseUrl('/products?category=' . e($cat['slug'])) ?>"
-                            class="category-link <?= $currentCategory === $cat['slug'] ? 'active' : '' ?>">
-                            <?= e($cat['name']) ?>
-                        </a>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
-        </aside>
+<!-- Breadcrumbs -->
+<div class="breadcrumbs" id="breadcrumbs">
+    <div class="container">
+        <a href="<?= baseUrl('/') ?>" class="breadcrumb-link">Home</a>
+        <span class="breadcrumb-separator">›</span>
+        <span class="breadcrumb-current">All Products</span>
+    </div>
+</div>
 
-        <!-- Products Grid -->
-        <div class="products-main">
-            <?php if (!empty($products)): ?>
+<!-- Products Layout -->
+<div class="products-layout">
+    <div class="container">
+        <div class="products-container">
+            <!-- Sidebar -->
+            <aside class="products-sidebar">
+                <div class="sidebar-group">
+                    <div class="sidebar-head">
+                        <h3 class="sidebar-title">Categories</h3>
+                    </div>
+                    <div class="sidebar-body">
+                        <ul class="sidebar-list">
+                            <li class="sidebar-item <?= empty($currentCategory) ? 'active' : '' ?>">
+                                <a href="<?= baseUrl('/products') ?>" class="sidebar-link">
+                                    All Products
+                                </a>
+                            </li>
+                            <?php foreach ($categories as $cat): ?>
+                                <li class="sidebar-item <?= ($currentCategory === $cat['slug']) ? 'active' : '' ?>">
+                                    <a href="<?= baseUrl('/products?category=' . e($cat['slug'])) ?>" class="sidebar-link">
+                                        <?= e($cat['name']) ?>
+                                    </a>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="products-main">
                 <div class="products-header">
-                    <h2 class="page-title">
+                    <h1 class="products-title">
                         <?php if ($currentCategory): ?>
                             <?php
-                            $currentCat = array_filter($categories, fn($c) => $c['slug'] === $currentCategory);
-                            $currentCat = reset($currentCat);
-                            echo e($currentCat['name'] ?? 'Produk');
+                            $catName = 'Products';
+                            foreach ($categories as $cat) {
+                                if ($cat['slug'] === $currentCategory) {
+                                    $catName = $cat['name'];
+                                    break;
+                                }
+                            }
+                            echo e($catName);
                             ?>
                         <?php else: ?>
-                            Semua Produk
+                            All Products
                         <?php endif; ?>
-                    </h2>
-                    <p class="products-count">Menampilkan <?= count($products) ?> dari <?= $totalProducts ?> produk</p>
+                    </h1>
+                    <p class="products-count"><?= $totalProducts ?> products found</p>
                 </div>
 
-                <div class="grid grid-3">
-                    <?php foreach ($products as $product): ?>
-                        <a href="<?= baseUrl('/products/' . e($product['slug'])) ?>" class="product-card">
-                            <div class="product-image">
-                                <img src="<?= imageUrl($product['thumbnail'], 'frontend/images/product-placeholder.jpg') ?>"
-                                    alt="<?= e($product['name']) ?>" loading="lazy">
+                <?php if (!empty($products)): ?>
+                    <div class="grid grid-4">
+                        <?php foreach ($products as $product): ?>
+                            <div class="product-card">
+                                <div class="product-card-image">
+                                    <a href="<?= baseUrl('/products/' . e($product['slug'])) ?>">
+                                        <img src="<?= imageUrl($product['thumbnail'] ?? '', 'frontend/images/product-placeholder.jpg') ?>"
+                                            alt="<?= e($product['name']) ?>" loading="lazy">
+                                    </a>
+                                </div>
+                                <div class="product-card-info">
+                                    <h3 class="product-card-title">
+                                        <a href="<?= baseUrl('/products/' . e($product['slug'])) ?>">
+                                            <?= e($product['name']) ?>
+                                        </a>
+                                    </h3>
+                                    <?php if (isset($product['category_name'])): ?>
+                                        <p class="product-card-category"><?= e($product['category_name']) ?></p>
+                                    <?php endif; ?>
+                                    <?php if (isset($product['base_price'])): ?>
+                                        <p class="product-card-price"><?= formatPrice($product['base_price']) ?></p>
+                                    <?php endif; ?>
+                                </div>
                             </div>
-                            <div class="product-info">
-                                <?php if (!empty($product['category_name'])): ?>
-                                    <span class="product-category"><?= e($product['category_name']) ?></span>
-                                <?php endif; ?>
-                                <h3 class="product-name"><?= e($product['name']) ?></h3>
-                                <p class="product-price"><?= formatPrice($product['base_price']) ?></p>
-                            </div>
-                        </a>
-                    <?php endforeach; ?>
-                </div>
+                        <?php endforeach; ?>
+                    </div>
 
-                <!-- Pagination -->
-                <?php if ($totalPages > 1): ?>
-                    <div class="pagination">
-                        <?php if ($currentPage > 1): ?>
-                            <a href="<?= baseUrl('/products?page=' . ($currentPage - 1) . ($currentCategory ? '&category=' . $currentCategory : '')) ?>"
-                                class="pagination-btn">← Previous</a>
-                        <?php endif; ?>
-
-                        <div class="pagination-numbers">
+                    <!-- Pagination -->
+                    <?php if ($totalPages > 1): ?>
+                        <div class="pagination">
                             <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                                <?php if ($i === $currentPage): ?>
-                                    <span class="pagination-number active"><?= $i ?></span>
-                                <?php elseif ($i === 1 || $i === $totalPages || abs($i - $currentPage) <= 2): ?>
-                                    <a href="<?= baseUrl('/products?page=' . $i . ($currentCategory ? '&category=' . $currentCategory : '')) ?>"
-                                        class="pagination-number"><?= $i ?></a>
-                                <?php elseif (abs($i - $currentPage) === 3): ?>
-                                    <span class="pagination-ellipsis">...</span>
-                                <?php endif; ?>
+                                <?php
+                                $pageUrl = baseUrl('/products');
+                                if ($currentCategory) {
+                                    $pageUrl .= '?category=' . urlencode($currentCategory) . '&page=' . $i;
+                                } else {
+                                    $pageUrl .= '?page=' . $i;
+                                }
+                                ?>
+                                <a href="<?= $pageUrl ?>" class="pagination-link <?= $i === $currentPage ? 'active' : '' ?>">
+                                    <?= $i ?>
+                                </a>
                             <?php endfor; ?>
                         </div>
-
-                        <?php if ($currentPage < $totalPages): ?>
-                            <a href="<?= baseUrl('/products?page=' . ($currentPage + 1) . ($currentCategory ? '&category=' . $currentCategory : '')) ?>"
-                                class="pagination-btn">Next →</a>
-                        <?php endif; ?>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <div class="empty-state">
+                        <p>No products found in this category.</p>
+                        <a href="<?= baseUrl('/products') ?>" class="btn btn-primary">View All Products</a>
                     </div>
                 <?php endif; ?>
-
-            <?php else: ?>
-                <!-- Empty State -->
-                <div class="empty-state">
-                    <div class="empty-icon">📦</div>
-                    <h3>Belum Ada Produk</h3>
-                    <p>Tidak ada produk di kategori ini.</p>
-                    <a href="<?= baseUrl('/products') ?>" class="btn btn-primary">Lihat Semua Produk</a>
-                </div>
-            <?php endif; ?>
+            </main>
         </div>
     </div>
 </div>

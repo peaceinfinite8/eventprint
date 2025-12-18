@@ -23,7 +23,18 @@
                             <p class="slide-subtitle"><?= e($slide['subtitle']) ?></p>
                         <?php endif; ?>
                         <?php if (!empty($slide['cta_text']) && !empty($slide['cta_link'])): ?>
-                            <a href="<?= baseUrl($slide['cta_link']) ?>" class="btn btn-primary"><?= e($slide['cta_text']) ?></a>
+                            <?php
+                            // Check if CTA link is absolute URL or relative path
+                            $ctaUrl = $slide['cta_link'];
+                            if (!preg_match('/^https?:\/\//i', $ctaUrl)) {
+                                // Relative path - prepend baseUrl
+                                $ctaUrl = baseUrl($ctaUrl);
+                            }
+                            // If it's already a full URL, use it as-is
+                            ?>
+                            <a href="<?= e($ctaUrl) ?>" class="btn btn-primary btn-lg">
+                                <?= e($slide['cta_text']) ?>
+                            </a>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -51,28 +62,101 @@
     <section class="category-bar--fullbleed">
         <div class="container catbar__inner">
             <h2 class="catbar__label">SERVICES</h2>
-            <div class="category-list">
-                <?php foreach ($categories as $cat): ?>
-                    <a href="<?= baseUrl('/products?category=' . e($cat['slug'])) ?>" class="category-item">
-                        <span class="category-icon">
-                            <?php
-                            $icon = $cat['icon'] ?? '🖨️';
-                            // Check if icon is a FontAwesome class (starts with 'fa')
-                            if (strpos($icon, 'fa-') === 0 || strpos($icon, 'fa ') === 0) {
-                                echo '<i class="fas ' . e($icon) . '"></i>';
-                            } else {
-                                // Treat as emoji or plain text
-                                echo e($icon);
-                            }
-                            ?>
-                        </span>
-                        <span class="category-name"><?= e($cat['name']) ?></span>
-                    </a>
-                <?php endforeach; ?>
+
+            <div class="services-wrapper">
+                <button class="services-nav prev" id="servPrev" aria-label="Previous">❮</button>
+                <div class="category-list services-track" data-services-track>
+                    <?php foreach ($categories as $cat): ?>
+                        <a href="<?= baseUrl('/products?category=' . e($cat['slug'])) ?>" class="category-item">
+                            <span class="category-icon">
+                                <?php
+                                $icon = $cat['icon'] ?? '🖨️';
+                                // Check if icon is a FontAwesome class (starts with 'fa')
+                                if (strpos($icon, 'fa-') === 0 || strpos($icon, 'fa ') === 0) {
+                                    echo '<i class="fas ' . e($icon) . '"></i>';
+                                } else {
+                                    // Treat as emoji or plain text
+                                    echo e($icon);
+                                }
+                                ?>
+                            </span>
+                            <span class="category-name"><?= e($cat['name']) ?></span>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+                <button class="services-nav next" id="servNext" aria-label="Next">❯</button>
             </div>
         </div>
     </section>
 <?php endif; ?>
+
+<!-- Print Warna & Hitam Putih -->
+<section class="section">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">Print Warna & Hitam Putih</h2>
+        </div>
+        <div id="printProducts" class="grid grid-4">
+            <?php
+            // Display up to 4 products (filter by category or show featured)
+            $displayProducts = array_slice($featuredProducts ?? [], 0, 4);
+            foreach ($displayProducts as $product):
+                ?>
+                <div class="product-card">
+                    <div class="product-card-image">
+                        <a href="<?= baseUrl('/products/' . e($product['slug'])) ?>">
+                            <img src="<?= imageUrl($product['thumbnail'] ?? '') ?>" alt="<?= e($product['name']) ?>">
+                        </a>
+                    </div>
+                    <div class="product-card-info">
+                        <h3 class="product-card-title">
+                            <a href="<?= baseUrl('/products/' . e($product['slug'])) ?>">
+                                <?= e($product['name']) ?>
+                            </a>
+                        </h3>
+                        <?php if (isset($product['base_price'])): ?>
+                            <p class="product-card-price"><?= formatPrice($product['base_price']) ?></p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</section>
+
+<!-- Cetak Media Promosi -->
+<section class="section">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">Cetak Media Promosi</h2>
+        </div>
+        <div id="mediaProducts" class="grid grid-4">
+            <?php
+            // Display next 4 products
+            $displayProducts = array_slice($featuredProducts ?? [], 4, 4);
+            foreach ($displayProducts as $product):
+                ?>
+                <div class="product-card">
+                    <div class="product-card-image">
+                        <a href="<?= baseUrl('/products/' . e($product['slug'])) ?>">
+                            <img src="<?= imageUrl($product['thumbnail'] ?? '') ?>" alt="<?= e($product['name']) ?>">
+                        </a>
+                    </div>
+                    <div class="product-card-info">
+                        <h3 class="product-card-title">
+                            <a href="<?= baseUrl('/products/' . e($product['slug'])) ?>">
+                                <?= e($product['name']) ?>
+                            </a>
+                        </h3>
+                        <?php if (isset($product['base_price'])): ?>
+                            <p class="product-card-price"><?= formatPrice($product['base_price']) ?></p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</section>
 
 <!-- Testimonials (Kata Mereka) -->
 <?php if (!empty($testimonials)): ?>

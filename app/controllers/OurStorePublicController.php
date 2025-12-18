@@ -15,9 +15,7 @@ class OurStorePublicController extends Controller
 
     public function index(): void
     {
-        // Fetch settings
-        $settingsRow = $this->db->query("SELECT * FROM settings WHERE id=1 LIMIT 1")->fetch_assoc();
-        $settings = $settingsRow ?: [];
+        // Settings auto-injected
 
         // Fetch all stores
         $stores = [];
@@ -33,11 +31,38 @@ class OurStorePublicController extends Controller
             }
         }
 
-        $this->renderFrontend('pages/our_home', [
+        $this->renderFrontend('our_store/index', [
             'page' => 'our_home',
             'title' => 'Our Home - Lokasi Toko',
-            'settings' => $settings,
+            // settings auto-injected
             'stores' => $stores,
+            'additionalJs' => [
+                'frontend/js/render/renderOurHome.js'
+            ]
+        ]);
+    }
+
+    public function apiStores(): void
+    {
+        header('Content-Type: application/json');
+
+        // Fetch all active stores
+        $stores = [];
+        $res = $this->db->query("
+            SELECT id, name, slug, office_type, address, city, phone, whatsapp, gmaps_url, thumbnail
+            FROM our_store
+            WHERE is_active=1
+            ORDER BY sort_order ASC, name ASC
+        ");
+        if ($res) {
+            while ($r = $res->fetch_assoc()) {
+                $stores[] = $r;
+            }
+        }
+
+        echo json_encode([
+            'success' => true,
+            'stores' => $stores
         ]);
     }
 }

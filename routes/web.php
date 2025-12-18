@@ -32,6 +32,10 @@ $router->get('/api/home', 'HomePublicController@apiHome');
 $router->get('/api/products', 'ProductPublicController@apiList');
 $router->get('/api/products/{id}', 'ProductPublicController@apiDetail');
 $router->get('/api/products/slug/{slug}', 'ProductPublicController@apiDetailBySlug');
+$router->get('/api/categories', 'ProductPublicController@apiCategories');
+$router->get('/api/blog', 'BlogPublicController@apiBlog');
+$router->get('/api/contact', 'ContactPublicController@apiContact');
+$router->get('/api/our-home', 'OurStorePublicController@apiStores');
 
 
 

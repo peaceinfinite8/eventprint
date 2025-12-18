@@ -10,16 +10,16 @@ class OurStore
 
     public function countAll(): int
     {
-        $db  = $this->db();
+        $db = $this->db();
         $res = $db->query("SELECT COUNT(*) AS total FROM our_store");
         $row = $res ? $res->fetch_assoc() : null;
-        return $row ? (int)$row['total'] : 0;
+        return $row ? (int) $row['total'] : 0;
     }
 
     public function getLatest(int $limit = 5): array
     {
-        $db    = $this->db();
-        $limit = max(1, (int)$limit);
+        $db = $this->db();
+        $limit = max(1, (int) $limit);
 
         $sql = "SELECT *
                 FROM our_store
@@ -27,11 +27,12 @@ class OurStore
                 LIMIT ?";
 
         $stmt = $db->prepare($sql);
-        if (!$stmt) throw new Exception("Prepare failed: " . $db->error);
+        if (!$stmt)
+            throw new Exception("Prepare failed: " . $db->error);
 
         $stmt->bind_param("i", $limit);
         $stmt->execute();
-        $res  = $stmt->get_result();
+        $res = $stmt->get_result();
         $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
         $stmt->close();
 
@@ -44,8 +45,8 @@ class OurStore
 
     public function publicList(int $limit = 50): array
     {
-        $db    = $this->db();
-        $limit = max(1, (int)$limit);
+        $db = $this->db();
+        $limit = max(1, (int) $limit);
 
         $sql = "SELECT *
                 FROM our_store
@@ -54,12 +55,13 @@ class OurStore
                 LIMIT ?";
 
         $stmt = $db->prepare($sql);
-        if (!$stmt) throw new Exception("Prepare failed: " . $db->error);
+        if (!$stmt)
+            throw new Exception("Prepare failed: " . $db->error);
 
         $stmt->bind_param("i", $limit);
         $stmt->execute();
 
-        $res  = $stmt->get_result();
+        $res = $stmt->get_result();
         $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
         $stmt->close();
 
@@ -75,31 +77,36 @@ class OurStore
 
     public function getNextSortOrder(): int
     {
-        $db  = $this->db();
+        $db = $this->db();
         $res = $db->query("SELECT COALESCE(MAX(sort_order),0)+1 AS next_order FROM our_store");
         $row = $res ? $res->fetch_assoc() : null;
-        return $row ? (int)$row['next_order'] : 1;
+        return $row ? (int) $row['next_order'] : 1;
     }
 
     public function slugExists(string $slug, ?int $ignoreId = null): bool
     {
-        $db   = $this->db();
+        $db = $this->db();
         $slug = trim($slug);
-        if ($slug === '') return false;
+        if ($slug === '')
+            return false;
 
         $sql = "SELECT id FROM our_store WHERE slug = ?";
-        if ($ignoreId !== null) $sql .= " AND id <> ?";
+        if ($ignoreId !== null)
+            $sql .= " AND id <> ?";
         $sql .= " LIMIT 1";
 
         $stmt = $db->prepare($sql);
-        if (!$stmt) throw new Exception("Prepare failed: " . $db->error);
+        if (!$stmt)
+            throw new Exception("Prepare failed: " . $db->error);
 
-        if ($ignoreId !== null) $stmt->bind_param("si", $slug, $ignoreId);
-        else $stmt->bind_param("s", $slug);
+        if ($ignoreId !== null)
+            $stmt->bind_param("si", $slug, $ignoreId);
+        else
+            $stmt->bind_param("s", $slug);
 
         $stmt->execute();
         $res = $stmt->get_result();
-        $ok  = $res && $res->num_rows > 0;
+        $ok = $res && $res->num_rows > 0;
         $stmt->close();
 
         return $ok;
@@ -107,33 +114,35 @@ class OurStore
 
     public function searchWithPagination(?string $keyword, int $page, int $perPage): array
     {
-        $db      = $this->db();
-        $page    = max(1, $page);
+        $db = $this->db();
+        $page = max(1, $page);
         $perPage = max(1, $perPage);
-        $offset  = ($page - 1) * $perPage;
+        $offset = ($page - 1) * $perPage;
 
-        $where  = "WHERE 1=1";
+        $where = "WHERE 1=1";
         $params = [];
-        $types  = "";
+        $types = "";
 
         $keyword = $keyword !== null ? trim($keyword) : null;
         if ($keyword !== null && $keyword !== '') {
             $where .= " AND (name LIKE ? OR city LIKE ? OR address LIKE ? OR office_type LIKE ?)";
             $like = "%{$keyword}%";
             $params = [$like, $like, $like, $like];
-            $types  = "ssss";
+            $types = "ssss";
         }
 
         // count
         $sqlCount = "SELECT COUNT(*) AS total FROM our_store $where";
         $stmt = $db->prepare($sqlCount);
-        if (!$stmt) throw new Exception("Prepare failed: " . $db->error);
-        if (!empty($params)) $stmt->bind_param($types, ...$params);
+        if (!$stmt)
+            throw new Exception("Prepare failed: " . $db->error);
+        if (!empty($params))
+            $stmt->bind_param($types, ...$params);
 
         $stmt->execute();
-        $res   = $stmt->get_result();
-        $row   = $res ? $res->fetch_assoc() : null;
-        $total = $row ? (int)$row['total'] : 0;
+        $res = $stmt->get_result();
+        $row = $res ? $res->fetch_assoc() : null;
+        $total = $row ? (int) $row['total'] : 0;
         $stmt->close();
 
         // data
@@ -144,7 +153,8 @@ class OurStore
                     LIMIT ?, ?";
 
         $stmt = $db->prepare($sqlData);
-        if (!$stmt) throw new Exception("Prepare failed: " . $db->error);
+        if (!$stmt)
+            throw new Exception("Prepare failed: " . $db->error);
 
         if (!empty($params)) {
             $types2 = $types . "ii";
@@ -155,14 +165,14 @@ class OurStore
         }
 
         $stmt->execute();
-        $res   = $stmt->get_result();
+        $res = $stmt->get_result();
         $items = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
         $stmt->close();
 
         return [
-            'items'    => $items,
-            'total'    => $total,
-            'page'     => $page,
+            'items' => $items,
+            'total' => $total,
+            'page' => $page,
             'per_page' => $perPage,
         ];
     }
@@ -171,7 +181,8 @@ class OurStore
     {
         $db = $this->db();
         $stmt = $db->prepare("SELECT * FROM our_store WHERE id=? LIMIT 1");
-        if (!$stmt) throw new Exception("Prepare failed: " . $db->error);
+        if (!$stmt)
+            throw new Exception("Prepare failed: " . $db->error);
 
         $stmt->bind_param("i", $id);
         $stmt->execute();
@@ -191,10 +202,11 @@ class OurStore
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         $stmt = $db->prepare($sql);
-        if (!$stmt) throw new Exception("Prepare failed: " . $db->error);
+        if (!$stmt)
+            throw new Exception("Prepare failed: " . $db->error);
 
-        $isActive  = (int)($d['is_active'] ?? 1);
-        $sortOrder = (int)($d['sort_order'] ?? 1);
+        $isActive = (int) ($d['is_active'] ?? 1);
+        $sortOrder = (int) ($d['sort_order'] ?? 1);
 
         $stmt->bind_param(
             "sssssssssii",
@@ -212,7 +224,7 @@ class OurStore
         );
 
         $stmt->execute();
-        $id = (int)$stmt->insert_id;
+        $id = (int) $stmt->insert_id;
         $stmt->close();
 
         return $id;
@@ -230,13 +242,14 @@ class OurStore
                 WHERE id=? LIMIT 1";
 
         $stmt = $db->prepare($sql);
-        if (!$stmt) throw new Exception("Prepare failed: " . $db->error);
+        if (!$stmt)
+            throw new Exception("Prepare failed: " . $db->error);
 
-        $isActive  = (int)($d['is_active'] ?? 1);
-        $sortOrder = (int)($d['sort_order'] ?? 1);
+        $isActive = (int) ($d['is_active'] ?? 1);
+        $sortOrder = (int) ($d['sort_order'] ?? 1);
 
         $stmt->bind_param(
-            "sssssssssiiii",
+            "sssssssssiii",
             $d['name'],
             $d['slug'],
             $d['office_type'],
@@ -262,7 +275,8 @@ class OurStore
     {
         $db = $this->db();
         $stmt = $db->prepare("DELETE FROM our_store WHERE id=? LIMIT 1");
-        if (!$stmt) throw new Exception("Prepare failed: " . $db->error);
+        if (!$stmt)
+            throw new Exception("Prepare failed: " . $db->error);
 
         $stmt->bind_param("i", $id);
         $stmt->execute();
