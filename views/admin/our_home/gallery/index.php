@@ -60,7 +60,8 @@ $csrfToken = $csrfToken ?? (class_exists('Security') ? Security::csrfToken() : '
                                 </td>
                                 <td>
                                     <div class="fw-bold text-dark mb-1">
-                                        <?php echo htmlspecialchars($item['store_name'], ENT_QUOTES, 'UTF-8'); ?></div>
+                                        <?php echo htmlspecialchars($item['store_name'], ENT_QUOTES, 'UTF-8'); ?>
+                                    </div>
                                     <div class="small text-muted">
                                         <?php if (!empty($item['caption'])): ?>
                                             <i class="fas fa-quote-left me-1 opacity-50"></i>
@@ -103,28 +104,9 @@ $csrfToken = $csrfToken ?? (class_exists('Security') ? Security::csrfToken() : '
                 </table>
             </div>
 
-            <?php if ($pagination['total'] > $pagination['per_page']): ?>
-                <div class="p-3 border-top">
-                    <nav>
-                        <ul class="pagination pagination-sm justify-content-end mb-0">
-                            <?php
-                            $totalPages = ceil($pagination['total'] / $pagination['per_page']);
-                            $currentPage = $pagination['page'];
 
-                            for ($p = 1; $p <= $totalPages; $p++):
-                                $active = ($p === $currentPage) ? 'active' : '';
-                                ?>
-                                <li class="page-item <?php echo $active; ?>">
-                                    <a class="page-link"
-                                        href="<?php echo $baseUrl; ?>/admin/our-home/gallery?page=<?php echo $p; ?>">
-                                        <?php echo $p; ?>
-                                    </a>
-                                </li>
-                            <?php endfor; ?>
-                        </ul>
-                    </nav>
-                </div>
-            <?php endif; ?>
+            <!-- Pagination -->
+            <?php echo renderPagination($baseUrl, '/admin/our-home/gallery', $pagination, []); ?>
         <?php endif; ?>
     </div>
 </div>

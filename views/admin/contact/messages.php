@@ -86,21 +86,9 @@ $lastPage = $perPage > 0 ? (int) ceil($total / $perPage) : 1;
         </table>
       </div>
 
-      <?php if ($lastPage > 1): ?>
-        <div class="p-3 border-top">
-          <nav>
-            <ul class="pagination pagination-sm justify-content-end mb-0">
-              <?php for ($p = 1; $p <= $lastPage; $p++): ?>
-                <li class="page-item <?php echo $p === $page ? 'active' : ''; ?>">
-                  <a class="page-link" href="<?php echo $baseUrl; ?>/admin/contact/messages?page=<?php echo $p; ?>">
-                    <?php echo $p; ?>
-                  </a>
-                </li>
-              <?php endfor; ?>
-            </ul>
-          </nav>
-        </div>
-      <?php endif; ?>
+
+      <!-- Pagination -->
+      <?php echo renderPagination($baseUrl, '/admin/contact/messages', ['total' => $total, 'page' => $page, 'per_page' => $perPage], []); ?>
 
     <?php else: ?>
       <div class="text-center py-5">

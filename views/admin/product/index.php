@@ -11,6 +11,10 @@ $page = (int) $pagination['page'];
 $perPage = (int) $pagination['per_page'];
 $lastPage = $perPage > 0 ? (int) ceil($total / $perPage) : 1;
 
+// Calculate pagination display
+$from = $total > 0 ? (($page - 1) * $perPage) + 1 : 0;
+$to = min($page * $perPage, $total);
+
 $csrfToken = $csrfToken ?? (class_exists('Security') ? Security::csrfToken() : '');
 
 
@@ -156,49 +160,7 @@ function buildQuery(array $params): string
       </div>
 
       <!-- Pagination -->
-      <?php if ($lastPage > 1): ?>
-        <div class="d-flex justify-content-between align-items-center p-4 border-top">
-          <div class="text-muted small">
-            Showing <strong><?php echo $from; ?>-<?php echo $to; ?></strong> of <strong><?php echo $total; ?></strong>
-          </div>
-          <nav>
-            <ul class="pagination pagination-sm mb-0">
-              <?php
-              $prev = $page - 1;
-              $prevQuery = buildQuery(['q' => $filter_q, 'category_id' => $filter_category_id, 'page' => $prev]);
-              ?>
-              <li class="page-item <?php echo ($page <= 1) ? 'disabled' : ''; ?>">
-                <a class="page-link border-0" href="<?php echo $baseUrl; ?>/admin/products<?php echo $prevQuery; ?>">
-                  <i class="fa-solid fa-chevron-left"></i>
-                </a>
-              </li>
-
-              <?php for ($p = 1; $p <= $lastPage; $p++): ?>
-                <?php
-                $active = ($p === $page);
-                $query = buildQuery(['q' => $filter_q, 'category_id' => $filter_category_id, 'page' => $p]);
-                ?>
-                <li class="page-item <?php echo $active ? 'active' : ''; ?>">
-                  <a class="page-link shadow-none <?php echo $active ? 'bg-primary text-white' : 'text-dark'; ?> border-0 rounded mx-1"
-                    href="<?php echo $baseUrl; ?>/admin/products<?php echo $query; ?>">
-                    <?php echo $p; ?>
-                  </a>
-                </li>
-              <?php endfor; ?>
-
-              <?php
-              $next = $page + 1;
-              $nextQuery = buildQuery(['q' => $filter_q, 'category_id' => $filter_category_id, 'page' => $next]);
-              ?>
-              <li class="page-item <?php echo ($page >= $lastPage) ? 'disabled' : ''; ?>">
-                <a class="page-link border-0" href="<?php echo $baseUrl; ?>/admin/products<?php echo $nextQuery; ?>">
-                  <i class="fa-solid fa-chevron-right"></i>
-                </a>
-              </li>
-            </ul>
-          </nav>
-        </div>
-      <?php endif; ?>
+      <?php echo renderPagination($baseUrl, '/admin/products', $pagination, ['q' => $filter_q, 'category_id' => $filter_category_id]); ?>
 
     <?php else: ?>
       <div class="empty-state">

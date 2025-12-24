@@ -97,36 +97,7 @@ $q = $q ?? '';
         </div>
     </div>
 
+
     <!-- Pagination -->
-    <?php if ($pagination['total'] > 0): ?>
-        <div class="p-3 border-top">
-            <?php
-            $total = $pagination['total'];
-            $perPage = $pagination['per_page'];
-            $page = $pagination['page'];
-            $totalPages = ceil($total / $perPage);
-            ?>
-            <nav aria-label="Page navigation">
-                <ul class="pagination pagination-sm mb-0 justify-content-end">
-                    <?php if ($page > 1): ?>
-                        <li class="page-item">
-                            <a class="page-link" href="?q=<?= urlencode($q) ?>&page=<?= $page - 1 ?>">Previous</a>
-                        </li>
-                    <?php endif; ?>
-
-                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                        <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
-                            <a class="page-link" href="?q=<?= urlencode($q) ?>&page=<?= $i ?>"><?= $i ?></a>
-                        </li>
-                    <?php endfor; ?>
-
-                    <?php if ($page < $totalPages): ?>
-                        <li class="page-item">
-                            <a class="page-link" href="?q=<?= urlencode($q) ?>&page=<?= $page + 1 ?>">Next</a>
-                        </li>
-                    <?php endif; ?>
-                </ul>
-            </nav>
-        </div>
-    <?php endif; ?>
+    <?php echo renderPagination($baseUrl, '/admin/tier-pricing', $pagination, ['q' => $q]); ?>
 </div>

@@ -17,7 +17,8 @@ $total = $vars['total'] ?? 0;
 
 <div class="dash-container-card fade-in delay-1">
     <div class="d-flex justify-content-between align-items-center p-4 border-bottom">
-        <h5 class="fw-bold mb-0 text-primary"><i class="fas fa-envelope me-2"></i>Daftar Pesan (<?= (int) $total ?>)</h5>
+        <h5 class="fw-bold mb-0 text-primary"><i class="fas fa-envelope me-2"></i>Daftar Pesan (<?= (int) $total ?>)
+        </h5>
     </div>
 
     <div class="p-0">
@@ -80,21 +81,12 @@ $total = $vars['total'] ?? 0;
                 </table>
             </div>
 
-            <?php if ($totalPages > 1): ?>
-                <div class="p-3 border-top">
-                    <nav>
-                        <ul class="pagination pagination-sm justify-content-end mb-0">
-                            <?php for ($p = 1; $p <= $totalPages; $p++): ?>
-                                <li class="page-item <?= $p === $currentPage ? 'active' : '' ?>">
-                                    <a class="page-link" href="<?= $baseUrl ?>/admin/contact-messages?page=<?= $p ?>">
-                                        <?= $p ?>
-                                    </a>
-                                </li>
-                            <?php endfor; ?>
-                        </ul>
-                    </nav>
-                </div>
-            <?php endif; ?>
+
+            <!-- Pagination -->
+            <?php
+            $perPage = ceil($total / max(1, $totalPages));
+            echo renderPagination($baseUrl, '/admin/contact-messages', ['total' => $total, 'page' => $currentPage, 'per_page' => $perPage], []);
+            ?>
         <?php else: ?>
             <div class="text-center py-5">
                 <div class="mb-3">

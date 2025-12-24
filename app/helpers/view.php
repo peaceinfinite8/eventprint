@@ -124,3 +124,91 @@ if (!function_exists('format_rupiah')) {
         return $showSymbol ? "Rp {$formatted}" : $formatted;
     }
 }
+
+if (!function_exists('renderPagination')) {
+    /**
+     * Render pagination HTML for admin panel
+     * @param string $baseUrl Base URL
+     * @param string $route Route path (e.g., '/admin/products')
+     * @param array $pagination Array with 'total', 'page', 'per_page'
+     * @param array $queryParams Additional query parameters (e.g., ['q' => 'search', 'category_id' => '5'])
+     * @return string HTML pagination markup
+     */
+    function renderPagination(string $baseUrl, string $route, array $pagination, array $queryParams = []): string
+    {
+        $total = (int) ($pagination['total'] ?? 0);
+        $page = (int) ($pagination['page'] ?? 1);
+        $perPage = (int) ($pagination['per_page'] ?? 10);
+        $lastPage = $perPage > 0 ? (int) ceil($total / $perPage) : 1;
+
+        // Don't show pagination if only one page
+        if ($lastPage <= 1) {
+            return '';
+        }
+
+        // Calculate from/to
+        $from = $total > 0 ? (($page - 1) * $perPage) + 1 : 0;
+        $to = min($page * $perPage, $total);
+
+        // Build query string helper
+        $buildQuery = function ($pageNum) use ($queryParams) {
+            $params = array_merge($queryParams, ['page' => $pageNum]);
+            $query = [];
+            foreach ($params as $k => $v) {
+                if ($v === null || $v === '')
+                    continue;
+                $query[] = urlencode($k) . '=' . urlencode($v);
+            }
+            return $query ? ('?' . implode('&', $query)) : '';
+        };
+
+        $baseUrl = rtrim($baseUrl, '/');
+        $route = '/' . trim($route, '/');
+
+        $prev = $page - 1;
+        $next = $page + 1;
+        $prevQuery = $buildQuery($prev);
+        $nextQuery = $buildQuery($next);
+
+        $html = '<div class="d-flex justify-content-between align-items-center p-4 border-top">';
+        $html .= '<div class="text-muted small">';
+        $html .= 'Showing <strong>' . $from . '-' . $to . '</strong> of <strong>' . $total . '</strong>';
+        $html .= '</div>';
+        $html .= '<nav aria-label="Pagination">';
+        $html .= '<ul class="pagination pagination-sm mb-0">';
+
+        // Previous button
+        $html .= '<li class="page-item' . ($page <= 1 ? ' disabled' : '') . '">';
+        $html .= '<a class="page-link" href="' . ($page <= 1 ? '#' : $baseUrl . $route . $prevQuery) . '"';
+        $html .= ($page <= 1 ? ' tabindex="-1"' : '') . '>';
+        $html .= '<i class="fa-solid fa-chevron-left"></i>';
+        $html .= '</a>';
+        $html .= '</li>';
+
+        // Page numbers
+        for ($p = 1; $p <= $lastPage; $p++) {
+            $active = ($p === $page);
+            $query = $buildQuery($p);
+            $html .= '<li class="page-item' . ($active ? ' active' : '') . '">';
+            $html .= '<a class="page-link" href="' . $baseUrl . $route . $query . '">';
+            $html .= $p;
+            $html .= '</a>';
+            $html .= '</li>';
+        }
+
+        // Next button
+        $html .= '<li class="page-item' . ($page >= $lastPage ? ' disabled' : '') . '">';
+        $html .= '<a class="page-link" href="' . ($page >= $lastPage ? '#' : $baseUrl . $route . $nextQuery) . '"';
+        $html .= ($page >= $lastPage ? ' tabindex="-1"' : '') . '>';
+        $html .= '<i class="fa-solid fa-chevron-right"></i>';
+        $html .= '</a>';
+        $html .= '</li>';
+
+        $html .= '</ul>';
+        $html .= '</nav>';
+        $html .= '</div>';
+
+        return $html;
+    }
+}
+

@@ -111,20 +111,6 @@ $lastPage = $perPage > 0 ? (int) ceil($total / $perPage) : 1;
       </tbody>
     </table>
   </div>
-  <?php if ($lastPage > 1): ?>
-    <div class="p-3 border-top">
-      <nav>
-        <ul class="pagination pagination-sm mb-0 justify-content-end">
-          <?php for ($p = 1; $p <= $lastPage; $p++): ?>
-            <li class="page-item <?php echo $p === $page ? 'active' : ''; ?>">
-              <a class="page-link"
-                href="<?php echo $baseUrl; ?>/admin/our-home/stores?page=<?php echo $p; ?>&q=<?php echo urlencode($filter_q); ?>">
-                <?php echo $p; ?>
-              </a>
-            </li>
-          <?php endfor; ?>
-        </ul>
-      </nav>
-    </div>
-  <?php endif; ?>
+  <!-- Pagination -->
+  <?php echo renderPagination($baseUrl, '/admin/our-home/stores', $pagination, ['q' => $filter_q]); ?>
 </div>
