@@ -214,6 +214,25 @@ async function handleContactSubmit(event) {
       // Show success message
       alert(result.message || 'Pesan Anda berhasil terkirim!');
       form.reset();
+
+      // Build WhatsApp message
+      const waMessage = `🌟 *PESAN DARI WEBSITE*\n` +
+        `━━━━━━━━━━━━━━━━\n\n` +
+        `👤 *Nama:* ${name}\n` +
+        `📱 *No. Telepon:* ${phone}\n\n` +
+        `💬 *Pesan:*\n${message}\n\n` +
+        `━━━━━━━━━━━━━━━━\n` +
+        `Terima kasih telah menghubungi kami!`;
+
+      // Get WhatsApp number from settings
+      const waNumber = window.EP_SETTINGS?.whatsapp || '6281234567890';
+      const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(waMessage)}`;
+
+      // Redirect to WhatsApp
+      setTimeout(() => {
+        window.open(waUrl, '_blank');
+      }, 500);
+
     } else {
       // Show error message
       const errorMessage = result.errors ? result.errors.join('\n') : 'Terjadi kesalahan saat mengirim pesan.';
