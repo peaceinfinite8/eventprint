@@ -26,7 +26,7 @@ function renderContactDetails(settings) {
   const container = document.getElementById('contactDetails');
   if (!container) return;
 
-  const html = `
+  let html = `
     <div class="contact-detail mb-2">
       <div class="contact-icon">📍</div>
       <div class="contact-text">
@@ -51,6 +51,72 @@ function renderContactDetails(settings) {
       <div class="contact-text">${settings.whatsapp || 'WhatsApp belum diatur'}</div>
     </div>
   `;
+
+  // Add sales contacts if available
+  if (settings.sales_contacts) {
+    try {
+      const salesContacts = typeof settings.sales_contacts === 'string'
+        ? JSON.parse(settings.sales_contacts)
+        : settings.sales_contacts;
+
+      if (Array.isArray(salesContacts) && salesContacts.length > 0) {
+        html += `
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--gray-200);">
+            <h4 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; color: var(--gray-900);">
+              👥 Kontak Sales Team
+            </h4>
+        `;
+
+        salesContacts.forEach(contact => {
+          if (contact.name && contact.number) {
+            // Normalize WhatsApp number
+            let waNumber = contact.number.replace(/\D/g, '');
+            if (waNumber.startsWith('0')) {
+              waNumber = '62' + waNumber.substring(1);
+            } else if (!waNumber.startsWith('62')) {
+              waNumber = '62' + waNumber;
+            }
+
+            html += `
+              <div class="contact-detail mb-2" style="align-items: center;">
+                <div class="contact-icon">💼</div>
+                <div class="contact-text" style="flex: 1;">
+                  <strong>${contact.name}</strong>
+                  <br>
+                  <span style="color: var(--gray-600); font-size: 0.9rem;">${contact.number}</span>
+                </div>
+                <a href="https://wa.me/${waNumber}" 
+                   target="_blank" 
+                   rel="noopener"
+                   style="
+                     padding: 6px 12px;
+                     background: #25D366;
+                     color: white;
+                     border-radius: 6px;
+                     text-decoration: none;
+                     font-size: 0.85rem;
+                     font-weight: 500;
+                     display: inline-flex;
+                     align-items: center;
+                     gap: 5px;
+                     transition: all 0.3s ease;
+                   "
+                   onmouseover="this.style.background='#128C7E'; this.style.transform='translateY(-2px)'"
+                   onmouseout="this.style.background='#25D366'; this.style.transform='translateY(0)'"
+                >
+                  💬 Chat
+                </a>
+              </div>
+            `;
+          }
+        });
+
+        html += `</div>`;
+      }
+    } catch (e) {
+      console.error('Error parsing sales_contacts:', e);
+    }
+  }
 
   container.innerHTML = html;
 }
