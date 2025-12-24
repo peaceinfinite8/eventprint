@@ -9,6 +9,10 @@ class Controller
         $this->config = $config;
         if (session_status() === PHP_SESSION_NONE)
             session_start();
+
+        // Load helpers
+        require_once __DIR__ . '/../helpers/url.php';
+        require_once __DIR__ . '/../helpers/view.php';
     }
 
     protected function baseUrl(string $path = ''): string
@@ -76,6 +80,24 @@ class Controller
         return $settings;
     }
 
+    // ========== GET FOOTER CONTENT (Centralized) ==========
+    protected function getFooterContent(): array
+    {
+        static $footer = null;
+        if ($footer === null) {
+            $db = db();
+            $content = [];
+            $res = $db->query("SELECT field, value FROM page_contents WHERE page_slug='footer' AND section='main'");
+            if ($res) {
+                while ($r = $res->fetch_assoc()) {
+                    $content[$r['field']] = $r['value'];
+                }
+            }
+            $footer = $content;
+        }
+        return $footer;
+    }
+
     // ========== RENDER FRONTEND VIEW ==========
     public function renderFrontend(string $viewName, array $vars = [], string $title = 'EventPrint'): void
     {
@@ -111,6 +133,7 @@ class Controller
             '__viewPath' => $viewPath,
             'flash' => $this->pullFlash(),
             'settings' => $settings, // Auto-injected
+            'footer' => $this->getFooterContent(), // Auto-injected
         ]);
 
         // layout membaca $vars

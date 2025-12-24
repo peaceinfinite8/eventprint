@@ -1,7 +1,6 @@
 <?php
 /**
- * Frontend Navbar - 1:1 Match with Frontend Reference
- * Exact HTML structure from frontend/public/views/home.html
+ * Frontend Navbar - Enhanced with Mobile Menu
  */
 
 // Settings
@@ -10,9 +9,11 @@ $logo = $settings['logo'] ?? null;
 $phone = $settings['phone'] ?? '0812-9898-4414';
 $whatsapp = $settings['whatsapp'] ?? '';
 $operatingHours = $settings['operating_hours'] ?? 'Senin–Jumat 09.00–18.00 | Sabtu 08.00–18.00 | Minggu & Tanggal Merah Libur';
+$tagline = $settings['site_tagline'] ?? '';
 
-// WhatsApp URL
-$waUrl = normalizeWhatsApp($whatsapp ?: $phone);
+// WhatsApp URL with wa.me prefix
+$waNumber = normalizeWhatsApp($whatsapp ?: $phone);
+$waUrl = 'https://wa.me/' . $waNumber;
 $waDisplay = $phone ?: $whatsapp;
 ?>
 
@@ -20,7 +21,12 @@ $waDisplay = $phone ?: $whatsapp;
     <!-- Topbar -->
     <div class="topbar--fullbleed">
         <div class="topbar__inner">
-            <span class="topbar-text"><?= e($operatingHours) ?></span>
+            <span class="topbar-text">
+                <?php if (!empty($tagline)): ?>
+                    <span class="fw-bold"><?= e($tagline) ?></span> &nbsp;|&nbsp;
+                <?php endif; ?>
+                <?= e($operatingHours) ?>
+            </span>
             <?php if ($waUrl): ?>
                 <a href="<?= e($waUrl) ?>" target="_blank" class="topbar-cta" rel="noopener">
                     <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -35,30 +41,29 @@ $waDisplay = $phone ?: $whatsapp;
 
     <!-- Navbar -->
     <nav class="navbar">
-        <div class="container">
+        <div class="container"
+            style="display: flex; align-items: center; justify-content: space-between; position: relative;">
             <!-- Brand -->
             <a href="<?= baseUrl('/') ?>" class="navbar-brand">
                 <?php
                 // Logo with fallback
                 $logoPath = $logo ?? '';
-                $logoFullPath = !empty($logoPath) ? $_SERVER['DOCUMENT_ROOT'] . '/' . ltrim($logoPath, '/') : '';
+                $logoFullPath = !empty($logoPath) ? realpath(__DIR__ . '/../../../public/' . ltrim($logoPath, '/')) : '';
                 $logoExists = !empty($logoFullPath) && file_exists($logoFullPath);
 
                 if ($logoExists):
                     ?>
                     <img src="<?= uploadUrl($logoPath) ?>" alt="<?= e($siteName) ?>" style="max-height: 40px;">
                 <?php elseif (!empty($logoPath)): ?>
-                    <!-- Fallback to placeholder if DB has logo but file missing -->
                     <img src="<?= assetUrl('frontend/images/placeholder-logo.png') ?>" alt="<?= e($siteName) ?>"
                         style="max-height: 40px;">
                 <?php else: ?>
-                    <!-- Text fallback if no logo configured -->
                     <?= e($siteName) ?>
                 <?php endif; ?>
             </a>
 
-            <!-- Search Container -->
-            <div id="navSearchContainer">
+            <!-- Search Container (Responsive) -->
+            <div id="navSearchContainer" class="nav-search-container">
                 <div class="nav-search">
                     <form action="<?= baseUrl('/products') ?>" method="GET" style="display: contents;">
                         <input type="text" id="globalSearchInput" name="search" class="search-input"
@@ -79,7 +84,48 @@ $waDisplay = $phone ?: $whatsapp;
             <ul class="navbar-nav desktop-nav">
                 <li>
                     <a href="<?= baseUrl('/') ?>"
-                        class="nav-link <?= (isActive('/') && currentPath() === '/') ? 'active' : '' ?>">
+                        class="nav-link <?= (currentPath() === '/' || currentPath() === '/eventprint/public/' || currentPath() === '/eventprint/public') ? 'active' : '' ?>">
+                        Home
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= baseUrl('/products') ?>" class="nav-link <?= isActive('/products') ? 'active' : '' ?>">
+                        All Product
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= baseUrl('/our-home') ?>" class="nav-link <?= isActive('/our-home') ? 'active' : '' ?>">
+                        Our Home
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= baseUrl('/blog') ?>" class="nav-link <?= isActive('/blog') ? 'active' : '' ?>">
+                        Artikel
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= baseUrl('/contact') ?>" class="nav-link <?= isActive('/contact') ? 'active' : '' ?>">
+                        Contact
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Mobile Menu Button REMOVED - replaced by floating hamburger -->
+
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Modal (only visible on mobile) -->
+    <nav class="mobile-menu-modal" id="mobileMenuModal">
+        <div class="menu-modal-header">
+            <h3 class="menu-modal-title">Menu</h3>
+            <button class="menu-close-btn" id="menuCloseBtn">×</button>
+        </div>
+        <div class="menu-modal-content">
+            <ul>
+                <li>
+                    <a href="<?= baseUrl('/') ?>"
+                        class="nav-link <?= (currentPath() === '/' || currentPath() === '/eventprint/public/' || currentPath() === '/eventprint/public') ? 'active' : '' ?>">
                         Home
                     </a>
                 </li>
@@ -106,4 +152,7 @@ $waDisplay = $phone ?: $whatsapp;
             </ul>
         </div>
     </nav>
+
+    <!-- Menu Overlay -->
+    <div class="menu-overlay" id="menuOverlay"></div>
 </div>

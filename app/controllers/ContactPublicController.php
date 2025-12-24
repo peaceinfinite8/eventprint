@@ -20,7 +20,7 @@ class ContactPublicController extends Controller
         // Get pre-filled product name from query string (if redirected from product page)
         $productName = $_GET['product'] ?? '';
 
-        $this->renderFrontend('contact/index', [
+        $this->renderFrontend('pages/contact', [
             'page' => 'contact',
             'title' => 'Contact Us',
             // settings auto-injected
@@ -49,9 +49,8 @@ class ContactPublicController extends Controller
             $errors[] = 'Nama wajib diisi';
         }
 
-        if (empty($email)) {
-            $errors[] = 'Email wajib diisi';
-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        // Email validation only if provided
+        if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors[] = 'Email tidak valid';
         }
 

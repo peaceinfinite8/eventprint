@@ -1,244 +1,545 @@
 <?php
-/**
- * Product Detail Page
- * Display product information, gallery, options, and pricing
- */
-
-$finalPrice = $product['base_price'];
-if ($discount) {
-    if ($discount['discount_type'] === 'percent') {
-        $finalPrice = $product['base_price'] * (1 - $discount['discount_value'] / 100);
-    } else {
-        $finalPrice = $product['base_price'] - $discount['discount_value'];
-    }
-}
+// views/frontend/pages/product_detail.php
+// STRICT FRONTEND-FIRST: JS-RENDERED ONLY
+// Reference: frontend/public/views/product-detail.html
+//header('X-EP-View: views/frontend/pages/product_detail.php');
+echo "<!-- EP_VIEW_USED: " . __FILE__ . " -->";
 ?>
 
-<div class="product-detail-page">
-    <div class="container">
-        <!-- Breadcrumb -->
-        <nav class="breadcrumb">
-            <a href="<?= baseUrl('/') ?>">Home</a>
-            <span class="separator">›</span>
-            <a href="<?= baseUrl('/products') ?>">Products</a>
-            <?php if (!empty($product['category_name'])): ?>
-                <span class="separator">›</span>
-                <a href="<?= baseUrl('/products?category=' . e($product['category_slug'])) ?>"><?= e($product['category_name']) ?></a>
-            <?php endif; ?>
-            <span class="separator">›</span>
-            <span class="current"><?= e($product['name']) ?></span>
-        </nav>
-        
-        <div class="product-detail-grid">
-            <!-- Product Images -->
-            <div class="product-images">
-                <div class="main-image">
-                    <img src="<?= imageUrl($product['thumbnail'], 'frontend/images/product-placeholder.jpg') ?>" 
-                         alt="<?= e($product['name']) ?>" 
-                         id="mainImage">
-                </div>
-                
-                <?php if (!empty($gallery)): ?>
-                    <div class="image-gallery">
-                        <img src="<?= imageUrl($product['thumbnail']) ?>" 
-                             alt="<?= e($product['name']) ?>" 
-                             class="gallery-thumb active"
-                             onclick="changeImage(this.src)">
-                        <?php foreach ($gallery as $img): ?>
-                            <img src="<?= imageUrl($img) ?>" 
-                                 alt="<?= e($product['name']) ?>"
-                                 class="gallery-thumb"
-                                 onclick="changeImage(this.src)">
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
-            </div>
-            
-            <!-- Product Info -->
-            <div class="product-info-section">
-                <?php if (!empty($product['category_name'])): ?>
-                    <span class="product-category-badge"><?= e($product['category_name']) ?></span>
-                <?php endif; ?>
-                
-                <h1 class="product-title"><?= e($product['name']) ?></h1>
-                
-                <?php if (!empty($product['short_description'])): ?>
-                    <p class="product-excerpt"><?= e($product['short_description']) ?></p>
-                <?php endif; ?>
-                
-                <!-- Price -->
-                <div class="product-pricing">
-                    <?php if ($discount): ?>
-                        <div class="discount-badge">
-                            <?php if ($discount['discount_type'] === 'percent'): ?>
-                                DISKON <?= number_format($discount['discount_value'], 0) ?>%
-                            <?php else: ?>
-                                DISKON <?= formatPrice($discount['discount_value']) ?>
-                            <?php endif; ?>
-                        </div>
-                        <div class="price-wrapper">
-                            <span class="original-price"><?= formatPrice($product['base_price']) ?></span>
-                            <span class="final-price"><?= formatPrice($finalPrice) ?></span>
-                        </div>
-                    <?php else: ?>
-                        <span class="final-price"><?= formatPrice($product['base_price']) ?></span>
-                    <?php endif; ?>
-                </div>
-                
-                <!-- Product Options -->
-                <?php if (!empty($optionGroups)): ?>
-                    <form class="product-options-form" id="productForm">
-                        <?php foreach ($optionGroups as $group): ?>
-                            <div class="option-group">
-                                <label class="option-label">
-                                    <?= e($group['name']) ?>
-                                    <?php if ($group['is_required']): ?>
-                                        <span class="required">*</span>
-                                    <?php endif; ?>
-                                </label>
-                                
-                                <?php if ($group['input_type'] === 'select'): ?>
-                                    <select name="option_<?= $group['id'] ?>" 
-                                            class="option-select" 
-                                            <?= $group['is_required'] ? 'required' : '' ?>
-                                            onchange="calculatePrice()">
-                                        <option value="">Pilih <?= e($group['name']) ?></option>
-                                        <?php foreach ($group['values'] as $value): ?>
-                                            <option value="<?= $value['id'] ?>" 
-                                                    data-price-type="<?= $value['price_type'] ?>"
-                                                    data-price-value="<?= $value['price_value'] ?>">
-                                                <?= e($value['label']) ?>
-                                                <?php if ($value['price_value'] > 0): ?>
-                                                    (+<?= formatPrice($value['price_value']) ?>)
-                                                <?php endif; ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                    
-                                <?php elseif ($group['input_type'] === 'radio'): ?>
-                                    <div class="option-radio-group">
-                                        <?php foreach ($group['values'] as $value): ?>
-                                            <label class="radio-option">
-                                                <input type="radio" 
-                                                       name="option_<?= $group['id'] ?>" 
-                                                       value="<?= $value['id'] ?>"
-                                                       data-price-type="<?= $value['price_type'] ?>"
-                                                       data-price-value="<?= $value['price_value'] ?>"
-                                                       <?= $group['is_required'] ? 'required' : '' ?>
-                                                       onchange="calculatePrice()">
-                                                <span class="radio-label">
-                                                    <?= e($value['label']) ?>
-                                                    <?php if ($value['price_value'] > 0): ?>
-                                                        <span class="option-price">(+<?= formatPrice($value['price_value']) ?>)</span>
-                                                    <?php endif; ?>
-                                                </span>
-                                            </label>
-                                        <?php endforeach; ?>
-                                    </div>
-                                    
-                                <?php elseif ($group['input_type'] === 'checkbox'): ?>
-                                    <div class="option-checkbox-group">
-                                        <?php foreach ($group['values'] as $value): ?>
-                                            <label class="checkbox-option">
-                                                <input type="checkbox" 
-                                                       name="option_<?= $group['id'] ?>[]" 
-                                                       value="<?= $value['id'] ?>"
-                                                       data-price-type="<?= $value['price_type'] ?>"
-                                                       data-price-value="<?= $value['price_value'] ?>"
-                                                       onchange="calculatePrice()">
-                                                <span class="checkbox-label">
-                                                    <?= e($value['label']) ?>
-                                                    <?php if ($value['price_value'] > 0): ?>
-                                                        <span class="option-price">(+<?= formatPrice($value['price_value']) ?>)</span>
-                                                    <?php endif; ?>
-                                                </span>
-                                            </label>
-                                        <?php endforeach; ?>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        <?php endforeach; ?>
-                        
-                        <div class="calculated-price">
-                            <strong>Total Harga:</strong>
-                            <span class="total-price" id="totalPrice"><?= formatPrice($finalPrice) ?></span>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary btn-large">
-                            Hubungi Kami untuk Order
-                        </button>
-                    </form>
-                <?php else: ?>
-                    <a href="<?= baseUrl('/contact') ?>" class="btn btn-primary btn-large">
-                        Hubungi Kami untuk Order
-                    </a>
-                <?php endif; ?>
-            </div>
-        </div>
-        
-        <!-- Product Description -->
-        <?php if (!empty($product['description'])): ?>
-            <div class="product-description">
-                <h2>Deskripsi Produk</h2>
-                <div class="description-content">
-                    <?= nl2br(e($product['description'])) ?>
-                </div>
-            </div>
-        <?php endif; ?>
-    </div>
-</div>
+<style>
+    /* Product Detail Specific Styles - Complete 1:1 with frontend reference */
+    .product-detail-container {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr 0.8fr;
+        gap: 24px;
+        margin-bottom: 40px;
+    }
 
-<script>
-// Gallery image change
-function changeImage(src) {
-    document.getElementById('mainImage').src = src;
-    document.querySelectorAll('.gallery-thumb').forEach(thumb => {
-        thumb.classList.remove('active');
-    });
-    event.target.classList.add('active');
-}
+    /* Gallery Column */
+    .gallery-section {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
 
-// Price calculation
-const basePrice = <?= $finalPrice ?>;
+    .main-image {
+        width: 100%;
+        height: 400px;
+        background: var(--gray-200);
+        border-radius: var(--radius-medium);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--gray-600);
+        font-size: 1.1rem;
+        overflow: hidden;
+    }
 
-function calculatePrice() {
-    let total = basePrice;
-    
-    // Get all selected options
-    document.querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked, select').forEach(input => {
-        if (input.tagName === 'SELECT') {
-            const selected = input.options[input.selectedIndex];
-            if (selected && selected.value) {
-                const priceType = selected.dataset.priceType;
-                const priceValue = parseFloat(selected.dataset.priceValue || 0);
-                if (priceType === 'fixed') {
-                    total += priceValue;
-                } else if (priceType === 'percent') {
-                    total += (basePrice * priceValue / 100);
-                }
-            }
-        } else if (input.value) {
-            const priceType = input.dataset.priceType;
-            const priceValue = parseFloat(input.dataset.priceValue || 0);
-            if (priceType === 'fixed') {
-                total += priceValue;
-            } else if (priceType === 'percent') {
-                total += (basePrice * priceValue / 100);
-            }
+    .main-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .thumbnail-list {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+
+    .thumbnail {
+        height: 100px;
+        background: var(--gray-200);
+        border-radius: var(--radius-small);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--gray-600);
+        font-size: 0.8rem;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+    .thumbnail:hover {
+        border-color: var(--primary-cyan);
+    }
+
+    .thumbnail.active {
+        border-color: var(--primary-cyan);
+        background: var(--cyan-50);
+    }
+
+    .thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* Options Column */
+    .options-section h1 {
+        font-size: 1.75rem;
+        margin-bottom: 8px;
+    }
+
+    .price-display {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-cyan);
+        margin-bottom: 16px;
+    }
+
+    /* Marketplace CTAs */
+    .marketplace-ctas {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 24px;
+    }
+
+    .marketplace-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: var(--radius-pill);
+        border: none;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .marketplace-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .marketplace-btn.shopee {
+        background: #EE4D2D;
+        color: white;
+    }
+
+    .marketplace-btn.shopee:hover {
+        background: #D73211;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(238, 77, 45, 0.3);
+    }
+
+    .marketplace-btn.tokopedia {
+        background: #42B549;
+        color: white;
+    }
+
+    .marketplace-btn.tokopedia:hover {
+        background: #2E9738;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(66, 181, 73, 0.3);
+    }
+
+    .option-group {
+        margin-bottom: 24px;
+    }
+
+    .option-label {
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin-bottom: 10px;
+        display: block;
+        color: var(--gray-900);
+    }
+
+    .chips-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .chip {
+        padding: 6px 20px;
+        height: 32px;
+        border-radius: var(--radius-pill);
+        border: 1.5px solid var(--cyan-200);
+        background: var(--white);
+        color: var(--gray-700);
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .chip:hover {
+        border-color: var(--primary-cyan);
+        background: var(--cyan-50);
+    }
+
+    .chip.active {
+        background: var(--primary-cyan);
+        border-color: var(--primary-cyan);
+        color: var(--white);
+    }
+
+    .note-textarea {
+        width: 100%;
+        min-height: 150px;
+        padding: 12px 16px;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-input);
+        font-family: var(--font-body);
+        font-size: 0.9rem;
+        resize: vertical;
+        transition: border 0.3s ease;
+    }
+
+    .note-textarea:focus {
+        outline: none;
+        border-color: var(--primary-cyan);
+    }
+
+    /* Pricing Options */
+    .pricing-option-select {
+        width: 100%;
+        padding: 10px 16px;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-input);
+        font-family: var(--font-body);
+        font-size: 0.9rem;
+        background: var(--white);
+        cursor: pointer;
+        transition: border 0.3s ease;
+    }
+
+    .pricing-option-select:focus {
+        outline: none;
+        border-color: var(--primary-cyan);
+    }
+
+    .chip.selected {
+        background: var(--primary-cyan);
+        border-color: var(--primary-cyan);
+        color: var(--white);
+    }
+
+    .required-badge {
+        color: #DC2626;
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin-left: 4px;
+    }
+
+    .file-upload-wrapper {
+        position: relative;
+    }
+
+    .file-upload-btn {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 20px;
+        background: var(--gray-100);
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-input);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .file-upload-btn:hover {
+        background: var(--gray-200);
+    }
+
+    .file-upload-btn input[type="file"] {
+        display: none;
+    }
+
+    .file-name {
+        font-size: 0.85rem;
+        color: var(--gray-600);
+        margin-top: 8px;
+    }
+
+    .file-error {
+        font-size: 0.85rem;
+        color: #DC2626;
+        margin-top: 8px;
+    }
+
+    /* Checkout Box */
+    .checkout-box {
+        background: var(--white);
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-medium);
+        padding: 20px;
+        box-shadow: var(--shadow-card);
+        position: sticky;
+        top: calc(var(--navbar-height) + 20px);
+    }
+
+    .checkout-title {
+        font-size: 1rem;
+        font-weight: 700;
+        margin-bottom: 16px;
+    }
+
+    .quantity-stepper {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .quantity-label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        min-width: 70px;
+    }
+
+    .stepper-controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: var(--gray-100);
+        padding: 6px 12px;
+        border-radius: var(--radius-pill);
+    }
+
+    .stepper-btn {
+        width: 28px;
+        height: 28px;
+        border: none;
+        background: var(--white);
+        border-radius: 50%;
+        color: var(--gray-700);
+        font-size: 1.2rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .stepper-btn:hover:not(:disabled) {
+        background: var(--primary-cyan);
+        color: var(--white);
+    }
+
+    .stepper-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+    }
+
+    .quantity-value {
+        min-width: 40px;
+        text-align: center;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    /* Order Summary Details */
+    .order-summary {
+        margin-top: 16px;
+        margin-bottom: 16px;
+        padding: 12px;
+        background: var(--gray-50);
+        border-radius: var(--radius-small);
+        border: 1px dashed var(--gray-300);
+    }
+
+    .order-summary h4 {
+        font-size: 0.85rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: var(--gray-700);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .order-summary-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .order-summary-item {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        margin-bottom: 6px;
+        color: var(--gray-600);
+    }
+
+    .order-summary-item span:first-child {
+        font-weight: 500;
+    }
+
+    .order-summary-item span:last-child {
+        text-align: right;
+        font-weight: 600;
+        color: var(--gray-900);
+    }
+
+    .subtotal-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 0;
+        border-top: 1px solid var(--gray-200);
+        margin-bottom: 16px;
+    }
+
+    .subtotal-label {
+        font-size: 0.95rem;
+        font-weight: 600;
+    }
+
+    .subtotal-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--primary-cyan);
+    }
+
+    .checkout-btn {
+        width: 100%;
+        height: 48px;
+        background: var(--primary-cyan);
+        color: var(--white);
+        border: none;
+        border-radius: var(--radius-pill);
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .checkout-btn:hover {
+        background: var(--cyan-600);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    /* Info Sections */
+    .info-sections {
+        margin-top: 40px;
+        display: grid;
+        gap: 32px;
+    }
+
+    .info-section {
+        background: var(--white);
+        padding: 24px;
+        border-radius: var(--radius-medium);
+        box-shadow: var(--shadow-card);
+    }
+
+    .info-section h3 {
+        font-size: 1.1rem;
+        margin-bottom: 12px;
+        color: var(--gray-900);
+    }
+
+    .info-section ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .info-section ul li {
+        margin-bottom: 8px;
+        color: var(--gray-700);
+        font-size: 0.9rem;
+        line-height: 1.6;
+    }
+
+    .info-section ul li::before {
+        content: "• ";
+        color: var(--primary-cyan);
+        font-weight: bold;
+        margin-right: 8px;
+    }
+
+    .info-section p {
+        color: var(--gray-700);
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    /* Toast Notification */
+    .toast {
+        position: fixed;
+        top: 100px;
+        right: 24px;
+        background: var(--gray-900);
+        color: var(--white);
+        padding: 16px 24px;
+        border-radius: var(--radius-small);
+        box-shadow: var(--shadow-hover);
+        z-index: 1000;
+        animation: slideIn 0.3s ease;
+        display: none;
+    }
+
+    .toast.show {
+        display: block;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
         }
-    });
-    
-    // Update display
-    document.getElementById('totalPrice').textContent = 'Rp ' + total.toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 0});
-}
 
-// Form submission
-document.getElementById('productForm')?.addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    // Redirect to contact page
-    const productName = <?= json_encode($product['name']) ?>;
-    const message = `Saya tertarik dengan produk: ${productName}`;
-    window.location.href = <?= json_encode(baseUrl('/contact')) ?> + '?product=' + encodeURIComponent(productName);
-});
-</script>
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    /* Empty State */
+    .product-not-found {
+        text-align: center;
+        padding: 80px 24px;
+    }
+
+    .product-not-found h2 {
+        margin-bottom: 16px;
+    }
+
+    .product-not-found p {
+        color: var(--gray-600);
+        margin-bottom: 24px;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .product-detail-container {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .checkout-box {
+            position: static;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .product-detail-container {
+            grid-template-columns: 1fr;
+        }
+
+        .main-image {
+            height: 300px;
+        }
+    }
+</style>
+
+<!-- Toast Notification -->
+<div id="toast" class="toast"></div>
+
+<!-- Product Detail Content -->
+<section class="section">
+    <div class="container">
+        <div id="productDetailContent">
+            <!-- Rendered by JS -->
+        </div>
+    </div>
+</section>

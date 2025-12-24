@@ -39,6 +39,8 @@ require_once __DIR__ . '/../app/core/route.php';
 require_once __DIR__ . '/../app/core/controller.php';
 require_once __DIR__ . '/../app/core/auth.php';
 require_once __DIR__ . '/../app/helpers/url.php';
+require_once __DIR__ . '/../app/helpers/logging.php';
+require_once __DIR__ . '/../app/helpers/pricing.php';
 
 // Init router
 $router = new Router($appConfig);

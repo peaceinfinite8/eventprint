@@ -79,6 +79,7 @@ try {
 
     <ul class="sidebar-nav">
 
+      <!-- Dashboard -->
       <li class="sidebar-item <?= isActive('/admin/dashboard') ? 'active' : '' ?>">
         <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/dashboard">
           <i class="align-middle" data-feather="home"></i>
@@ -86,23 +87,131 @@ try {
         </a>
       </li>
 
-      <?php if ($isAdmin): ?>
-        <li class="sidebar-header">Kelola Konten</li>
+      <?php if ($isSuper): ?>
+        <!-- PRODUK & KATALOG (Consolidated) -->
+        <li class="sidebar-header">Produk & Katalog</li>
 
-        <li class="sidebar-item <?= isActive('/admin/blog') ? 'active' : '' ?>">
-          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/blog">
-            <i class="align-middle" data-feather="file-text"></i>
-            <span class="align-middle sidebar-text">Artikel</span>
+        <li class="sidebar-item <?= isActive('/admin/products') ? 'active' : '' ?>">
+          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/products">
+            <i class="align-middle" data-feather="box"></i>
+            <span class="align-middle sidebar-text">Semua Produk</span>
           </a>
         </li>
 
-        <li class="sidebar-item <?= isActive('/admin/contact') ? 'active' : '' ?>">
-          <a class="sidebar-link d-flex align-items-center justify-content-between" href="<?= $baseUrl; ?>/admin/contact">
+        <li class="sidebar-item <?= isActive('/admin/product-categories') ? 'active' : '' ?>">
+          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/product-categories">
+            <i class="align-middle" data-feather="tag"></i>
+            <span class="align-middle sidebar-text">Kategori</span>
+          </a>
+        </li>
+
+        <li class="sidebar-item <?= isActive('/admin/materials') ? 'active' : '' ?>">
+          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/materials">
+            <i class="align-middle" data-feather="layers"></i>
+            <span class="align-middle sidebar-text">Bahan (Materials)</span>
+          </a>
+        </li>
+
+        <li class="sidebar-item <?= isActive('/admin/laminations') ? 'active' : '' ?>">
+          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/laminations">
+            <i class="align-middle" data-feather="droplet"></i>
+            <span class="align-middle sidebar-text">Laminasi</span>
+          </a>
+        </li>
+
+        <li class="sidebar-item <?= isActive('/admin/category-options') ? 'active' : '' ?>">
+          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/category-options">
+            <i class="align-middle" data-feather="sliders"></i>
+            <span class="align-middle sidebar-text">Mapping Opsi</span>
+          </a>
+        </li>
+
+        <li class="sidebar-item <?= isActive('/admin/tier-pricing') ? 'active' : '' ?>">
+          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/tier-pricing">
+            <i class="align-middle" data-feather="list"></i>
+            <span class="align-middle sidebar-text">Tier Pricing</span>
+          </a>
+        </li>
+      <?php endif; ?>
+
+      <!-- KONTEN WEBSITE -->
+      <?php if ($isSuper || $isAdmin): ?>
+        <li class="sidebar-header">Konten Website</li>
+
+        <?php if ($isSuper): ?>
+          <li class="sidebar-item <?= isActive('/admin/home') ? 'active' : '' ?>">
+            <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/home">
+              <i class="align-middle" data-feather="layout"></i>
+              <span class="align-middle sidebar-text">Home Page</span>
+            </a>
+          </li>
+
+          <li
+            class="sidebar-item <?= (isActive('/admin/our-home/stores') || isActive('/admin/our-home/gallery')) ? 'active' : '' ?>">
+            <a data-bs-target="#ourHomeSubmenu" data-bs-toggle="collapse"
+              class="sidebar-link <?= (isActive('/admin/our-home/stores') || isActive('/admin/our-home/gallery')) ? '' : 'collapsed' ?>">
+              <i class="align-middle" data-feather="map"></i>
+              <span class="align-middle sidebar-text">Our Home</span>
+            </a>
+            <ul id="ourHomeSubmenu"
+              class="sidebar-dropdown list-unstyled collapse <?= (isActive('/admin/our-home/stores') || isActive('/admin/our-home/gallery')) ? 'show' : '' ?>"
+              data-bs-parent="#sidebar">
+              <li class="sidebar-item <?= isActive('/admin/our-home/stores') ? 'active' : '' ?>">
+                <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/our-home/stores">
+                  <i class="align-middle" data-feather="map-pin"></i>
+                  <span class="sidebar-text">Stores</span>
+                </a>
+              </li>
+              <li class="sidebar-item <?= isActive('/admin/our-home/gallery') ? 'active' : '' ?>">
+                <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/our-home/gallery">
+                  <i class="align-middle" data-feather="image"></i>
+                  <span class="sidebar-text">Gallery</span>
+                </a>
+              </li>
+              <li class="sidebar-item <?= isActive('/admin/our-home/content') ? 'active' : '' ?>">
+                <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/our-home/content">
+                  <i class="align-middle" data-feather="edit"></i>
+                  <span class="sidebar-text">Edit Content</span>
+                </a>
+              </li>
+            </ul>
+          </li>
+
+          <li class="sidebar-item <?= isActive('/admin/testimonials') ? 'active' : '' ?>">
+            <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/testimonials">
+              <i class="align-middle" data-feather="message-circle"></i>
+              <span class="align-middle sidebar-text">Testimonials</span>
+            </a>
+          </li>
+        <?php endif; ?>
+
+        <!-- Blog accessible by Admin & Super -->
+        <li class="sidebar-item <?= isActive('/admin/blog') ? 'active' : '' ?>">
+          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/blog">
+            <i class="align-middle" data-feather="file-text"></i>
+            <span class="align-middle sidebar-text">Blog / Artikel</span>
+          </a>
+        </li>
+
+        <?php if ($isSuper): ?>
+          <li class="sidebar-item <?= isActive('/admin/footer') ? 'active' : '' ?>">
+            <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/footer">
+              <i class="align-middle" data-feather="columns"></i>
+              <span class="align-middle sidebar-text">Footer</span>
+            </a>
+          </li>
+        <?php endif; ?>
+
+        <!-- KOMUNIKASI -->
+        <li class="sidebar-header">Komunikasi</li>
+
+        <li class="sidebar-item <?= isActive('/admin/contact-messages') ? 'active' : '' ?>">
+          <a class="sidebar-link d-flex align-items-center justify-content-between"
+            href="<?= $baseUrl; ?>/admin/contact-messages">
             <span class="d-flex align-items-center gap-2">
               <i class="align-middle" data-feather="mail"></i>
-              <span class="align-middle sidebar-text">Pesan Masuk</span>
+              <span class="align-middle sidebar-text">Messages</span>
             </span>
-
             <?php if ($unreadCount > 0): ?>
               <span class="badge bg-danger" style="font-size:.7rem;"><?= (int) $unreadCount ?></span>
             <?php endif; ?>
@@ -111,85 +220,33 @@ try {
       <?php endif; ?>
 
       <?php if ($isSuper): ?>
-        <li class="sidebar-header">Kelola Website</li>
-
-        <li class="sidebar-item <?= isActive('/admin/home') ? 'active' : '' ?>">
-          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/home">
-            <i class="align-middle" data-feather="layout"></i>
-            <span class="align-middle sidebar-text">Konten Beranda</span>
-          </a>
-        </li>
-
-        <li class="sidebar-header">Katalog Produk</li>
-
-        <li class="sidebar-item <?= isActive('/admin/products') ? 'active' : '' ?>">
-          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/products">
-            <i class="align-middle" data-feather="box"></i>
-            <span class="align-middle sidebar-text">Produk</span>
-          </a>
-        </li>
-
-        <li class="sidebar-item <?= isActive('/admin/product-categories') ? 'active' : '' ?>">
-          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/product-categories">
-            <i class="align-middle" data-feather="tag"></i>
-            <span class="align-middle sidebar-text">Kategori Produk</span>
-          </a>
-        </li>
-
-        <li class="sidebar-item <?= isActive('/admin/discounts') ? 'active' : '' ?>">
-          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/discounts">
-            <i class="align-middle" data-feather="percent"></i>
-            <span class="align-middle sidebar-text">Diskon</span>
-          </a>
-        </li>
-
-        <li class="sidebar-item <?= isActive('/admin/our-store') ? 'active' : '' ?>">
-          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/our-store">
-            <i class="align-middle" data-feather="map-pin"></i>
-            <span class="align-middle sidebar-text">Lokasi / Our Store</span>
-          </a>
-        </li>
-
-        <li class="sidebar-header">Konten & Komunikasi</li>
-
-        <li class="sidebar-item <?= isActive('/admin/blog') ? 'active' : '' ?>">
-          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/blog">
-            <i class="align-middle" data-feather="file-text"></i>
-            <span class="align-middle sidebar-text">Artikel</span>
-          </a>
-        </li>
-
-        <li class="sidebar-item <?= isActive('/admin/contact') ? 'active' : '' ?>">
-          <a class="sidebar-link d-flex align-items-center justify-content-between" href="<?= $baseUrl; ?>/admin/contact">
-            <span class="d-flex align-items-center gap-2">
-              <i class="align-middle" data-feather="mail"></i>
-              <span class="align-middle sidebar-text">Pesan Masuk</span>
-            </span>
-
-            <?php if ($unreadCount > 0): ?>
-              <span class="badge bg-danger" style="font-size:.7rem;"><?= (int) $unreadCount ?></span>
-            <?php endif; ?>
-          </a>
-        </li>
-
-        <li class="sidebar-header">Pengaturan</li>
+        <!-- SYSTEM -->
+        <li class="sidebar-header">System</li>
 
         <li class="sidebar-item <?= isActive('/admin/settings') ? 'active' : '' ?>">
           <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/settings">
             <i class="align-middle" data-feather="settings"></i>
-            <span class="align-middle sidebar-text">General Settings</span>
+            <span class="align-middle sidebar-text">Pengaturan Umum</span>
           </a>
         </li>
 
         <li class="sidebar-item <?= isActive('/admin/users') ? 'active' : '' ?>">
           <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/users">
             <i class="align-middle" data-feather="users"></i>
-            <span class="align-middle sidebar-text">Users</span>
+            <span class="align-middle sidebar-text">Pengguna (Users)</span>
+          </a>
+        </li>
+
+        <li class="sidebar-item <?= isActive('/admin/system-logs') ? 'active' : '' ?>">
+          <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/system-logs">
+            <i class="align-middle" data-feather="activity"></i>
+            <span class="align-middle sidebar-text">System Logs</span>
           </a>
         </li>
       <?php endif; ?>
 
-      <li class="sidebar-item">
+      <!-- LOGOUT -->
+      <li class="sidebar-item mt-3">
         <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/logout" onclick="return confirm('Yakin ingin logout?');">
           <i class="align-middle" data-feather="log-out"></i>
           <span class="align-middle sidebar-text">Logout</span>

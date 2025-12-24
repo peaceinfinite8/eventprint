@@ -2,6 +2,7 @@
     "name": "eventprint/app",
     "description": "Custom MVC EventPrint",
     "type": "project",
+    "license": "proprietary",
     "autoload": {
         "psr-4": {
             "App\\": "app/"

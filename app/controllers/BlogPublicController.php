@@ -27,7 +27,7 @@ class BlogPublicController extends Controller
         // Fetch featured posts (for hero mosaic)
         $featuredPosts = [];
         $res = $this->db->query("
-            SELECT id, title, slug, excerpt, thumbnail, published_at
+            SELECT id, title, slug, excerpt, thumbnail, published_at, external_url, link_target
             FROM posts
             WHERE is_published=1 AND is_featured=1
             ORDER BY published_at DESC
@@ -51,7 +51,7 @@ class BlogPublicController extends Controller
         // Fetch latest posts
         $posts = [];
         $res = $this->db->query("
-            SELECT id, title, slug, excerpt, thumbnail, published_at
+            SELECT id, title, slug, excerpt, thumbnail, published_at, external_url, link_target
             FROM posts
             WHERE is_published=1
             ORDER BY published_at DESC
@@ -125,6 +125,9 @@ class BlogPublicController extends Controller
             'settings' => $settings,
             'post' => $post,
             'relatedPosts' => $relatedPosts,
+            'additionalJs' => [
+                'frontend/js/render/renderBlogDetail.js'
+            ]
         ]);
     }
 
@@ -135,7 +138,7 @@ class BlogPublicController extends Controller
         // Fetch featured posts
         $featuredPosts = [];
         $res = $this->db->query("
-            SELECT id, title, slug, excerpt, thumbnail, published_at
+            SELECT id, title, slug, excerpt, thumbnail, published_at, external_url, link_target
             FROM posts
             WHERE is_published=1 AND is_featured=1
             ORDER BY published_at DESC
@@ -143,6 +146,7 @@ class BlogPublicController extends Controller
         ");
         if ($res) {
             while ($r = $res->fetch_assoc()) {
+                $r['thumbnail'] = safeImageUrl($r['thumbnail'] ?? '', 'blog');
                 $featuredPosts[] = $r;
             }
         }
@@ -150,7 +154,7 @@ class BlogPublicController extends Controller
         // Fetch recent posts
         $recentPosts = [];
         $res = $this->db->query("
-            SELECT id, title, slug, excerpt, thumbnail, published_at
+            SELECT id, title, slug, excerpt, thumbnail, published_at, external_url, link_target
             FROM posts
             WHERE is_published=1
             ORDER BY published_at DESC
@@ -158,6 +162,7 @@ class BlogPublicController extends Controller
         ");
         if ($res) {
             while ($r = $res->fetch_assoc()) {
+                $r['thumbnail'] = safeImageUrl($r['thumbnail'] ?? '', 'blog');
                 $recentPosts[] = $r;
             }
         }
@@ -167,5 +172,101 @@ class BlogPublicController extends Controller
             'featured' => $featuredPosts,
             'recent' => $recentPosts
         ]);
+    }
+
+    public function apiBlogDetail($slug): void
+    {
+        header('Content-Type: application/json');
+
+        try {
+            // Fetch post by slug
+            $stmt = $this->db->prepare("
+                SELECT id, title, slug, content, thumbnail, published_at, excerpt, external_url, link_target
+                FROM posts
+                WHERE slug=? AND is_published=1
+            ");
+            $stmt->bind_param('s', $slug);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $post = $result->fetch_assoc();
+            $stmt->close();
+
+            if (!$post) {
+                http_response_code(404);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Article not found'
+                ]);
+                return;
+            }
+
+            // Safe URL for post thumbnail
+            $post['thumbnail'] = safeImageUrl($post['thumbnail'] ?? '', 'blog');
+
+            // Fetch related posts
+            $relatedPosts = [];
+            $res = $this->db->query("
+                SELECT id, title, slug, thumbnail, published_at, external_url, link_target
+                FROM posts
+                WHERE is_published=1 AND id != {$post['id']}
+                ORDER BY published_at DESC
+                LIMIT 3
+            ");
+            if ($res) {
+                while ($r = $res->fetch_assoc()) {
+                    $r['thumbnail'] = safeImageUrl($r['thumbnail'] ?? '', 'blog');
+                    $relatedPosts[] = $r;
+                }
+            }
+
+            echo json_encode([
+                'success' => true,
+                'post' => $post,
+                'relatedPosts' => $relatedPosts
+            ]);
+        } catch (\Throwable $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * API endpoint for posts list (used by global search)
+     * Returns all published posts with basic fields for search filtering
+     */
+    public function apiPosts(): void
+    {
+        header('Content-Type: application/json');
+
+        try {
+            // Fetch all published posts for search
+            $posts = [];
+            $res = $this->db->query("
+                SELECT id, title, slug, excerpt, external_url, link_target
+                FROM posts
+                WHERE is_published=1
+                ORDER BY published_at DESC
+            ");
+
+            if ($res) {
+                while ($r = $res->fetch_assoc()) {
+                    $posts[] = $r;
+                }
+            }
+
+            echo json_encode([
+                'success' => true,
+                'posts' => $posts
+            ]);
+        } catch (\Throwable $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
     }
 }

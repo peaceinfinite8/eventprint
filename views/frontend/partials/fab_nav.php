@@ -8,55 +8,96 @@ $waUrl = normalizeWhatsApp($settings['whatsapp'] ?? '');
 ?>
 
 <!-- FAB Navigation (Mobile) -->
-<div class="fabNav" id="fabNav">
-    <button class="fabNav__toggle" id="fabNavToggle" aria-label="Quick Navigation">
+<div class="fab-nav-container" id="fabNavContainer">
+    <!-- Overlay -->
+    <div class="fab-overlay" id="fabOverlay"></div>
+
+    <!-- Main Toggle Button -->
+    <button class="fab-main-btn" id="fabNavToggle" aria-label="Toggle Quick Navigation">
         <i class="fas fa-bars"></i>
     </button>
 
-    <div class="fabNav__menu" id="fabNavMenu" style="display: none;">
-        <a href="<?= baseUrl('/') ?>" class="fabNav__item">
-            <i class="fas fa-home"></i>
-            <span>Home</span>
-        </a>
-        <a href="<?= baseUrl('/products') ?>" class="fabNav__item">
-            <i class="fas fa-shopping-bag"></i>
-            <span>Products</span>
-        </a>
-        <?php if ($waUrl): ?>
-            <a href="<?= e($waUrl) ?>" target="_blank" class="fabNav__item fabNav__item--wa" rel="noopener">
-                <i class="fab fa-whatsapp"></i>
-                <span>WhatsApp</span>
-            </a>
-        <?php endif; ?>
-        <a href="<?= baseUrl('/contact') ?>" class="fabNav__item">
-            <i class="fas fa-envelope"></i>
-            <span>Contact</span>
-        </a>
+    <!-- Slide-up Menu Panel -->
+    <div class="fab-menu-panel">
+        <div class="fab-menu-header">
+            <h5>Quick Menu</h5>
+            <button class="fab-close" id="fabNavClose" aria-label="Close Menu">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <ul class="fab-menu-list">
+            <li>
+                <a href="<?= baseUrl('/') ?>"
+                    class="fab-link <?= (currentPath() === '/' || currentPath() === '/eventprint/public/' || currentPath() === '/eventprint/public') ? 'active' : '' ?>">
+                    <i class="fas fa-home me-2"></i> Home
+                </a>
+            </li>
+            <li>
+                <a href="<?= baseUrl('/products') ?>" class="fab-link <?= isActive('/products') ? 'active' : '' ?>">
+                    <i class="fas fa-shopping-bag me-2"></i> Products
+                </a>
+            </li>
+            <?php if ($waUrl): ?>
+                <li>
+                    <a href="<?= e($waUrl) ?>" target="_blank" class="fab-link text-success" rel="noopener">
+                        <i class="fab fa-whatsapp me-2"></i> WhatsApp
+                    </a>
+                </li>
+            <?php endif; ?>
+            <li>
+                <a href="<?= baseUrl('/contact') ?>" class="fab-link <?= isActive('/contact') ? 'active' : '' ?>">
+                    <i class="fas fa-envelope me-2"></i> Contact
+                </a>
+            </li>
+        </ul>
     </div>
 </div>
 
 <!-- FAB Navigation Script -->
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const fabToggle = document.getElementById('fabNavToggle');
-        const fabMenu = document.getElementById('fabNavMenu');
+    (function () {
+        // GUARD: Prevent duplicate initialization
+        if (window.fabNavInitialized) return;
+        window.fabNavInitialized = true;
 
-        if (fabToggle && fabMenu) {
-            fabToggle.addEventListener('click', function (e) {
-                e.preventDefault();
-                const isVisible = fabMenu.style.display !== 'none';
-                fabMenu.style.display = isVisible ? 'none' : 'flex';
-                fabToggle.classList.toggle('active');
-            });
+        document.addEventListener('DOMContentLoaded', function () {
+            const container = document.getElementById('fabNavContainer');
+            const toggleBtn = document.getElementById('fabNavToggle');
+            const closeBtn = document.getElementById('fabNavClose');
+            const overlay = document.getElementById('fabOverlay');
+            const icon = toggleBtn.querySelector('i');
 
-            // Close when clicking outside
-            document.addEventListener('click', function (e) {
-                const fabNav = document.getElementById('fabNav');
-                if (fabNav && !fabNav.contains(e.target)) {
-                    fabMenu.style.display = 'none';
-                    fabToggle.classList.remove('active');
+            function toggleMenu() {
+                const isOpen = container.classList.contains('open');
+
+                if (isOpen) {
+                    container.classList.remove('open');
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-bars');
+                    document.body.style.overflow = ''; // Restore scrolling
+                } else {
+                    container.classList.add('open');
+                    icon.classList.remove('fa-bars');
+                    icon.classList.add('fa-times');
+                    document.body.style.overflow = 'hidden'; // Prevent scrolling when menu is open
                 }
+            }
+
+            if (toggleBtn) toggleBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                toggleMenu();
             });
-        }
-    });
+
+            if (closeBtn) closeBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                toggleMenu();
+            });
+
+            if (overlay) overlay.addEventListener('click', function (e) {
+                e.preventDefault();
+                toggleMenu();
+            });
+        });
+    })();
 </script>

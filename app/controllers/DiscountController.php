@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../helpers/Security.php';
 require_once __DIR__ . '/../models/ProductDiscount.php';
+require_once __DIR__ . '/../helpers/logging.php';
 
 class DiscountController extends Controller
 {
@@ -15,7 +16,7 @@ class DiscountController extends Controller
 
     private function role(): string
     {
-        return strtolower((string)($_SESSION['user']['role'] ?? ''));
+        return strtolower((string) ($_SESSION['user']['role'] ?? ''));
     }
 
     private function isAdminOrSuper(): bool
@@ -46,9 +47,11 @@ class DiscountController extends Controller
     private function dt(?string $s): ?string
     {
         $s = $this->v($s);
-        if ($s === null) return null;
+        if ($s === null)
+            return null;
         $s = str_replace('T', ' ', $s);
-        if (strlen($s) === 16) $s .= ':00';
+        if (strlen($s) === 16)
+            $s .= ':00';
         return $s;
     }
 
@@ -62,7 +65,9 @@ class DiscountController extends Controller
 
         $res = $db->query($sql);
         $rows = [];
-        if ($res) while ($r = $res->fetch_assoc()) $rows[] = $r;
+        if ($res)
+            while ($r = $res->fetch_assoc())
+                $rows[] = $r;
         return $rows;
     }
 
@@ -76,21 +81,21 @@ class DiscountController extends Controller
             return;
         }
 
-        $q       = trim($_GET['q'] ?? '');
-        $page    = max(1, (int)($_GET['page'] ?? 1));
+        $q = trim($_GET['q'] ?? '');
+        $page = max(1, (int) ($_GET['page'] ?? 1));
         $perPage = 10;
 
         $result = $this->discount->paginate($q !== '' ? $q : null, $page, $perPage);
 
         $this->renderAdmin('discounts/index', [
-            'items'      => $result['items'],
-            'filter_q'   => $q,
+            'items' => $result['items'],
+            'filter_q' => $q,
             'pagination' => [
-                'total'    => $result['total'],
-                'page'     => $result['page'],
+                'total' => $result['total'],
+                'page' => $result['page'],
                 'per_page' => $result['per_page'],
             ],
-            'isSuper'    => $this->isSuper(), // buat view: tombol CRUD hanya super
+            'isSuper' => $this->isSuper(), // buat view: tombol CRUD hanya super
         ], 'Diskon Produk');
     }
 
@@ -115,60 +120,59 @@ class DiscountController extends Controller
             return;
         }
 
-        try { Security::requireCsrfToken(); }
-        catch (Exception $e) { $this->redirectWithError('admin/discounts/create', 'CSRF tidak valid.'); }
+        try {
+            Security::requireCsrfToken();
+        } catch (Exception $e) {
+            $this->redirectWithError('admin/discounts/create', 'CSRF tidak valid.');
+        }
 
-        $productId = (int)($_POST['product_id'] ?? 0);
-        $type      = $_POST['discount_type'] ?? 'percent';
-        $value     = (float)($_POST['discount_value'] ?? 0);
-        $qtyTotal  = (int)($_POST['qty_total'] ?? 0);
+        $productId = (int) ($_POST['product_id'] ?? 0);
+        $type = $_POST['discount_type'] ?? 'percent';
+        $value = (float) ($_POST['discount_value'] ?? 0);
+        // Quota no longer required - discount based on datetime only
+        $qtyTotal = null;
 
-        $startAt   = $this->dt($_POST['start_at'] ?? null);
-        $endAt     = $this->dt($_POST['end_at'] ?? null);
-        $isActive  = isset($_POST['is_active']) ? 1 : 0;
+        $startAt = $this->dt($_POST['start_at'] ?? null);
+        $endAt = $this->dt($_POST['end_at'] ?? null);
+        $isActive = isset($_POST['is_active']) ? 1 : 0;
 
-        if ($productId <= 0) $this->redirectWithError('admin/discounts/create', 'Produk wajib dipilih.');
-        if ($type !== 'percent' && $type !== 'fixed') $this->redirectWithError('admin/discounts/create', 'Tipe diskon tidak valid.');
-        if ($value <= 0) $this->redirectWithError('admin/discounts/create', 'Nilai diskon wajib > 0.');
-        if ($type === 'percent' && $value > 100) $this->redirectWithError('admin/discounts/create', 'Diskon persen maksimal 100.');
-        if ($qtyTotal <= 0) $this->redirectWithError('admin/discounts/create', 'Kuota diskon wajib > 0.');
+        if ($productId <= 0)
+            $this->redirectWithError('admin/discounts/create', 'Produk wajib dipilih.');
+        if ($type !== 'percent' && $type !== 'fixed')
+            $this->redirectWithError('admin/discounts/create', 'Tipe diskon tidak valid.');
+        if ($value <= 0)
+            $this->redirectWithError('admin/discounts/create', 'Nilai diskon wajib > 0.');
+        if ($type === 'percent' && $value > 100)
+            $this->redirectWithError('admin/discounts/create', 'Diskon persen maksimal 100.');
+        // Quota validation removed - no longer needed
 
-        if ($startAt !== null && !strtotime($startAt)) $this->redirectWithError('admin/discounts/create', 'Start time tidak valid.');
-        if ($endAt !== null && !strtotime($endAt)) $this->redirectWithError('admin/discounts/create', 'End time tidak valid.');
+        if ($startAt !== null && !strtotime($startAt))
+            $this->redirectWithError('admin/discounts/create', 'Start time tidak valid.');
+        if ($endAt !== null && !strtotime($endAt))
+            $this->redirectWithError('admin/discounts/create', 'End time tidak valid.');
         if ($startAt !== null && $endAt !== null && strtotime($startAt) > strtotime($endAt)) {
             $this->redirectWithError('admin/discounts/create', 'Start time tidak boleh lebih besar dari end time.');
         }
 
-        // cek stock produk
-        $db = db();
-        $stmt = $db->prepare("SELECT stock FROM products WHERE id=? LIMIT 1");
-        $stmt->bind_param('i', $productId);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        $p = $res ? $res->fetch_assoc() : null;
-        $stmt->close();
-
-        if (!$p) $this->redirectWithError('admin/discounts/create', 'Produk tidak ditemukan.');
-        $stock = (int)($p['stock'] ?? 0);
-        if ($qtyTotal > $stock) $this->redirectWithError('admin/discounts/create', 'Kuota diskon tidak boleh melebihi stok.');
+        // Stock check removed - no longer needed since quota is not used
 
         // cegah overlap diskon aktif (kalau diaktifkan)
         if ($isActive === 1 && $this->discount->hasOverlappingActive($productId, $startAt, $endAt, null)) {
             $this->redirectWithError('admin/discounts/create', 'Sudah ada diskon aktif yang overlap untuk produk ini.');
         }
 
-        $createdBy = (int)($_SESSION['user']['id'] ?? 0);
+        $createdBy = (int) ($_SESSION['user']['id'] ?? 0);
 
         try {
             $this->discount->create([
-                'product_id'      => $productId,
-                'discount_type'   => $type,
-                'discount_value'  => $value,
-                'qty_total'       => $qtyTotal,
-                'start_at'        => $startAt,
-                'end_at'          => $endAt,
-                'is_active'       => $isActive,
-                'created_by'      => $createdBy,
+                'product_id' => $productId,
+                'discount_type' => $type,
+                'discount_value' => $value,
+                'qty_total' => $qtyTotal,
+                'start_at' => $startAt,
+                'end_at' => $endAt,
+                'is_active' => $isActive,
+                'created_by' => $createdBy,
             ]);
         } catch (Exception $e) {
             $this->redirectWithError('admin/discounts/create', 'Gagal menyimpan: ' . $e->getMessage());
@@ -183,12 +187,16 @@ class DiscountController extends Controller
     {
         $this->requireSuper('admin/discounts');
 
-        $id = (int)$id;
+        $id = (int) $id;
         $item = $this->discount->find($id);
-        if (!$item) { http_response_code(404); echo "Diskon tidak ditemukan."; return; }
+        if (!$item) {
+            http_response_code(404);
+            echo "Diskon tidak ditemukan.";
+            return;
+        }
 
         $this->renderAdmin('discounts/edit', [
-            'item'     => $item,
+            'item' => $item,
             'products' => $this->getProductsOptions(),
         ], 'Edit Diskon');
     }
@@ -203,50 +211,49 @@ class DiscountController extends Controller
             return;
         }
 
-        try { Security::requireCsrfToken(); }
-        catch (Exception $e) { $this->redirectWithError("admin/discounts/edit/$id", 'CSRF tidak valid.'); }
-
-        $id = (int)$id;
-        $current = $this->discount->find($id);
-        if (!$current) { http_response_code(404); echo "Diskon tidak ditemukan."; return; }
-
-        $productId = (int)($_POST['product_id'] ?? 0);
-        $type      = $_POST['discount_type'] ?? 'percent';
-        $value     = (float)($_POST['discount_value'] ?? 0);
-        $qtyTotal  = (int)($_POST['qty_total'] ?? 0);
-
-        $startAt   = $this->dt($_POST['start_at'] ?? null);
-        $endAt     = $this->dt($_POST['end_at'] ?? null);
-        $isActive  = isset($_POST['is_active']) ? 1 : 0;
-
-        if ($productId <= 0) $this->redirectWithError("admin/discounts/edit/$id", 'Produk wajib dipilih.');
-        if ($type !== 'percent' && $type !== 'fixed') $this->redirectWithError("admin/discounts/edit/$id", 'Tipe diskon tidak valid.');
-        if ($value <= 0) $this->redirectWithError("admin/discounts/edit/$id", 'Nilai diskon wajib > 0.');
-        if ($type === 'percent' && $value > 100) $this->redirectWithError("admin/discounts/edit/$id", 'Diskon persen maksimal 100.');
-        if ($qtyTotal <= 0) $this->redirectWithError("admin/discounts/edit/$id", 'Kuota diskon wajib > 0.');
-
-        if ((int)($current['qty_used'] ?? 0) > $qtyTotal) {
-            $this->redirectWithError("admin/discounts/edit/$id", 'qty_total tidak boleh lebih kecil dari qty_used.');
+        try {
+            Security::requireCsrfToken();
+        } catch (Exception $e) {
+            $this->redirectWithError("admin/discounts/edit/$id", 'CSRF tidak valid.');
         }
 
-        if ($startAt !== null && !strtotime($startAt)) $this->redirectWithError("admin/discounts/edit/$id", 'Start time tidak valid.');
-        if ($endAt !== null && !strtotime($endAt)) $this->redirectWithError("admin/discounts/edit/$id", 'End time tidak valid.');
+        $id = (int) $id;
+        $current = $this->discount->find($id);
+        if (!$current) {
+            http_response_code(404);
+            echo "Diskon tidak ditemukan.";
+            return;
+        }
+
+        $productId = (int) ($_POST['product_id'] ?? 0);
+        $type = $_POST['discount_type'] ?? 'percent';
+        $value = (float) ($_POST['discount_value'] ?? 0);
+        // Quota no longer required - discount based on datetime only
+        $qtyTotal = null;
+
+        $startAt = $this->dt($_POST['start_at'] ?? null);
+        $endAt = $this->dt($_POST['end_at'] ?? null);
+        $isActive = isset($_POST['is_active']) ? 1 : 0;
+
+        if ($productId <= 0)
+            $this->redirectWithError("admin/discounts/edit/$id", 'Produk wajib dipilih.');
+        if ($type !== 'percent' && $type !== 'fixed')
+            $this->redirectWithError("admin/discounts/edit/$id", 'Tipe diskon tidak valid.');
+        if ($value <= 0)
+            $this->redirectWithError("admin/discounts/edit/$id", 'Nilai diskon wajib > 0.');
+        if ($type === 'percent' && $value > 100)
+            $this->redirectWithError("admin/discounts/edit/$id", 'Diskon persen maksimal 100.');
+        // Quota validation removed - no longer needed
+
+        if ($startAt !== null && !strtotime($startAt))
+            $this->redirectWithError("admin/discounts/edit/$id", 'Start time tidak valid.');
+        if ($endAt !== null && !strtotime($endAt))
+            $this->redirectWithError("admin/discounts/edit/$id", 'End time tidak valid.');
         if ($startAt !== null && $endAt !== null && strtotime($startAt) > strtotime($endAt)) {
             $this->redirectWithError("admin/discounts/edit/$id", 'Start time tidak boleh lebih besar dari end time.');
         }
 
-        // cek stock produk
-        $db = db();
-        $stmt = $db->prepare("SELECT stock FROM products WHERE id=? LIMIT 1");
-        $stmt->bind_param('i', $productId);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        $p = $res ? $res->fetch_assoc() : null;
-        $stmt->close();
-        if (!$p) $this->redirectWithError("admin/discounts/edit/$id", 'Produk tidak ditemukan.');
-
-        $stock = (int)($p['stock'] ?? 0);
-        if ($qtyTotal > $stock) $this->redirectWithError("admin/discounts/edit/$id", 'Kuota diskon tidak boleh melebihi stok.');
+        // Stock check removed - no longer needed since quota is not used
 
         // overlap
         if ($isActive === 1 && $this->discount->hasOverlappingActive($productId, $startAt, $endAt, $id)) {
@@ -255,13 +262,13 @@ class DiscountController extends Controller
 
         try {
             $this->discount->update($id, [
-                'product_id'     => $productId,
-                'discount_type'  => $type,
+                'product_id' => $productId,
+                'discount_type' => $type,
                 'discount_value' => $value,
-                'qty_total'      => $qtyTotal,
-                'start_at'       => $startAt,
-                'end_at'         => $endAt,
-                'is_active'      => $isActive,
+                'qty_total' => $qtyTotal,
+                'start_at' => $startAt,
+                'end_at' => $endAt,
+                'is_active' => $isActive,
             ]);
         } catch (Exception $e) {
             $this->redirectWithError("admin/discounts/edit/$id", 'Gagal update: ' . $e->getMessage());
@@ -282,10 +289,13 @@ class DiscountController extends Controller
             return;
         }
 
-        try { Security::requireCsrfToken(); }
-        catch (Exception $e) { $this->redirectWithError("admin/discounts", 'CSRF tidak valid.'); }
+        try {
+            Security::requireCsrfToken();
+        } catch (Exception $e) {
+            $this->redirectWithError("admin/discounts", 'CSRF tidak valid.');
+        }
 
-        $id = (int)$id;
+        $id = (int) $id;
 
         try {
             $this->discount->delete($id);

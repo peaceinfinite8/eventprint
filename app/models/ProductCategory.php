@@ -48,7 +48,7 @@ class ProductCategory
 
         $stmt->execute();
         $res = $stmt->get_result();
-        return (bool)$res->fetch_assoc();
+        return (bool) $res->fetch_assoc();
     }
 
     public function getNextSortOrder(): int
@@ -56,7 +56,7 @@ class ProductCategory
         $sql = "SELECT MAX(sort_order) AS max_sort FROM product_categories";
         $res = $this->db->query($sql);
         if ($res && $row = $res->fetch_assoc()) {
-            return ((int)$row['max_sort']) + 1;
+            return ((int) $row['max_sort']) + 1;
         }
         return 1;
     }
@@ -68,30 +68,32 @@ class ProductCategory
         $stmt->execute();
         $res = $stmt->get_result();
         $row = $res->fetch_assoc();
-        return (int)($row['total'] ?? 0);
+        return (int) ($row['total'] ?? 0);
     }
 
     public function create(array $data): bool
     {
         $sql = "INSERT INTO product_categories
-                (name, slug, description, sort_order, is_active)
-                VALUES (?, ?, ?, ?, ?)";
+                (name, slug, description, sort_order, is_active, whatsapp_number)
+                VALUES (?, ?, ?, ?, ?, ?)";
 
         $stmt = $this->db->prepare($sql);
 
-        $name        = $data['name'];
-        $slug        = $data['slug'];
+        $name = $data['name'];
+        $slug = $data['slug'];
         $description = $data['description'] ?? null;
-        $sort_order  = (int)($data['sort_order'] ?? 0);
-        $is_active   = (int)($data['is_active'] ?? 1);
+        $sort_order = (int) ($data['sort_order'] ?? 0);
+        $is_active = (int) ($data['is_active'] ?? 1);
+        $wa = $data['whatsapp_number'] ?? null;
 
         $stmt->bind_param(
-            'sssii',
+            'sssiss',
             $name,
             $slug,
             $description,
             $sort_order,
-            $is_active
+            $is_active,
+            $wa
         );
 
         return $stmt->execute();
@@ -100,24 +102,26 @@ class ProductCategory
     public function update(int $id, array $data): bool
     {
         $sql = "UPDATE product_categories
-                SET name = ?, slug = ?, description = ?, sort_order = ?, is_active = ?
+                SET name = ?, slug = ?, description = ?, sort_order = ?, is_active = ?, whatsapp_number = ?
                 WHERE id = ?";
 
         $stmt = $this->db->prepare($sql);
 
-        $name        = $data['name'];
-        $slug        = $data['slug'];
+        $name = $data['name'];
+        $slug = $data['slug'];
         $description = $data['description'] ?? null;
-        $sort_order  = (int)($data['sort_order'] ?? 0);
-        $is_active   = (int)($data['is_active'] ?? 1);
+        $sort_order = (int) ($data['sort_order'] ?? 0);
+        $is_active = (int) ($data['is_active'] ?? 1);
+        $wa = $data['whatsapp_number'] ?? null;
 
         $stmt->bind_param(
-            'sssiii',
+            'sssissi',
             $name,
             $slug,
             $description,
             $sort_order,
             $is_active,
+            $wa,
             $id
         );
 

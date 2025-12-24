@@ -29,9 +29,11 @@ $baseUrl = $baseUrl ?? '/eventprint/public';
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
     position: sticky;
     top: 100px;
+    /* Scrollable wrapper per requirement */
     height: fit-content;
     max-height: calc(100vh - 120px);
     overflow-y: auto;
+    /* Allow flow */
     display: block;
   }
 
@@ -46,11 +48,13 @@ $baseUrl = $baseUrl ?? '/eventprint/public';
   /* --- SIDEBAR GROUP --- */
   .category-list {
     list-style: none;
+    /* Reset */
     padding: 0;
     margin: 0;
     display: flex;
     flex-direction: column;
     gap: 0;
+    /* Handled by margins */
   }
 
   .sidebar-group {
@@ -61,15 +65,20 @@ $baseUrl = $baseUrl ?? '/eventprint/public';
 
   /* --- HEADER BUTTON --- */
   .sidebar-head {
+    /* Reset button styles */
     appearance: none;
     background: transparent;
     border: none;
+
+    /* Layout */
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
     padding: 10px 12px;
     border-radius: 10px;
+
+    /* Font */
     font-family: var(--font-body);
     font-size: 1rem;
     color: var(--gray-600);
@@ -105,29 +114,42 @@ $baseUrl = $baseUrl ?? '/eventprint/public';
 
   /* --- SUBMENU BODY (Flow Layout) --- */
   .sidebar-body {
+    /* Flex Column Layout */
     display: flex;
     flex-direction: column;
     gap: 4px;
+    /* Gap between items */
     padding: 6px 0 6px 0;
+    /* Padding vertical */
     margin-left: 0;
+    /* Reset */
     width: 100%;
     position: static;
+    /* NO ABSOLUTE */
   }
 
+  /* Hidden state handled by [hidden] attribute */
   .sidebar-body[hidden] {
     display: none;
   }
 
   /* --- SUBMENU ITEM (Button) --- */
   .sidebar-item {
+    /* Reset button styles */
     appearance: none;
     background: transparent;
     border: none;
+
+    /* Layout */
     display: flex;
     align-items: center;
     width: 100%;
     height: 38px;
+    /* Fixed height per request */
     padding: 0 12px 0 32px;
+    /* Indent */
+
+    /* Font */
     font-family: var(--font-body);
     font-size: 0.95rem;
     color: var(--gray-500);
@@ -196,9 +218,20 @@ $baseUrl = $baseUrl ?? '/eventprint/public';
       margin-bottom: 24px;
       max-height: none;
     }
+  }
 
-    .products-grid {
-      grid-template-columns: 1fr;
+  /* Small mobile optimization now handled in main.css */
+
+  /* Animation */
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-5px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
 </style>

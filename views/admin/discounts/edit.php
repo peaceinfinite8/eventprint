@@ -4,10 +4,15 @@ $item = $item ?? null;
 $products = $products ?? [];
 $csrfToken = $csrfToken ?? '';
 
-if (!$item) { echo "Data tidak ditemukan"; return; }
+if (!$item) {
+  echo "Data tidak ditemukan";
+  return;
+}
 
-function dtLocal(?string $dt): string {
-  if (!$dt) return '';
+function dtLocal(?string $dt): string
+{
+  if (!$dt)
+    return '';
   $ts = strtotime($dt);
   return $ts ? date('Y-m-d\TH:i', $ts) : '';
 }
@@ -17,7 +22,7 @@ function dtLocal(?string $dt): string {
 
 <div class="card">
   <div class="card-body">
-    <form method="post" action="<?php echo $baseUrl; ?>/admin/discounts/update/<?php echo (int)$item['id']; ?>">
+    <form method="post" action="<?php echo $baseUrl; ?>/admin/discounts/update/<?php echo (int) $item['id']; ?>">
       <input type="hidden" name="_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
 
       <div class="row g-3">
@@ -25,37 +30,40 @@ function dtLocal(?string $dt): string {
           <label class="form-label">Produk *</label>
           <select class="form-select" name="product_id" required>
             <?php foreach ($products as $p): ?>
-              <option value="<?php echo (int)$p['id']; ?>" <?php echo ((int)$item['product_id'] === (int)$p['id']) ? 'selected' : ''; ?>>
-                <?php echo htmlspecialchars($p['name']); ?> (Stok: <?php echo (int)$p['stock']; ?>)
+              <option value="<?php echo (int) $p['id']; ?>" <?php echo ((int) $item['product_id'] === (int) $p['id']) ? 'selected' : ''; ?>>
+                <?php echo htmlspecialchars($p['name']); ?> (Stok: <?php echo (int) $p['stock']; ?>)
               </option>
             <?php endforeach; ?>
           </select>
-          <div class="form-text">qty_total tidak boleh <strong>lebih kecil</strong> dari qty_used.</div>
         </div>
 
         <div class="col-md-3">
           <label class="form-label">Tipe *</label>
           <select class="form-select" name="discount_type" required>
-            <option value="percent" <?php echo ($item['discount_type'] === 'percent') ? 'selected' : ''; ?>>Percent (%)</option>
-            <option value="fixed" <?php echo ($item['discount_type'] === 'fixed') ? 'selected' : ''; ?>>Potongan (Rp)</option>
+            <option value="percent" <?php echo ($item['discount_type'] === 'percent') ? 'selected' : ''; ?>>Percent (%)
+            </option>
+            <option value="fixed" <?php echo ($item['discount_type'] === 'fixed') ? 'selected' : ''; ?>>Potongan (Rp)
+            </option>
           </select>
         </div>
 
         <div class="col-md-3">
           <label class="form-label">Nilai Diskon *</label>
           <input class="form-control" type="number" step="0.01" min="0" name="discount_value" required
-                 value="<?php echo htmlspecialchars((string)$item['discount_value']); ?>">
+            value="<?php echo htmlspecialchars((string) $item['discount_value']); ?>">
         </div>
 
 
         <div class="col-md-4">
           <label class="form-label">Mulai</label>
-          <input class="form-control" type="datetime-local" name="start_at" value="<?php echo htmlspecialchars(dtLocal($item['start_at'] ?? null)); ?>">
+          <input class="form-control" type="datetime-local" name="start_at"
+            value="<?php echo htmlspecialchars(dtLocal($item['start_at'] ?? null)); ?>">
         </div>
 
         <div class="col-md-4">
           <label class="form-label">Selesai</label>
-          <input class="form-control" type="datetime-local" name="end_at" value="<?php echo htmlspecialchars(dtLocal($item['end_at'] ?? null)); ?>">
+          <input class="form-control" type="datetime-local" name="end_at"
+            value="<?php echo htmlspecialchars(dtLocal($item['end_at'] ?? null)); ?>">
         </div>
 
         <div class="col-md-4 d-flex align-items-end">

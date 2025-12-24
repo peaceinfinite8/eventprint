@@ -15,7 +15,7 @@ class Post
         $db = $this->db();
         $res = $db->query("SELECT COUNT(*) AS total FROM posts");
         if ($res && $row = $res->fetch_assoc()) {
-            return (int)$row['total'];
+            return (int) $row['total'];
         }
         return 0;
     }
@@ -25,7 +25,7 @@ class Post
         $db = $this->db();
         $res = $db->query("SELECT COUNT(*) AS total FROM posts WHERE is_published = 1");
         if ($res && $row = $res->fetch_assoc()) {
-            return (int)$row['total'];
+            return (int) $row['total'];
         }
         return 0;
     }
@@ -35,17 +35,17 @@ class Post
         $db = $this->db();
         $res = $db->query("SELECT COUNT(*) AS total FROM posts WHERE is_published = 0");
         if ($res && $row = $res->fetch_assoc()) {
-            return (int)$row['total'];
+            return (int) $row['total'];
         }
         return 0;
     }
 
     public function getLatest(int $limit = 5): array
     {
-        $db    = $this->db();
+        $db = $this->db();
         $limit = max(1, $limit);
 
-        $sql  = "SELECT *
+        $sql = "SELECT *
                  FROM posts
                  ORDER BY COALESCE(published_at, created_at) DESC
                  LIMIT ?";
@@ -56,8 +56,8 @@ class Post
 
         $stmt->bind_param('i', $limit);
         $stmt->execute();
-        $res   = $stmt->get_result();
-        $rows  = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+        $res = $stmt->get_result();
+        $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
         $stmt->close();
 
         return $rows;
@@ -65,26 +65,26 @@ class Post
 
     public function searchWithPagination(?string $keyword, int $page, int $perPage): array
     {
-        $db      = $this->db();
-        $page    = max(1, $page);
+        $db = $this->db();
+        $page = max(1, $page);
         $perPage = max(1, $perPage);
-        $offset  = ($page - 1) * $perPage;
+        $offset = ($page - 1) * $perPage;
 
         $keyword = $keyword !== null ? trim($keyword) : null;
-        $where   = '';
-        $params  = [];
-        $types   = '';
+        $where = '';
+        $params = [];
+        $types = '';
 
         if ($keyword !== null && $keyword !== '') {
-            $where   = "WHERE title LIKE ? OR excerpt LIKE ?";
-            $like    = '%' . $keyword . '%';
-            $params  = [$like, $like];
-            $types   = 'ss';
+            $where = "WHERE title LIKE ? OR excerpt LIKE ?";
+            $like = '%' . $keyword . '%';
+            $params = [$like, $like];
+            $types = 'ss';
         }
 
         // total
         $sqlCount = "SELECT COUNT(*) AS total FROM posts " . $where;
-        $stmt     = $db->prepare($sqlCount);
+        $stmt = $db->prepare($sqlCount);
         if (!$stmt) {
             throw new Exception("Prepare failed: " . $db->error);
         }
@@ -92,9 +92,9 @@ class Post
             $stmt->bind_param($types, ...$params);
         }
         $stmt->execute();
-        $res   = $stmt->get_result();
-        $row   = $res ? $res->fetch_assoc() : null;
-        $total = $row ? (int)$row['total'] : 0;
+        $res = $stmt->get_result();
+        $row = $res ? $res->fetch_assoc() : null;
+        $total = $row ? (int) $row['total'] : 0;
         $stmt->close();
 
         // data
@@ -110,21 +110,21 @@ class Post
 
         if ($params) {
             $mergedParams = [...$params, $offset, $perPage];
-            $mergedTypes  = $types . 'ii';
+            $mergedTypes = $types . 'ii';
             $stmt->bind_param($mergedTypes, ...$mergedParams);
         } else {
             $stmt->bind_param('ii', $offset, $perPage);
         }
 
         $stmt->execute();
-        $res   = $stmt->get_result();
+        $res = $stmt->get_result();
         $items = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
         $stmt->close();
 
         return [
-            'items'    => $items,
-            'total'    => $total,
-            'page'     => $page,
+            'items' => $items,
+            'total' => $total,
+            'page' => $page,
             'per_page' => $perPage,
         ];
     }
@@ -135,7 +135,7 @@ class Post
     {
         $db = $this->db();
 
-        $sql  = "SELECT * FROM posts WHERE id = ? LIMIT 1";
+        $sql = "SELECT * FROM posts WHERE id = ? LIMIT 1";
         $stmt = $db->prepare($sql);
         if (!$stmt) {
             throw new Exception("Prepare failed: " . $db->error);
@@ -153,7 +153,7 @@ class Post
     {
         $db = $this->db();
 
-        $sql  = "SELECT * FROM posts WHERE slug = ? LIMIT 1";
+        $sql = "SELECT * FROM posts WHERE slug = ? LIMIT 1";
         $stmt = $db->prepare($sql);
         if (!$stmt) {
             throw new Exception("Prepare failed: " . $db->error);
@@ -173,12 +173,12 @@ class Post
     {
         $db = $this->db();
 
-        $title   = trim($data['title'] ?? '');
-        $slug    = trim($data['slug'] ?? '');
+        $title = trim($data['title'] ?? '');
+        $slug = trim($data['slug'] ?? '');
         $excerpt = trim($data['excerpt'] ?? '');
         $content = trim($data['content'] ?? '');
-        $thumb   = trim($data['thumbnail'] ?? '');
-        $isPublished = (int)($data['is_published'] ?? 0);
+        $thumb = trim($data['thumbnail'] ?? '');
+        $isPublished = (int) ($data['is_published'] ?? 0);
 
         if ($title === '' || $content === '') {
             throw new Exception("Title dan content wajib diisi.");
@@ -196,26 +196,39 @@ class Post
 
         $publishedAt = $isPublished ? date('Y-m-d H:i:s') : null;
 
-        $sql  = "INSERT INTO posts
-                 (title, slug, excerpt, content, thumbnail, is_published, published_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO posts
+                 (title, slug, excerpt, content, thumbnail, is_published, published_at, post_type, bg_color, is_featured, post_category, external_url, link_target)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $db->prepare($sql);
         if (!$stmt) {
             throw new Exception("Prepare failed: " . $db->error);
         }
 
+        $pType = $data['post_type'] ?? 'normal';
+        $pBg = $data['bg_color'] ?? null;
+        $pFeat = (int) ($data['is_featured'] ?? 0);
+        $pCat = $data['post_category'] ?? null;
+        $pExt = $data['external_url'] ?? null;
+        $pTarget = $data['link_target'] ?? '_self';
+
         $stmt->bind_param(
-            'sssssis',
+            'sssssisssssss',
             $title,
             $slug,
             $excerpt,
             $content,
             $thumb,
             $isPublished,
-            $publishedAt
+            $publishedAt,
+            $pType,
+            $pBg,
+            $pFeat,
+            $pCat,
+            $pExt,
+            $pTarget
         );
         $stmt->execute();
-        $id = (int)$stmt->insert_id;
+        $id = (int) $stmt->insert_id;
         $stmt->close();
 
         return $id;
@@ -223,18 +236,18 @@ class Post
 
     public function update(int $id, array $data): void
     {
-        $db   = $this->db();
+        $db = $this->db();
         $post = $this->find($id);
         if (!$post) {
             throw new Exception("Post tidak ditemukan.");
         }
 
-        $title   = trim($data['title'] ?? '');
-        $slug    = trim($data['slug'] ?? '');
+        $title = trim($data['title'] ?? '');
+        $slug = trim($data['slug'] ?? '');
         $excerpt = trim($data['excerpt'] ?? '');
         $content = trim($data['content'] ?? '');
-        $thumb   = trim($data['thumbnail'] ?? '');
-        $isPublished = (int)($data['is_published'] ?? 0);
+        $thumb = trim($data['thumbnail'] ?? '');
+        $isPublished = (int) ($data['is_published'] ?? 0);
 
         if ($title === '' || $content === '') {
             throw new Exception("Title dan content wajib diisi.");
@@ -269,7 +282,13 @@ class Post
                     content      = ?,
                     thumbnail    = ?,
                     is_published = ?,
-                    published_at = ?
+                    published_at = ?,
+                    post_type = ?,
+                    bg_color = ?,
+                    is_featured = ?,
+                    post_category = ?,
+                    external_url = ?,
+                    link_target = ?
                 WHERE id = ?";
 
         $stmt = $db->prepare($sql);
@@ -277,8 +296,15 @@ class Post
             throw new Exception("Prepare failed: " . $db->error);
         }
 
+        $pType = $data['post_type'] ?? 'normal';
+        $pBg = $data['bg_color'] ?? null;
+        $pFeat = (int) ($data['is_featured'] ?? 0);
+        $pCat = $data['post_category'] ?? null;
+        $pExt = $data['external_url'] ?? null;
+        $pTarget = $data['link_target'] ?? '_self';
+
         $stmt->bind_param(
-            'sssssisi',
+            'sssssisssssssi',
             $title,
             $slug,
             $excerpt,
@@ -286,6 +312,12 @@ class Post
             $thumb,
             $isPublished,
             $publishedAt,
+            $pType,
+            $pBg,
+            $pFeat,
+            $pCat,
+            $pExt,
+            $pTarget,
             $id
         );
         $stmt->execute();
@@ -348,7 +380,7 @@ class Post
     {
         $db = $this->db();
 
-        $sql  = "DELETE FROM posts WHERE id = ? LIMIT 1";
+        $sql = "DELETE FROM posts WHERE id = ? LIMIT 1";
         $stmt = $db->prepare($sql);
         if (!$stmt) {
             throw new Exception("Prepare failed: " . $db->error);

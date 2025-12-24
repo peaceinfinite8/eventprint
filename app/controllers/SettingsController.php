@@ -4,6 +4,7 @@
 require_once __DIR__ . '/../core/Controller.php';
 require_once __DIR__ . '/../models/Setting.php';
 require_once __DIR__ . '/../helpers/Security.php';
+require_once __DIR__ . '/../helpers/logging.php';
 
 class SettingsController extends Controller
 {
@@ -20,7 +21,7 @@ class SettingsController extends Controller
         $settings = $this->setting->getAll();
 
         $this->renderAdmin('settings/index', [
-            'title'    => 'General Settings',
+            'title' => 'General Settings',
             'settings' => $settings,
         ], 'General Settings');
     }
@@ -39,15 +40,36 @@ class SettingsController extends Controller
         $current = $this->setting->getAll();
 
         $data = [
-            'site_name'    => trim($_POST['site_name'] ?? ''),
+            'site_name' => trim($_POST['site_name'] ?? ''),
             'site_tagline' => trim($_POST['site_tagline'] ?? ''),
-            'phone'        => trim($_POST['phone'] ?? ''),
-            'email'        => trim($_POST['email'] ?? ''),
-            'address'      => trim($_POST['address'] ?? ''),
-            'facebook'     => trim($_POST['facebook'] ?? ''),
-            'instagram'    => trim($_POST['instagram'] ?? ''),
-            'whatsapp'     => trim($_POST['whatsapp'] ?? ''),
+            'phone' => trim($_POST['phone'] ?? ''),
+            'email' => trim($_POST['email'] ?? ''),
+            'address' => trim($_POST['address'] ?? ''),
+            'maps_link' => trim($_POST['maps_link'] ?? ''),
+            'facebook' => trim($_POST['facebook'] ?? ''),
+            'instagram' => trim($_POST['instagram'] ?? ''),
+            'tiktok' => trim($_POST['tiktok'] ?? ''),
+            'twitter' => trim($_POST['twitter'] ?? ''),
+            'youtube' => trim($_POST['youtube'] ?? ''),
+            'linkedin' => trim($_POST['linkedin'] ?? ''),
+            'whatsapp' => trim($_POST['whatsapp'] ?? ''),
+            'gmaps_embed' => trim($_POST['gmaps_embed'] ?? ''),
+            'operating_hours' => trim($_POST['operating_hours'] ?? ''),
         ];
+
+        // Handle Sales Contacts (JSON)
+        $contactsRaw = $_POST['sales_contacts'] ?? [];
+        $contacts = [];
+        if (isset($contactsRaw['name']) && is_array($contactsRaw['name'])) {
+            for ($i = 0; $i < count($contactsRaw['name']); $i++) {
+                $n = trim($contactsRaw['name'][$i] ?? '');
+                $p = trim($contactsRaw['number'][$i] ?? '');
+                if ($n !== '' && $p !== '') {
+                    $contacts[] = ['name' => $n, 'number' => $p];
+                }
+            }
+        }
+        $data['sales_contacts'] = !empty($contacts) ? json_encode($contacts) : null;
 
         if ($data['site_name'] === '') {
             $this->redirectWithError(
@@ -58,9 +80,9 @@ class SettingsController extends Controller
 
         // ===== Upload Logo =====
         if (!empty($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
-            $tmpPath  = $_FILES['logo']['tmp_name'];
+            $tmpPath = $_FILES['logo']['tmp_name'];
             $fileName = $_FILES['logo']['name'];
-            $fileSize = (int)$_FILES['logo']['size'];
+            $fileSize = (int) $_FILES['logo']['size'];
 
             $maxSize = 2 * 1024 * 1024; // 2MB
             if ($fileSize > $maxSize) {
@@ -68,7 +90,7 @@ class SettingsController extends Controller
             }
 
             $finfo = finfo_open(FILEINFO_MIME_TYPE);
-            $mime  = finfo_file($finfo, $tmpPath);
+            $mime = finfo_file($finfo, $tmpPath);
             finfo_close($finfo);
 
             $allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
@@ -81,9 +103,9 @@ class SettingsController extends Controller
                 mkdir($uploadDir, 0777, true);
             }
 
-            $ext      = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+            $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
             $safeBase = preg_replace('/[^a-zA-Z0-9_\-]/', '_', pathinfo($fileName, PATHINFO_FILENAME));
-            $newName  = 'logo_' . $safeBase . '_' . time() . '.' . $ext;
+            $newName = 'logo_' . $safeBase . '_' . time() . '.' . $ext;
 
             $destPath = $uploadDir . '/' . $newName;
 
@@ -103,6 +125,8 @@ class SettingsController extends Controller
         }
 
         $this->setting->saveAll($data);
+
+        log_admin_action('UPDATE', 'Memperbarui pengaturan umum website', ['entity' => 'settings']);
 
         $this->redirectWithSuccess(
             $this->baseUrl('admin/settings'),

@@ -30,18 +30,30 @@ async function initPage() {
   await initPartials();
 
   // Load page-specific renderer
-  // Check specific pages before generic ones to avoid false matches
-  if (currentPage.includes('product-detail')) {
+  // Use regex patterns for accurate route matching
+
+  // Product detail: /products/{slug} (has something after /products/)
+  if (/\/products\/[^\/]+\/?$/.test(currentPage)) {
     if (typeof initProductDetailPage === 'function') initProductDetailPage();
-  } else if (currentPage.includes('our-home')) {
-    if (typeof initOurHomePage === 'function') initOurHomePage();
-  } else if (currentPage.includes('products')) {
+  }
+  // Product list: /products or /products/
+  else if (/\/products\/?$/.test(currentPage)) {
     if (typeof initProductsPage === 'function') initProductsPage();
-  } else if (currentPage.includes('home') || currentPage === '/') {
+  }
+  // Our Home
+  else if (currentPage.includes('our-home')) {
+    if (typeof initOurHomePage === 'function') initOurHomePage();
+  }
+  // Homepage
+  else if (currentPage.includes('home') || currentPage.match(/\/public\/?$/) || currentPage === '/') {
     if (typeof initHomePage === 'function') initHomePage();
-  } else if (currentPage.includes('blog')) {
+  }
+  // Blog
+  else if (currentPage.includes('blog') || currentPage.includes('articles')) {
     if (typeof initBlogPage === 'function') initBlogPage();
-  } else if (currentPage.includes('contact')) {
+  }
+  // Contact
+  else if (currentPage.includes('contact')) {
     if (typeof initContactPage === 'function') initContactPage();
   }
 }

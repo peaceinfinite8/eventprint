@@ -2,7 +2,7 @@
 // views/admin/dashboard/index.php
 
 $baseUrl = $vars['baseUrl'] ?? '/eventprint/public';
-$stats   = $vars['stats'] ?? [
+$stats = $vars['stats'] ?? [
   'products_active' => 0,
   'categories_active' => 0,
   'hero_active' => 0,
@@ -12,109 +12,145 @@ $stats   = $vars['stats'] ?? [
 
 $latestProducts = $vars['latestProducts'] ?? [];
 $latestMessages = $vars['latestMessages'] ?? [];
+$latestLogs = $vars['latestLogs'] ?? [];
+
+// Greetings logic
+$hour = (int) date('H');
+if ($hour < 12)
+  $greeting = "Selamat Pagi";
+else if ($hour < 18)
+  $greeting = "Selamat Sore";
+else
+  $greeting = "Selamat Malam";
 ?>
 
-<h1 class="h3 mb-3">Dashboard</h1>
+<div class="welcome-section animate-enter">
+  <div class="welcome-content">
+    <h1 class="welcome-title"><?= $greeting ?>, Admin! 👋</h1>
+    <p class="welcome-subtitle">Here's what's happening with your store today.</p>
+  </div>
+</div>
 
-<div class="row g-3 mb-4">
-  <div class="col-12 col-md-6 col-xl-3">
-    <div class="card border-0 shadow-sm">
-      <div class="card-body d-flex justify-content-between">
-        <div>
-          <div class="text-muted small">Produk Aktif</div>
-          <div class="h2 mb-0"><?= (int)$stats['products_active'] ?></div>
+<!-- Stats Grid -->
+<div class="row g-4 mb-4">
+  <!-- Active Products -->
+  <div class="col-12 col-md-6 col-xl-3 animate-enter delay-1">
+    <div class="dash-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div class="stat-icon-wrapper bg-light-primary">
+          <i class="fa-solid fa-box-open"></i>
         </div>
-        <div><i class="align-middle" data-feather="box"></i></div>
+        <a href="<?= $baseUrl ?>/admin/products" class="stat-link" title="Manage Products">
+          <i class="fa-solid fa-arrow-right"></i>
+        </a>
       </div>
-      <div class="card-footer bg-transparent border-0 pt-0">
-        <a href="<?= $baseUrl ?>/admin/products" class="small">Kelola Produk →</a>
-      </div>
+      <div class="stat-value"><?= (int) $stats['products_active'] ?></div>
+      <div class="stat-label">Active Products</div>
     </div>
   </div>
 
-  <div class="col-12 col-md-6 col-xl-3">
-    <div class="card border-0 shadow-sm">
-      <div class="card-body d-flex justify-content-between">
-        <div>
-          <div class="text-muted small">Kategori Aktif</div>
-          <div class="h2 mb-0"><?= (int)$stats['categories_active'] ?></div>
+  <!-- Active Categories -->
+  <div class="col-12 col-md-6 col-xl-3 animate-enter delay-2">
+    <div class="dash-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div class="stat-icon-wrapper bg-light-info">
+          <i class="fa-solid fa-tags"></i>
         </div>
-        <div><i class="align-middle" data-feather="tag"></i></div>
+        <a href="<?= $baseUrl ?>/admin/product-categories" class="stat-link" title="Manage Categories">
+          <i class="fa-solid fa-arrow-right"></i>
+        </a>
       </div>
-      <div class="card-footer bg-transparent border-0 pt-0">
-        <a href="<?= $baseUrl ?>/admin/product-categories" class="small">Kelola Kategori →</a>
-      </div>
+      <div class="stat-value"><?= (int) $stats['categories_active'] ?></div>
+      <div class="stat-label">Product Categories</div>
     </div>
   </div>
 
-  <div class="col-12 col-md-6 col-xl-3">
-    <div class="card border-0 shadow-sm">
-      <div class="card-body d-flex justify-content-between">
-        <div>
-          <div class="text-muted small">Hero Aktif</div>
-          <div class="h2 mb-0"><?= (int)$stats['hero_active'] ?></div>
+  <!-- Messages -->
+  <div class="col-12 col-md-6 col-xl-3 animate-enter delay-3">
+    <div class="dash-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div class="stat-icon-wrapper bg-light-warning">
+          <i class="fa-regular fa-envelope"></i>
         </div>
-        <div><i class="align-middle" data-feather="image"></i></div>
+        <a href="<?= $baseUrl ?>/admin/contact-messages" class="stat-link" title="Read Messages">
+          <i class="fa-solid fa-arrow-right"></i>
+        </a>
       </div>
-      <div class="card-footer bg-transparent border-0 pt-0">
-        <a href="<?= $baseUrl ?>/admin/home" class="small">Konten Beranda →</a>
+      <div class="stat-value">
+        <?= (int) $stats['messages_total'] ?>
+        <?php if ((int) $stats['messages_unread'] > 0): ?>
+          <span style="font-size:14px; color:var(--dash-danger);">
+            (<?= (int) $stats['messages_unread'] ?> New)
+          </span>
+        <?php endif; ?>
       </div>
+      <div class="stat-label">Messages Received</div>
     </div>
   </div>
 
-  <div class="col-12 col-md-6 col-xl-3">
-    <div class="card border-0 shadow-sm">
-      <div class="card-body d-flex justify-content-between">
-        <div>
-          <div class="text-muted small">Pesan Masuk</div>
-          <div class="h2 mb-0">
-            <?= (int)$stats['messages_total'] ?>
-            <?php if ((int)$stats['messages_unread'] > 0): ?>
-              <span class="badge bg-danger ms-2"><?= (int)$stats['messages_unread'] ?> baru</span>
-            <?php endif; ?>
-          </div>
+  <!-- Hero Active -->
+  <div class="col-12 col-md-6 col-xl-3 animate-enter delay-4">
+    <div class="dash-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div class="stat-icon-wrapper bg-light-success">
+          <i class="fa-regular fa-image"></i>
         </div>
-        <div><i class="align-middle" data-feather="mail"></i></div>
+        <a href="<?= $baseUrl ?>/admin/home" class="stat-link" title="Manage Content">
+          <i class="fa-solid fa-arrow-right"></i>
+        </a>
       </div>
-      <div class="card-footer bg-transparent border-0 pt-0">
-        <a href="<?= $baseUrl ?>/admin/contact" class="small">Lihat Pesan →</a>
-      </div>
+      <div class="stat-value"><?= (int) $stats['hero_active'] ?></div>
+      <div class="stat-label">Active Sliders</div>
     </div>
   </div>
 </div>
 
-<div class="row g-3">
-  <div class="col-12 col-xl-6">
-    <div class="card border-0 shadow-sm">
-      <div class="card-header bg-transparent">
-        <h5 class="card-title mb-0">Produk Terbaru</h5>
+<!-- Main Content Grid -->
+<div class="row g-4">
+  <!-- Recent Products -->
+  <div class="col-12 col-xl-8 animate-enter delay-2">
+    <div class="dash-container-card">
+      <div class="dash-header">
+        <h5 class="dash-title">Latest Products</h5>
+        <a href="<?= $baseUrl ?>/admin/products" class="btn btn-sm btn-light">View All</a>
       </div>
-      <div class="card-body p-0">
+      <div class="dash-body">
         <?php if (empty($latestProducts)): ?>
-          <div class="p-3 text-muted">Belum ada data produk.</div>
+          <div class="empty-state">
+            <i class="fa-solid fa-box-open empty-icon"></i>
+            <p>No products found.</p>
+          </div>
         <?php else: ?>
           <div class="table-responsive">
-            <table class="table mb-0 align-middle">
+            <table class="table-custom">
               <thead>
                 <tr>
-                  <th>Nama</th>
-                  <th style="width:120px;">Status</th>
-                  <th style="width:140px;">Aksi</th>
+                  <th>Product Name</th>
+                  <th>Created At</th>
+                  <th>Status</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
-                <?php foreach ($latestProducts as $p): ?>
+                <?php foreach (array_slice($latestProducts, 0, 5) as $p): ?>
                   <tr>
-                    <td><?= htmlspecialchars($p['name'] ?? '') ?></td>
                     <td>
-                      <?php $active = (int)($p['is_active'] ?? 1) === 1; ?>
-                      <span class="badge <?= $active ? 'bg-success' : 'bg-secondary' ?>">
-                        <?= $active ? 'Aktif' : 'Nonaktif' ?>
+                      <div class="fw-bold"><?= htmlspecialchars($p['name'] ?? '') ?></div>
+                    </td>
+                    <td style="color:var(--dash-text-muted);">
+                      <?php echo isset($p['created_at']) ? date('M d, Y', strtotime($p['created_at'])) : '-'; ?>
+                    </td>
+                    <td>
+                      <?php $active = ((int) ($p['is_active'] ?? 0) === 1); ?>
+                      <span class="dash-badge <?= $active ? 'active' : 'inactive' ?>">
+                        <?= $active ? 'Active' : 'Inactive' ?>
                       </span>
                     </td>
                     <td>
-                      <a class="btn btn-sm btn-outline-primary"
-                         href="<?= $baseUrl ?>/admin/products/edit/<?= (int)($p['id'] ?? 0) ?>">Edit</a>
+                      <a href="<?= $baseUrl ?>/admin/products/edit/<?= (int) ($p['id'] ?? 0) ?>"
+                        class="btn btn-sm btn-light">
+                        Edit
+                      </a>
                     </td>
                   </tr>
                 <?php endforeach; ?>
@@ -123,44 +159,76 @@ $latestMessages = $vars['latestMessages'] ?? [];
           </div>
         <?php endif; ?>
       </div>
-      <div class="card-footer bg-transparent">
-        <a href="<?= $baseUrl ?>/admin/products" class="small">Buka semua produk →</a>
-      </div>
     </div>
   </div>
 
-  <div class="col-12 col-xl-6">
-    <div class="card border-0 shadow-sm">
-      <div class="card-header bg-transparent d-flex align-items-center justify-content-between">
-        <h5 class="card-title mb-0">Pesan Terbaru</h5>
-        <a href="<?= $baseUrl ?>/admin/contact" class="small">Buka semua →</a>
+  <!-- Sidebar: Recent Messages & Activity -->
+  <div class="col-12 col-xl-4 d-flex flex-column gap-4 animate-enter delay-3">
+
+    <!-- Recent Messages -->
+    <div class="dash-container-card">
+      <div class="dash-header">
+        <h5 class="dash-title">Recent Messages</h5>
+        <a href="<?= $baseUrl ?>/admin/contact-messages" class="btn btn-sm btn-light">View All</a>
       </div>
-      <div class="card-body">
+      <div class="dash-body">
         <?php if (empty($latestMessages)): ?>
-          <div class="text-muted">Belum ada pesan masuk.</div>
+          <div class="empty-state">
+            <i class="fa-regular fa-envelope-open empty-icon"></i>
+            <p>No messages yet.</p>
+          </div>
         <?php else: ?>
-          <ul class="list-group list-group-flush">
-            <?php foreach ($latestMessages as $m): ?>
-              <li class="list-group-item px-0">
-                <div class="d-flex justify-content-between">
-                  <div>
-                    <div class="fw-semibold">
-                      <?= htmlspecialchars(trim(($m['name'] ?? '') ?: 'Pengunjung')) ?>
-                      <span class="text-muted small">· <?= htmlspecialchars($m['email'] ?? '') ?></span>
-                    </div>
-                    <div class="text-muted small">
-                      <?= htmlspecialchars(mb_strimwidth((string)($m['message'] ?? ''), 0, 90, '…')) ?>
-                    </div>
-                  </div>
-                  <div class="text-muted small">
-                    <?= htmlspecialchars((string)($m['created_at'] ?? '')) ?>
+          <div class="msg-list">
+            <?php foreach (array_slice($latestMessages, 0, 4) as $m): ?>
+              <div class="msg-list-item">
+                <div class="user-meta">
+                  <span class="user-name"><?= htmlspecialchars(trim(($m['name'] ?? '') ?: 'Guest')) ?></span>
+                  <span class="user-email"><?= htmlspecialchars($m['email'] ?? '') ?></span>
+                  <div class="mt-1 small text-muted">
+                    <?= htmlspecialchars(mb_strimwidth((string) ($m['message'] ?? ''), 0, 50, '…')) ?>
                   </div>
                 </div>
-              </li>
+                <small class="text-muted" style="white-space:nowrap; font-size:11px;">
+                  <?= isset($m['created_at']) ? date('d M', strtotime($m['created_at'])) : '' ?>
+                </small>
+              </div>
             <?php endforeach; ?>
-          </ul>
+          </div>
         <?php endif; ?>
       </div>
     </div>
+
+    <!-- System Logs (Mini) -->
+    <?php if (!empty($latestLogs)): ?>
+      <div class="dash-container-card">
+        <div class="dash-header">
+          <h5 class="dash-title">System Activity</h5>
+        </div>
+        <div class="dash-body p-0">
+          <div class="table-responsive" style="max-height: 250px; overflow-y:auto;">
+            <table class="table-custom">
+              <tbody>
+                <?php foreach (array_slice($latestLogs, 0, 5) as $log): ?>
+                  <tr>
+                    <td width="10">
+                      <div style="width:8px; height:8px; border-radius:50%; background: #94a3b8;"></div>
+                    </td>
+                    <td>
+                      <div style="font-size:13px; line-height:1.3;">
+                        <?= htmlspecialchars(mb_strimwidth($log['message'], 0, 60, '…')) ?>
+                      </div>
+                      <div style="font-size:11px; color:var(--dash-text-muted); margin-top:2px;">
+                        <?= date('H:i', strtotime($log['created_at'])) ?> · <?= htmlspecialchars($log['level']) ?>
+                      </div>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    <?php endif; ?>
+
   </div>
 </div>

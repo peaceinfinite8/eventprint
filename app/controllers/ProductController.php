@@ -4,6 +4,7 @@
 require_once __DIR__ . '/../helpers/Security.php';
 require_once __DIR__ . '/../helpers/Validation.php';
 require_once __DIR__ . '/../helpers/Upload.php';
+require_once __DIR__ . '/../helpers/logging.php';
 require_once __DIR__ . '/../models/Product.php';
 
 class ProductController extends Controller
@@ -30,7 +31,7 @@ class ProductController extends Controller
     {
         $base = $this->slugifyBase($name);
         $slug = $base;
-        $i    = 2;
+        $i = 2;
 
         while ($this->product->slugExists($slug, $ignoreId)) {
             $slug = $base . '-' . $i;
@@ -42,41 +43,44 @@ class ProductController extends Controller
     protected function getCategories(): array
     {
         $data = [];
-        $sql  = "SELECT id, name
+        $sql = "SELECT id, name
                  FROM product_categories
                  WHERE is_active = 1
                  ORDER BY sort_order ASC, name ASC";
-        $res  = $this->db->query($sql);
-        if ($res) while ($row = $res->fetch_assoc()) $data[] = $row;
+        $res = $this->db->query($sql);
+        if ($res)
+            while ($row = $res->fetch_assoc())
+                $data[] = $row;
         return $data;
     }
 
     protected function uploadThumbnail(?array $file): ?string
     {
-        if (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) return null;
+        if (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK)
+            return null;
         return Upload::image($file, 'products');
     }
 
     public function adminList()
     {
-        $q          = trim($_GET['q'] ?? '');
-        $categoryId = ($_GET['category_id'] ?? '') !== '' ? (int)$_GET['category_id'] : null;
+        $q = trim($_GET['q'] ?? '');
+        $categoryId = ($_GET['category_id'] ?? '') !== '' ? (int) $_GET['category_id'] : null;
 
-        $page    = max(1, (int)($_GET['page'] ?? 1));
+        $page = max(1, (int) ($_GET['page'] ?? 1));
         $perPage = 10;
 
         $categoriesOptions = $this->getCategories();
         $result = $this->product->searchWithPagination($q !== '' ? $q : null, $categoryId, $page, $perPage);
 
         $this->renderAdmin('product/index', [
-            'products'           => $result['items'],
-            'categoriesOptions'  => $categoriesOptions,
-            'filter_q'           => $q,
+            'products' => $result['items'],
+            'categoriesOptions' => $categoriesOptions,
+            'filter_q' => $q,
             'filter_category_id' => $categoryId,
-            'pagination'         => [
-                'total'    => (int)$result['total'],
-                'page'     => (int)$result['page'],
-                'per_page' => (int)$result['per_page'],
+            'pagination' => [
+                'total' => (int) $result['total'],
+                'page' => (int) $result['page'],
+                'per_page' => (int) $result['per_page'],
             ],
         ], 'All Produk');
     }
@@ -91,30 +95,49 @@ class ProductController extends Controller
 
     public function store()
     {
-        try { Security::requireCsrfToken(); }
-        catch (Exception $e) { http_response_code(419); echo "CSRF tidak valid."; return; }
+        try {
+            Security::requireCsrfToken();
+        } catch (Exception $e) {
+            http_response_code(419);
+            echo "CSRF tidak valid.";
+            return;
+        }
 
         $rules = [
-            'name'              => 'required|min:3|max:150',
-            'category_id'       => 'nullable|integer',
+            'name' => 'required|min:3|max:150',
+            'category_id' => 'nullable|integer',
             'short_description' => 'nullable|max:255',
-            'description'       => 'nullable',
-            'base_price'        => 'required|numeric|min_value:0',
-            'stock'             => 'required|integer|min_value:0',
+            'description' => 'nullable',
+            'base_price' => 'required|numeric|min_value:0',
+            'stock' => 'required|integer|min_value:0',
         ];
 
         $input = Validation::validateOrRedirect($_POST, $rules, $this->baseUrl('admin/products/create'));
 
-        $name        = $input['name'];
-        $category_id = ($input['category_id'] ?? '') !== '' ? (int)$input['category_id'] : null;
-        $short_desc  = $input['short_description'] ?? null;
-        $desc        = $input['description'] ?? null;
-        $base_price  = (float)($input['base_price'] ?? 0);
-        $stock       = (int)($input['stock'] ?? 0);
-        if ($stock < 0) $stock = 0;
+        $name = $input['name'];
+        $category_id = ($input['category_id'] ?? '') !== '' ? (int) $input['category_id'] : null;
+        $short_desc = $input['short_description'] ?? null;
+        $desc = $input['description'] ?? null;
+        $base_price = (float) ($input['base_price'] ?? 0);
+        $stock = (int) ($input['stock'] ?? 0);
+        if ($stock < 0)
+            $stock = 0;
 
         $is_featured = isset($_POST['is_featured']) ? 1 : 0;
-        $is_active   = isset($_POST['is_active']) ? 1 : 0;
+        $is_active = isset($_POST['is_active']) ? 1 : 0;
+
+        // NEW FIELDS
+        $currency = $_POST['currency'] ?? 'IDR';
+        $shopee_url = trim($_POST['shopee_url'] ?? '');
+        $tokopedia_url = trim($_POST['tokopedia_url'] ?? '');
+        $work_time = trim($_POST['work_time'] ?? '');
+        $product_notes = trim($_POST['product_notes'] ?? '');
+        $specs = trim($_POST['specs'] ?? '');
+        $upload_rules = trim($_POST['upload_rules'] ?? '');
+
+        // Discount fields
+        $discount_type = $_POST['discount_type'] ?? 'none';
+        $discount_value = (float) ($_POST['discount_value'] ?? 0);
 
         $slug = $this->generateUniqueSlug($name);
 
@@ -132,22 +155,36 @@ class ProductController extends Controller
 
         try {
             $this->product->create([
-                'category_id'       => $category_id,
-                'name'              => $name,
-                'slug'              => $slug,
+                'category_id' => $category_id,
+                'name' => $name,
+                'slug' => $slug,
                 'short_description' => $short_desc,
-                'description'       => $desc,
-                'thumbnail'         => $thumbnail,
-                'base_price'        => $base_price,
-                'stock'             => $stock,
-                'is_featured'       => $is_featured,
-                'is_active'         => $is_active,
+                'description' => $desc,
+                'thumbnail' => $thumbnail,
+                'base_price' => $base_price,
+                'stock' => $stock,
+                'is_featured' => $is_featured,
+                'is_active' => $is_active,
+                // NEW FIELDS
+                'currency' => $currency,
+                'shopee_url' => $shopee_url ?: null,
+                'tokopedia_url' => $tokopedia_url ?: null,
+                'work_time' => $work_time ?: null,
+                'product_notes' => $product_notes ?: null,
+                'specs' => $specs ?: null,
+                'upload_rules' => $upload_rules ?: null,
+                // Discount fields
+                'discount_type' => $discount_type,
+                'discount_value' => $discount_value,
             ]);
         } catch (Exception $e) {
             $_SESSION['flash_error'] = 'Gagal menyimpan produk: ' . $e->getMessage();
             header('Location: ' . $this->baseUrl('admin/products/create'));
             exit;
         }
+
+        // Log activity
+        log_admin_action('CREATE', "Menambah produk: $name", ['entity' => 'product', 'name' => $name]);
 
         $_SESSION['flash_success'] = 'Produk berhasil ditambahkan.';
         header('Location: ' . $this->baseUrl('admin/products'));
@@ -156,9 +193,13 @@ class ProductController extends Controller
 
     public function edit($id)
     {
-        $id = (int)$id;
+        $id = (int) $id;
         $product = $this->product->find($id);
-        if (!$product) { http_response_code(404); echo "Product not found"; return; }
+        if (!$product) {
+            http_response_code(404);
+            echo "Product not found";
+            return;
+        }
 
         $this->renderAdmin('product/edit', [
             'product' => $product,
@@ -168,34 +209,57 @@ class ProductController extends Controller
 
     public function update($id)
     {
-        $id = (int)$id;
+        $id = (int) $id;
         $product = $this->product->find($id);
-        if (!$product) { http_response_code(404); echo "Product not found"; return; }
+        if (!$product) {
+            http_response_code(404);
+            echo "Product not found";
+            return;
+        }
 
-        try { Security::requireCsrfToken(); }
-        catch (Exception $e) { http_response_code(419); echo "CSRF tidak valid."; return; }
+        try {
+            Security::requireCsrfToken();
+        } catch (Exception $e) {
+            http_response_code(419);
+            echo "CSRF tidak valid.";
+            return;
+        }
 
         $rules = [
-            'name'              => 'required|min:3|max:150',
-            'category_id'       => 'nullable|integer',
+            'name' => 'required|min:3|max:150',
+            'category_id' => 'nullable|integer',
             'short_description' => 'nullable|max:255',
-            'description'       => 'nullable',
-            'base_price'        => 'required|numeric|min_value:0',
-            'stock'             => 'required|integer|min_value:0',
+            'description' => 'nullable',
+            'base_price' => 'required|numeric|min_value:0',
+            'stock' => 'required|integer|min_value:0',
         ];
 
         $input = Validation::validateOrRedirect($_POST, $rules, $this->baseUrl('admin/products/edit/' . $id));
 
-        $name        = $input['name'];
-        $category_id = ($input['category_id'] ?? '') !== '' ? (int)$input['category_id'] : null;
-        $short_desc  = $input['short_description'] ?? null;
-        $desc        = $input['description'] ?? null;
-        $base_price  = (float)($input['base_price'] ?? 0);
-        $stock       = (int)($input['stock'] ?? 0);
-        if ($stock < 0) $stock = 0;
+        $name = $input['name'];
+        $category_id = ($input['category_id'] ?? '') !== '' ? (int) $input['category_id'] : null;
+        $short_desc = $input['short_description'] ?? null;
+        $desc = $input['description'] ?? null;
+        $base_price = (float) ($input['base_price'] ?? 0);
+        $stock = (int) ($input['stock'] ?? 0);
+        if ($stock < 0)
+            $stock = 0;
 
         $is_featured = isset($_POST['is_featured']) ? 1 : 0;
-        $is_active   = isset($_POST['is_active']) ? 1 : 0;
+        $is_active = isset($_POST['is_active']) ? 1 : 0;
+
+        // NEW FIELDS
+        $currency = $_POST['currency'] ?? 'IDR';
+        $shopee_url = trim($_POST['shopee_url'] ?? '');
+        $tokopedia_url = trim($_POST['tokopedia_url'] ?? '');
+        $work_time = trim($_POST['work_time'] ?? '');
+        $product_notes = trim($_POST['product_notes'] ?? '');
+        $specs = trim($_POST['specs'] ?? '');
+        $upload_rules = trim($_POST['upload_rules'] ?? '');
+
+        // Discount fields
+        $discount_type = $_POST['discount_type'] ?? 'none';
+        $discount_value = (float) ($_POST['discount_value'] ?? 0);
 
         $slug = $product['slug']; // keep slug
         $thumbnail = $product['thumbnail'];
@@ -206,7 +270,8 @@ class ProductController extends Controller
                 if ($newThumb) {
                     if (!empty($product['thumbnail'])) {
                         $oldPath = __DIR__ . '/../../public/' . $product['thumbnail'];
-                        if (is_file($oldPath)) @unlink($oldPath);
+                        if (is_file($oldPath))
+                            @unlink($oldPath);
                     }
                     $thumbnail = $newThumb;
                 }
@@ -220,22 +285,36 @@ class ProductController extends Controller
 
         try {
             $this->product->update($id, [
-                'category_id'       => $category_id,
-                'name'              => $name,
-                'slug'              => $slug,
+                'category_id' => $category_id,
+                'name' => $name,
+                'slug' => $slug,
                 'short_description' => $short_desc,
-                'description'       => $desc,
-                'thumbnail'         => $thumbnail,
-                'base_price'        => $base_price,
-                'stock'             => $stock,
-                'is_featured'       => $is_featured,
-                'is_active'         => $is_active,
+                'description' => $desc,
+                'thumbnail' => $thumbnail,
+                'base_price' => $base_price,
+                'stock' => $stock,
+                'is_featured' => $is_featured,
+                'is_active' => $is_active,
+                // NEW FIELDS  
+                'currency' => $currency,
+                'shopee_url' => $shopee_url ?: null,
+                'tokopedia_url' => $tokopedia_url ?: null,
+                'work_time' => $work_time ?: null,
+                'product_notes' => $product_notes ?: null,
+                'specs' => $specs ?: null,
+                'upload_rules' => $upload_rules ?: null,
+                // Discount fields
+                'discount_type' => $discount_type,
+                'discount_value' => $discount_value,
             ]);
         } catch (Exception $e) {
             $_SESSION['flash_error'] = 'Gagal memperbarui produk: ' . $e->getMessage();
             header('Location: ' . $this->baseUrl('admin/products/edit/' . $id));
             exit;
         }
+
+        // Log activity
+        log_admin_action('UPDATE', "Mengubah produk: $name", ['entity' => 'product', 'id' => $id, 'name' => $name]);
 
         $_SESSION['flash_success'] = 'Produk berhasil diperbarui.';
         header('Location: ' . $this->baseUrl('admin/products'));
@@ -244,19 +323,33 @@ class ProductController extends Controller
 
     public function delete($id)
     {
-        $id = (int)$id;
+        $id = (int) $id;
         $product = $this->product->find($id);
-        if (!$product) { http_response_code(404); echo "Product not found"; return; }
+        if (!$product) {
+            http_response_code(404);
+            echo "Product not found";
+            return;
+        }
 
-        try { Security::requireCsrfToken(); }
-        catch (Exception $e) { http_response_code(419); echo "CSRF tidak valid."; return; }
+        try {
+            Security::requireCsrfToken();
+        } catch (Exception $e) {
+            http_response_code(419);
+            echo "CSRF tidak valid.";
+            return;
+        }
 
         if (!empty($product['thumbnail'])) {
             $oldPath = __DIR__ . '/../../public/' . $product['thumbnail'];
-            if (is_file($oldPath)) @unlink($oldPath);
+            if (is_file($oldPath))
+                @unlink($oldPath);
         }
 
+        $productName = $product['name'];
         $this->product->delete($id);
+
+        // Log activity
+        log_admin_action('DELETE', "Menghapus produk: $productName", ['entity' => 'product', 'id' => $id, 'name' => $productName]);
 
         $_SESSION['flash_success'] = 'Produk berhasil dihapus.';
         header('Location: ' . $this->baseUrl('admin/products'));

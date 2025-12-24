@@ -16,16 +16,16 @@ const DataClient = {
 
         // Check cache
         if (this.cache[fullUrl]) {
-            console.log('[DataClient CACHE HIT]', fullUrl);
+            if (window.EP_DEBUG) console.log('[DataClient CACHE HIT]', fullUrl);
             return this.cache[fullUrl];
         }
 
         try {
-            console.log('[DataClient FETCH]', fullUrl);
+            if (window.EP_DEBUG) console.log('[DataClient FETCH]', fullUrl);
             const response = await fetch(fullUrl);
             const contentType = response.headers.get('content-type');
 
-            console.log('[DataClient STATUS]', response.status, contentType);
+            if (window.EP_DEBUG) console.log('[DataClient STATUS]', response.status, contentType);
 
             if (!response.ok) {
                 const text = await response.text();
@@ -34,7 +34,7 @@ const DataClient = {
             }
 
             const text = await response.text();
-            console.log('[DataClient RESPONSE START]', text.substring(0, 100));
+            if (window.EP_DEBUG) console.log('[DataClient RESPONSE START]', text.substring(0, 100));
 
             let data;
             try {

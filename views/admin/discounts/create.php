@@ -17,12 +17,11 @@ $csrfToken = $csrfToken ?? '';
           <select class="form-select" name="product_id" required>
             <option value="">-- Pilih Produk --</option>
             <?php foreach ($products as $p): ?>
-              <option value="<?php echo (int)$p['id']; ?>">
-                <?php echo htmlspecialchars($p['name']); ?> (Stok: <?php echo (int)$p['stock']; ?>)
+              <option value="<?php echo (int) $p['id']; ?>">
+                <?php echo htmlspecialchars($p['name']); ?> (Stok: <?php echo (int) $p['stock']; ?>)
               </option>
             <?php endforeach; ?>
           </select>
-          <div class="form-text">Kuota diskon tidak boleh melebihi stok.</div>
         </div>
 
         <div class="col-md-3">
@@ -48,7 +47,7 @@ $csrfToken = $csrfToken ?? '';
         <div class="col-md-4">
           <label class="form-label">Selesai</label>
           <input class="form-control" type="datetime-local" name="end_at">
-          <div class="form-text">Kosong = sampai kuota habis.</div>
+          <div class="form-text">Kosong = tidak ada batas waktu.</div>
         </div>
 
         <div class="col-md-4 d-flex align-items-end">

@@ -14,7 +14,10 @@ async function initBlogPage() {
     const data = await loadData('/api/blog');
 
     if (data && data.success) {
-      renderHeroMosaic(data.featured || []);
+      // Fallback: If no featured posts, use recent posts for Hero
+      let heroData = (data.featured && data.featured.length > 0) ? data.featured : (data.recent || []);
+
+      renderHeroMosaic(heroData);
       renderUnggulanCarousel(data.featured || []);
       renderTrenGrid(data.recent || []);
     }
@@ -44,12 +47,14 @@ function renderHeroMosaic(featured) {
   let html = `
     <div class="blog-hero-main">
       <div class="blog-hero-main-image">
-        ${mainPost.thumbnail ?
+        <a href="${mainPost.external_url || `${baseUrl}/blog/${mainPost.slug || mainPost.id}`}" target="${mainPost.link_target || '_self'}" style="display:block; width:100%; height:100%;">
+          ${mainPost.thumbnail ?
       `<img src="${mainPost.thumbnail}" alt="${mainPost.title}">` :
       '<span>Gambar Berita</span>'}
+        </a>
       </div>
       <div class="blog-hero-main-content">
-        <h3><a href="${baseUrl}/blog/${mainPost.slug || mainPost.id}">${mainPost.title}</a></h3>
+        <h3><a href="${mainPost.external_url || `${baseUrl}/blog/${mainPost.slug || mainPost.id}`}" target="${mainPost.link_target || '_self'}">${mainPost.title}</a></h3>
         <p>${mainPost.excerpt || ''}</p>
       </div>
     </div>
@@ -61,12 +66,14 @@ function renderHeroMosaic(featured) {
     html += `
       <div class="blog-hero-small">
         <div class="blog-hero-small-image">
-          ${post.thumbnail ?
+          <a href="${post.external_url || `${baseUrl}/blog/${post.slug || post.id}`}" target="${post.link_target || '_self'}" style="display:block; width:100%; height:100%;">
+            ${post.thumbnail ?
         `<img src="${post.thumbnail}" alt="${post.title}">` :
         'Gambar Berita'}
+          </a>
         </div>
         <div class="blog-hero-small-content">
-          <p><a href="${baseUrl}/blog/${post.slug || post.id}">${post.title}</a></p>
+          <p><a href="${post.external_url || `${baseUrl}/blog/${post.slug || post.id}`}" target="${post.link_target || '_self'}">${post.title}</a></p>
         </div>
       </div>
     `;
@@ -94,7 +101,7 @@ function renderUnggulanCarousel(posts) {
   const html = posts.map((post, index) => `
     <div class="blog-carousel-card ${colors[index % colors.length]}">
       <div class="blog-carousel-title">
-        <a href="${baseUrl}/blog/${post.slug || post.id}" style="color: inherit; text-decoration: none;">
+        <a href="${post.external_url || `${baseUrl}/blog/${post.slug || post.id}`}" target="${post.link_target || '_self'}" style="color: inherit; text-decoration: none;">
           ${post.title}
         </a>
       </div>
@@ -121,13 +128,15 @@ function renderTrenGrid(posts) {
   const html = posts.map(post => `
     <div class="blog-card">
       <div class="blog-card-image">
-        ${post.thumbnail ?
+        <a href="${post.external_url || `${baseUrl}/blog/${post.slug || post.id}`}" target="${post.link_target || '_self'}" style="display:block; width:100%; height:100%;">
+          ${post.thumbnail ?
       `<img src="${post.thumbnail}" alt="${post.title}">` :
       '<span>Gambar Berita</span>'}
+        </a>
       </div>
       <div class="blog-card-content">
         <h4 class="blog-card-title">
-          <a href="${baseUrl}/blog/${post.slug || post.id}">${post.title}</a>
+          <a href="${post.external_url || `${baseUrl}/blog/${post.slug || post.id}`}" target="${post.link_target || '_self'}">${post.title}</a>
         </h4>
         <p class="blog-card-excerpt">${post.excerpt || ''}</p>
       </div>

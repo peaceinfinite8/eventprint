@@ -3,6 +3,7 @@
 
 require_once __DIR__ . '/../helpers/Security.php';
 require_once __DIR__ . '/../helpers/Validation.php';
+require_once __DIR__ . '/../helpers/logging.php';
 require_once __DIR__ . '/../models/ProductCategory.php';
 
 class ProductCategoryController extends Controller
@@ -14,7 +15,7 @@ class ProductCategoryController extends Controller
     {
         parent::__construct($config);
 
-        $this->db       = db();
+        $this->db = db();
         $this->category = new ProductCategory();
     }
 
@@ -30,7 +31,7 @@ class ProductCategoryController extends Controller
     {
         $base = $this->slugifyBase($nameOrSlug);
         $slug = $base;
-        $i    = 2;
+        $i = 2;
 
         while ($this->category->slugExists($slug, $ignoreId)) {
             $slug = $base . '-' . $i;
@@ -73,11 +74,11 @@ class ProductCategoryController extends Controller
         }
 
         $rules = [
-            'name'        => 'required|min:2|max:100',
-            'slug'        => 'nullable|max:150',
+            'name' => 'required|min:2|max:100',
+            'slug' => 'nullable|max:150',
             'description' => 'nullable|max:255',
-            'sort_order'  => 'nullable|integer',
-            'is_active'   => 'nullable|boolean',
+            'sort_order' => 'nullable|integer',
+            'is_active' => 'nullable|boolean',
         ];
 
         $input = Validation::validateOrRedirect(
@@ -86,24 +87,27 @@ class ProductCategoryController extends Controller
             $this->baseUrl('admin/product-categories/create')
         );
 
-        $name        = $input['name'];
-        $slugInput   = $input['slug'] ?? '';
+        $name = $input['name'];
+        $slugInput = $input['slug'] ?? '';
         $description = $input['description'] ?? null;
-        $sort_order  = (int)($input['sort_order'] ?? 0);
-        $is_active   = !empty($input['is_active']) ? 1 : 0;
+        $sort_order = (int) ($input['sort_order'] ?? 0);
+        $is_active = !empty($input['is_active']) ? 1 : 0;
+        $wa = trim($_POST['whatsapp_number'] ?? '');
 
         $baseSlug = $slugInput !== '' ? $slugInput : $name;
-        $slug     = $this->generateUniqueSlug($baseSlug);
+        $slug = $this->generateUniqueSlug($baseSlug);
 
         $ok = $this->category->create([
-            'name'        => $name,
-            'slug'        => $slug,
+            'name' => $name,
+            'slug' => $slug,
             'description' => $description !== '' ? $description : null,
-            'sort_order'  => $sort_order,
-            'is_active'   => $is_active,
+            'sort_order' => $sort_order,
+            'is_active' => $is_active,
+            'whatsapp_number' => $wa !== '' ? $wa : null,
         ]);
 
         if ($ok) {
+            log_admin_action('CREATE', "Menambah kategori: $name", ['entity' => 'category', 'name' => $name]);
             $_SESSION['flash_success'] = 'Kategori berhasil ditambahkan.';
             header('Location: ' . $this->baseUrl('admin/product-categories'));
         } else {
@@ -117,7 +121,7 @@ class ProductCategoryController extends Controller
 
     public function edit($id)
     {
-        $id  = (int)$id;
+        $id = (int) $id;
         $cat = $this->category->find($id);
 
         if (!$cat) {
@@ -133,7 +137,7 @@ class ProductCategoryController extends Controller
 
     public function update($id)
     {
-        $id  = (int)$id;
+        $id = (int) $id;
         $cat = $this->category->find($id);
 
         if (!$cat) {
@@ -151,11 +155,11 @@ class ProductCategoryController extends Controller
         }
 
         $rules = [
-            'name'        => 'required|min:2|max:100',
-            'slug'        => 'nullable|max:150',
+            'name' => 'required|min:2|max:100',
+            'slug' => 'nullable|max:150',
             'description' => 'nullable|max:255',
-            'sort_order'  => 'nullable|integer',
-            'is_active'   => 'nullable|boolean',
+            'sort_order' => 'nullable|integer',
+            'is_active' => 'nullable|boolean',
         ];
 
         $input = Validation::validateOrRedirect(
@@ -164,11 +168,12 @@ class ProductCategoryController extends Controller
             $this->baseUrl('admin/product-categories/edit/' . $id)
         );
 
-        $name        = $input['name'];
-        $slugInput   = $input['slug'] ?? '';
+        $name = $input['name'];
+        $slugInput = $input['slug'] ?? '';
         $description = $input['description'] ?? null;
-        $sort_order  = (int)($input['sort_order'] ?? 0);
-        $is_active   = !empty($input['is_active']) ? 1 : 0;
+        $sort_order = (int) ($input['sort_order'] ?? 0);
+        $is_active = !empty($input['is_active']) ? 1 : 0;
+        $wa = trim($_POST['whatsapp_number'] ?? '');
 
         if ($slugInput === '') {
             $slug = $cat['slug'];
@@ -177,14 +182,16 @@ class ProductCategoryController extends Controller
         }
 
         $ok = $this->category->update($id, [
-            'name'        => $name,
-            'slug'        => $slug,
+            'name' => $name,
+            'slug' => $slug,
             'description' => $description !== '' ? $description : null,
-            'sort_order'  => $sort_order,
-            'is_active'   => $is_active,
+            'sort_order' => $sort_order,
+            'is_active' => $is_active,
+            'whatsapp_number' => $wa !== '' ? $wa : null,
         ]);
 
         if ($ok) {
+            log_admin_action('UPDATE', "Mengubah kategori: $name", ['entity' => 'category', 'id' => $id, 'name' => $name]);
             $_SESSION['flash_success'] = 'Kategori berhasil diperbarui.';
             header('Location: ' . $this->baseUrl('admin/product-categories'));
         } else {
@@ -198,7 +205,7 @@ class ProductCategoryController extends Controller
 
     public function delete($id)
     {
-        $id  = (int)$id;
+        $id = (int) $id;
         $cat = $this->category->find($id);
 
         if (!$cat) {
@@ -222,7 +229,10 @@ class ProductCategoryController extends Controller
             exit;
         }
 
+        $catName = $cat['name'];
         $this->category->delete($id);
+
+        log_admin_action('DELETE', "Menghapus kategori: $catName", ['entity' => 'category', 'id' => $id, 'name' => $catName]);
 
         $_SESSION['flash_success'] = 'Kategori berhasil dihapus.';
         header('Location: ' . $this->baseUrl('admin/product-categories'));

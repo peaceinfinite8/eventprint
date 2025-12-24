@@ -39,16 +39,24 @@ class Setting
             'phone',
             'email',
             'address',
+            'maps_link',
             'facebook',
             'instagram',
+            'tiktok',
+            'twitter',
+            'youtube',
+            'linkedin',
             'whatsapp',
+            'gmaps_embed',
+            'operating_hours',
+            'sales_contacts',
         ];
 
         // sanitasi & ambil hanya field yang ada di $data
         $clean = [];
         foreach ($fields as $field) {
             if (array_key_exists($field, $data)) {
-                $clean[$field] = $this->db->real_escape_string((string)$data[$field]);
+                $clean[$field] = $this->db->real_escape_string((string) $data[$field]);
             }
         }
 
@@ -58,12 +66,12 @@ class Setting
 
         // cek apakah sudah ada row settings
         $sqlCheck = "SELECT id FROM settings ORDER BY id ASC LIMIT 1";
-        $res      = $this->db->query($sqlCheck);
-        $row      = ($res && $res->num_rows > 0) ? $res->fetch_assoc() : null;
+        $res = $this->db->query($sqlCheck);
+        $row = ($res && $res->num_rows > 0) ? $res->fetch_assoc() : null;
 
         if ($row) {
             // ================= UPDATE =================
-            $id       = (int)$row['id'];
+            $id = (int) $row['id'];
             $setParts = [];
 
             foreach ($clean as $field => $value) {
@@ -74,17 +82,17 @@ class Setting
         } else {
             // ================= INSERT =================
             $columns = [];
-            $values  = [];
+            $values = [];
 
             foreach ($clean as $field => $value) {
                 $columns[] = "`$field`";
-                $values[]  = "'$value'";
+                $values[] = "'$value'";
             }
 
             $sql = "INSERT INTO settings (" . implode(', ', $columns) . ")
                     VALUES (" . implode(', ', $values) . ")";
         }
 
-        return (bool)$this->db->query($sql);
+        return (bool) $this->db->query($sql);
     }
 }

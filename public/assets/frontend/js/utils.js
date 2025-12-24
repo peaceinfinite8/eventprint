@@ -4,11 +4,19 @@
 
 /**
  * Format price to Indonesian Rupiah format
- * @param {number} amount - Price amount
- * @returns {string} Formatted price string
+ * Handles both number and string inputs from API
+ * @param {number|string} amount - Price amount
+ * @returns {string} Formatted price (e.g., "Rp 100.000")
  */
 function formatPrice(amount) {
-  return `Rp ${amount.toLocaleString('id-ID')}`;
+  // Cast to number and round to remove decimals
+  const numericAmount = Math.round(Number(amount) || 0);
+
+  // Format with Indonesian locale (dot as thousand separator, no decimals)
+  return `Rp ${numericAmount.toLocaleString('id-ID', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  })}`;
 }
 
 /**
@@ -110,12 +118,11 @@ async function loadPartial(url, targetId) {
 
 /**
  * Get current page name from URL
- * @returns {string} Current page name
+ * Returns full pathname for proper route matching
+ * @returns {string} Current page path
  */
 function getCurrentPage() {
-  const path = window.location.pathname;
-  const page = path.substring(path.lastIndexOf('/') + 1);
-  return page || 'home.html';
+  return window.location.pathname;
 }
 
 /**

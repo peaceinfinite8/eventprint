@@ -1,81 +1,80 @@
 <?php
-$baseUrl    = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint/public';
 $categories = $categories ?? [];
 ?>
 
-<h1 class="h3 mb-3">Kategori Produk</h1>
 
-<div class="card mb-3">
-  <div class="card-body d-flex justify-content-between align-items-center">
-    <div class="small text-muted">
-      Kelola kategori produk untuk grouping All Produk di website.
-    </div>
-    <div>
-      <a href="<?php echo $baseUrl; ?>/admin/product-categories/create"
-         class="btn btn-sm btn-success">
-        + Tambah Kategori
-      </a>
-    </div>
-  </div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 mb-0">Product Categories</h1>
+  <a href="<?php echo $baseUrl; ?>/admin/product-categories/create" class="btn btn-primary">
+    <i class="fa-solid fa-plus me-2"></i> Add Category
+  </a>
 </div>
 
-<div class="card">
-  <div class="card-body">
+<div class="dash-container-card">
+  <div class="dash-header">
+    <h5 class="dash-title">Categories</h5>
+  </div>
+  <div class="dash-body">
     <?php if (!empty($categories)): ?>
       <div class="table-responsive">
-        <table class="table table-striped align-middle">
+        <table class="table-custom">
           <thead>
-          <tr>
-            <th>#</th>
-            <th>Nama</th>
-            <th>Slug</th>
-            <th>Urutan</th>
-            <th>Status</th>
-            <th class="text-end">Aksi</th>
-          </tr>
+            <tr>
+              <th width="5%">#</th>
+              <th width="30%">Name</th>
+              <th width="30%">Slug</th>
+              <th width="10%">Sort Order</th>
+              <th width="10%">Status</th>
+              <th width="15%" class="text-end">Actions</th>
+            </tr>
           </thead>
           <tbody>
-          <?php foreach ($categories as $i => $cat): ?>
-            <tr>
-              <td><?php echo $i + 1; ?></td>
-              <td>
-                <strong><?php echo htmlspecialchars($cat['name']); ?></strong>
-              </td>
-              <td class="small text-muted">
-                <?php echo htmlspecialchars($cat['slug']); ?>
-              </td>
-              <td><?php echo (int)$cat['sort_order']; ?></td>
-              <td>
-                <?php if (!empty($cat['is_active'])): ?>
-                  <span class="badge bg-success">Aktif</span>
-                <?php else: ?>
-                  <span class="badge bg-secondary">Nonaktif</span>
-                <?php endif; ?>
-              </td>
-              <td class="text-end">
-                <a href="<?php echo $baseUrl; ?>/admin/product-categories/edit/<?php echo $cat['id']; ?>"
-                   class="btn btn-sm btn-primary">
-                  Edit
-                </a>
-                <form action="<?php echo $baseUrl; ?>/admin/product-categories/delete/<?php echo $cat['id']; ?>"
-                      method="post" class="d-inline"
-                      onsubmit="return confirm('Yakin ingin menghapus kategori ini?');">
+            <?php foreach ($categories as $i => $cat): ?>
+              <tr>
+                <td class="text-muted"><?php echo $i + 1; ?></td>
+                <td>
+                  <span class="fw-bold text-dark"><?php echo htmlspecialchars($cat['name']); ?></span>
+                </td>
+                <td class="text-muted small">
+                  <i class="fa-solid fa-link me-1 opacity-50"></i><?php echo htmlspecialchars($cat['slug']); ?>
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark border"><?php echo (int) $cat['sort_order']; ?></span>
+                </td>
+                <td>
+                  <?php if (!empty($cat['is_active'])): ?>
+                    <span class="dash-badge active">Active</span>
+                  <?php else: ?>
+                    <span class="dash-badge inactive">Inactive</span>
+                  <?php endif; ?>
+                </td>
+                <td class="text-end">
+                  <a href="<?php echo $baseUrl; ?>/admin/product-categories/edit/<?php echo $cat['id']; ?>"
+                    class="btn btn-sm btn-light text-primary me-1" title="Edit">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                  </a>
+                  <form action="<?php echo $baseUrl; ?>/admin/product-categories/delete/<?php echo $cat['id']; ?>"
+                    method="post" class="d-inline" onsubmit="return confirm('Delete this category?');">
 
-                      <input type="hidden" name="_token"
-       value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="hidden" name="_token"
+                      value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
 
-                  <button type="submit" class="btn btn-sm btn-danger">
-                    Hapus
-                  </button>
-                </form>
-              </td>
-            </tr>
-          <?php endforeach; ?>
+                    <button type="submit" class="btn btn-sm btn-light text-danger" title="Delete">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            <?php endforeach; ?>
           </tbody>
         </table>
       </div>
     <?php else: ?>
-      <p class="mb-0 text-muted">Belum ada kategori produk.</p>
+      <div class="empty-state">
+        <i class="fa-solid fa-tags fa-3x text-muted mb-3 opacity-25"></i>
+        <p class="text-muted mb-0">No categories found.</p>
+      </div>
     <?php endif; ?>
   </div>
 </div>

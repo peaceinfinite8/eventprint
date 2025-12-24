@@ -1,122 +1,260 @@
 <?php
 /**
- * Products Listing Page (1:1 with Frontend Reference)
- * Includes: Breadcrumbs, Sidebar, Product Grid
+ * Products Listing Page (1:1 Parity with Reference)
+ * Reference: frontend/public/views/products.html
+ * Structure: Container > Layout > (Sidebar + Content)
  */
 ?>
 
-<!-- Breadcrumbs -->
-<div class="breadcrumbs" id="breadcrumbs">
-    <div class="container">
-        <a href="<?= baseUrl('/') ?>" class="breadcrumb-link">Home</a>
-        <span class="breadcrumb-separator">›</span>
-        <span class="breadcrumb-current">All Products</span>
+<style>
+    /* Products Page Specific Styles (from reference product.html) */
+    body {
+        background-color: #F8FAFC;
+    }
+
+    .products-section {
+        padding: 40px 0 80px;
+    }
+
+    .products-layout {
+        display: flex;
+        gap: 32px;
+        align-items: flex-start;
+    }
+
+    /* --- SIDEBAR CONTAINER --- */
+    .products-sidebar {
+        width: 280px;
+        flex-shrink: 0;
+        background: #FFFFFF;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+        position: sticky;
+        top: 100px;
+        height: fit-content;
+        max-height: calc(100vh - 120px);
+        overflow-y: auto;
+        display: block;
+    }
+
+    .sidebar-title {
+        font-size: 1.5rem;
+        font-weight: 800;
+        margin-bottom: 24px;
+        color: var(--gray-900);
+        padding-left: 4px;
+    }
+
+    /* --- SIDEBAR GROUP --- */
+    .category-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .sidebar-group {
+        display: block;
+        margin-bottom: 8px;
+        width: 100%;
+    }
+
+    /* --- HEADER BUTTON --- */
+    .sidebar-head {
+        appearance: none;
+        background: transparent;
+        border: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 10px;
+        font-family: var(--font-body);
+        font-size: 1rem;
+        color: var(--gray-600);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: left;
+    }
+
+    .sidebar-head:hover {
+        color: var(--primary-cyan);
+        background: #F9FAFB;
+    }
+
+    .sidebar-head.active {
+        color: var(--gray-900);
+        font-weight: 700;
+    }
+
+    /* Icon Rotation */
+    .category-icon {
+        width: 20px;
+        height: 20px;
+        color: #9CA3AF;
+        transition: transform 0.2s ease;
+        flex-shrink: 0;
+    }
+
+    .sidebar-head[aria-expanded="true"] .category-icon {
+        transform: rotate(180deg);
+        color: var(--gray-900);
+    }
+
+    /* --- SUBMENU BODY (Flow Layout) --- */
+    .sidebar-body {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 6px 0 6px 0;
+        margin-left: 0;
+        width: 100%;
+        position: static;
+    }
+
+    .sidebar-body[hidden] {
+        display: none;
+    }
+
+    /* --- SUBMENU ITEM (Button) --- */
+    .sidebar-item {
+        appearance: none;
+        background: transparent;
+        border: none;
+        display: flex;
+        align-items: center;
+        width: 100%;
+        height: 38px;
+        padding: 0 12px 0 32px;
+        font-family: var(--font-body);
+        font-size: 0.95rem;
+        color: var(--gray-500);
+        text-align: left;
+        cursor: pointer;
+        border-radius: 8px;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .sidebar-item:hover {
+        color: var(--primary-cyan);
+        background: #F0F9FF;
+    }
+
+    .sidebar-item.active {
+        background: #F3F4F6;
+        color: var(--gray-900);
+        font-weight: 600;
+    }
+
+    /* products content */
+    .products-content {
+        flex: 1;
+    }
+
+    .products-header {
+        margin-bottom: 24px;
+    }
+
+    .breadcrumbs {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--gray-900);
+    }
+
+    .current-category-name {
+        color: var(--primary-cyan);
+    }
+
+    .products-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .products-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .products-sidebar {
+            width: 240px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .products-layout {
+            flex-direction: column;
+        }
+
+        .products-sidebar {
+            width: 100%;
+            position: static;
+            margin-bottom: 24px;
+            max-height: none;
+        }
+    }
+
+    /* Animation */
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-5px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+
+<!-- Main Content -->
+<div class="container">
+    <div class="products-layout">
+
+        <!-- Sidebar -->
+        <aside class="products-sidebar">
+            <h2 class="sidebar-title">Kategori</h2>
+            <ul id="categorySidebar" class="category-list">
+                <!-- Data Driven Sidebar via JS -->
+                <li class="skeleton-text" style="height: 40px; margin-bottom: 10px;"></li>
+                <li class="skeleton-text" style="height: 40px; margin-bottom: 10px;"></li>
+            </ul>
+        </aside>
+
+        <!-- Product Grid -->
+        <main class="products-content">
+            <div class="products-header">
+                <div id="pageTitle" class="breadcrumbs">
+                    Product
+                </div>
+            </div>
+
+            <div id="productGrid" class="products-grid">
+                <!-- Data Driven Products via JS -->
+            </div>
+        </main>
     </div>
 </div>
 
-<!-- Products Layout -->
-<div class="products-layout">
-    <div class="container">
-        <div class="products-container">
-            <!-- Sidebar -->
-            <aside class="products-sidebar">
-                <div class="sidebar-group">
-                    <div class="sidebar-head">
-                        <h3 class="sidebar-title">Categories</h3>
-                    </div>
-                    <div class="sidebar-body">
-                        <ul class="sidebar-list">
-                            <li class="sidebar-item <?= empty($currentCategory) ? 'active' : '' ?>">
-                                <a href="<?= baseUrl('/products') ?>" class="sidebar-link">
-                                    All Products
-                                </a>
-                            </li>
-                            <?php foreach ($categories as $cat): ?>
-                                <li class="sidebar-item <?= ($currentCategory === $cat['slug']) ? 'active' : '' ?>">
-                                    <a href="<?= baseUrl('/products?category=' . e($cat['slug'])) ?>" class="sidebar-link">
-                                        <?= e($cat['name']) ?>
-                                    </a>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                </div>
-            </aside>
-
-            <!-- Main Content -->
-            <main class="products-main">
-                <div class="products-header">
-                    <h1 class="products-title">
-                        <?php if ($currentCategory): ?>
-                            <?php
-                            $catName = 'Products';
-                            foreach ($categories as $cat) {
-                                if ($cat['slug'] === $currentCategory) {
-                                    $catName = $cat['name'];
-                                    break;
-                                }
-                            }
-                            echo e($catName);
-                            ?>
-                        <?php else: ?>
-                            All Products
-                        <?php endif; ?>
-                    </h1>
-                    <p class="products-count"><?= $totalProducts ?> products found</p>
-                </div>
-
-                <?php if (!empty($products)): ?>
-                    <div class="grid grid-4">
-                        <?php foreach ($products as $product): ?>
-                            <div class="product-card">
-                                <div class="product-card-image">
-                                    <a href="<?= baseUrl('/products/' . e($product['slug'])) ?>">
-                                        <img src="<?= imageUrl($product['thumbnail'] ?? '', 'frontend/images/product-placeholder.jpg') ?>"
-                                            alt="<?= e($product['name']) ?>" loading="lazy">
-                                    </a>
-                                </div>
-                                <div class="product-card-info">
-                                    <h3 class="product-card-title">
-                                        <a href="<?= baseUrl('/products/' . e($product['slug'])) ?>">
-                                            <?= e($product['name']) ?>
-                                        </a>
-                                    </h3>
-                                    <?php if (isset($product['category_name'])): ?>
-                                        <p class="product-card-category"><?= e($product['category_name']) ?></p>
-                                    <?php endif; ?>
-                                    <?php if (isset($product['base_price'])): ?>
-                                        <p class="product-card-price"><?= formatPrice($product['base_price']) ?></p>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-
-                    <!-- Pagination -->
-                    <?php if ($totalPages > 1): ?>
-                        <div class="pagination">
-                            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                                <?php
-                                $pageUrl = baseUrl('/products');
-                                if ($currentCategory) {
-                                    $pageUrl .= '?category=' . urlencode($currentCategory) . '&page=' . $i;
-                                } else {
-                                    $pageUrl .= '?page=' . $i;
-                                }
-                                ?>
-                                <a href="<?= $pageUrl ?>" class="pagination-link <?= $i === $currentPage ? 'active' : '' ?>">
-                                    <?= $i ?>
-                                </a>
-                            <?php endfor; ?>
-                        </div>
-                    <?php endif; ?>
-                <?php else: ?>
-                    <div class="empty-state">
-                        <p>No products found in this category.</p>
-                        <a href="<?= baseUrl('/products') ?>" class="btn btn-primary">View All Products</a>
-                    </div>
-                <?php endif; ?>
-            </main>
-        </div>
-    </div>
-</div>
+<!-- Page-Specific Scripts -->
+<script src="<?= assetUrl('frontend/js/lib/dataClient.js') ?>"></script>
+<script src="<?= assetUrl('frontend/js/components/navSearch.js') ?>"></script>
+<script src="<?= assetUrl('frontend/js/lib/urlState.js') ?>"></script>
+<script src="<?= assetUrl('frontend/js/render/renderProducts.js') ?>"></script>
+<script>
+    // Initialize products page on DOM ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initProductsPage);
+    } else {
+        initProductsPage();
+    }
+</script>
