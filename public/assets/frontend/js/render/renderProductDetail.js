@@ -898,18 +898,18 @@ function handleCheckout() {
   }
 
   // Build engaging WhatsApp message with emoji and formatting
-  let message = `🛒 *PESANAN BARU*\\n`;
-  message += `━━━━━━━━━━━━━━━━\\n\\n`;
+  let message = `🛒 *PESANAN BARU*\n`;
+  message += `━━━━━━━━━━━━━━━━\n\n`;
 
-  message += `📦 *Produk:* ${productData.name}\\n`;
-  message += `💰 *Harga Satuan:* ${formatPrice(unitPrice)}\\n`;
-  message += `🔢 *Jumlah:* ${quantity} unit\\n`;
+  message += `📦 *Produk:* ${productData.name}\n`;
+  message += `💰 *Harga Satuan:* ${formatPrice(unitPrice)}\n`;
+  message += `🔢 *Jumlah:* ${quantity} unit\n`;
 
   // Add selected material if any
   if (selectedMaterialId && productData.options?.materials?.items) {
     const material = productData.options.materials.items.find(m => m.id == selectedMaterialId);
     if (material) {
-      message += `🎨 *Bahan:* ${material.name}\\n`;
+      message += `🎨 *Bahan:* ${material.name}\n`;
     }
   }
 
@@ -917,7 +917,7 @@ function handleCheckout() {
   if (selectedLaminationId && productData.options?.laminations?.items) {
     const lamination = productData.options.laminations.items.find(l => l.id == selectedLaminationId);
     if (lamination) {
-      message += `✨ *Laminasi:* ${lamination.name}\\n`;
+      message += `✨ *Laminasi:* ${lamination.name}\n`;
     }
   }
 
@@ -928,24 +928,24 @@ function handleCheckout() {
       if (group && group.values) {
         const value = group.values.find(v => v.id == valueId);
         if (value) {
-          message += `📏 *${group.name}:* ${value.label}\\n`;
+          message += `📏 *${group.name}:* ${value.label}\n`;
         }
       }
     });
   }
 
-  message += `\\n💵 *TOTAL:* ${formatPrice(subtotal)}\\n`;
-  message += `━━━━━━━━━━━━━━━━\\n\\n`;
+  message += `\n💵 *TOTAL:* ${formatPrice(subtotal)}\n`;
+  message += `━━━━━━━━━━━━━━━━\n\n`;
 
   // Add notes if provided
   if (currentNote && currentNote.trim() !== '') {
-    message += `📝 *Catatan Khusus:*\\n${currentNote}\\n\\n`;
+    message += `📝 *Catatan Khusus:*\n${currentNote}\n\n`;
   }
 
   // Add file info if uploaded
   if (uploadedFileName) {
-    message += `📎 *File Design:* ${uploadedFileName}\\n`;
-    message += `_(File akan dikirim terpisah)_\\n\\n`;
+    message += `📎 *File Design:* ${uploadedFileName}\n`;
+    message += `_(File akan dikirim terpisah)_\n\n`;
   }
 
   message += `Mohon konfirmasi ketersediaan dan estimasi pengerjaan. Terima kasih! 🙏`;
@@ -955,9 +955,9 @@ function handleCheckout() {
   const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
 
   // Show confirmation dialog with clear instructions
-  const confirmMessage = `📱 Anda akan diarahkan ke WhatsApp\\n\\n` +
-    `✅ Pesan sudah disiapkan otomatis\\n` +
-    `✅ Tinggal klik tombol "Send" di WhatsApp\\n\\n` +
+  const confirmMessage = `📱 Anda akan diarahkan ke WhatsApp\n\n` +
+    `✅ Pesan sudah disiapkan otomatis\n` +
+    `✅ Tinggal klik tombol "Send" di WhatsApp\n\n` +
     `Lanjutkan ke WhatsApp?`;
 
   if (confirm(confirmMessage)) {
