@@ -883,29 +883,88 @@ function handleCheckout() {
   const unitPrice = calculateUnitPrice();
   const subtotal = unitPrice * quantity;
 
-  // Build WhatsApp message
-  let message = `Halo, saya ingin memesan:\n\n`;
-  message += `*Produk:* ${productData.name}\n`;
-  message += `*Jumlah:* ${quantity}\n`;
-  message += `*Harga Satuan:* ${formatPrice(unitPrice)}\n`;
-  message += `*Subtotal:* ${formatPrice(subtotal)}\n`;
+  // Validation: Check if required options are selected
+  const materialEnabled = productData.options?.materials?.enabled;
+  const laminationEnabled = productData.options?.laminations?.enabled;
 
-  if (currentNote) {
-    message += `*Catatan:* ${currentNote}\n`;
+  if (materialEnabled && !selectedMaterialId) {
+    showToast('⚠️ Silakan pilih bahan terlebih dahulu');
+    return;
   }
 
+  if (laminationEnabled && !selectedLaminationId) {
+    showToast('⚠️ Silakan pilih laminasi terlebih dahulu');
+    return;
+  }
+
+  // Build engaging WhatsApp message with emoji and formatting
+  let message = `🛒 *PESANAN BARU*\\n`;
+  message += `━━━━━━━━━━━━━━━━\\n\\n`;
+
+  message += `📦 *Produk:* ${productData.name}\\n`;
+  message += `💰 *Harga Satuan:* ${formatPrice(unitPrice)}\\n`;
+  message += `🔢 *Jumlah:* ${quantity} unit\\n`;
+
+  // Add selected material if any
+  if (selectedMaterialId && productData.options?.materials?.items) {
+    const material = productData.options.materials.items.find(m => m.id == selectedMaterialId);
+    if (material) {
+      message += `🎨 *Bahan:* ${material.name}\\n`;
+    }
+  }
+
+  // Add selected lamination if any
+  if (selectedLaminationId && productData.options?.laminations?.items) {
+    const lamination = productData.options.laminations.items.find(l => l.id == selectedLaminationId);
+    if (lamination) {
+      message += `✨ *Laminasi:* ${lamination.name}\\n`;
+    }
+  }
+
+  // Add pricing options if any
+  if (selectedOptions.pricing && productData.option_groups) {
+    Object.entries(selectedOptions.pricing).forEach(([groupId, valueId]) => {
+      const group = productData.option_groups.find(g => g.id == groupId);
+      if (group && group.values) {
+        const value = group.values.find(v => v.id == valueId);
+        if (value) {
+          message += `📏 *${group.name}:* ${value.label}\\n`;
+        }
+      }
+    });
+  }
+
+  message += `\\n💵 *TOTAL:* ${formatPrice(subtotal)}\\n`;
+  message += `━━━━━━━━━━━━━━━━\\n\\n`;
+
+  // Add notes if provided
+  if (currentNote && currentNote.trim() !== '') {
+    message += `📝 *Catatan Khusus:*\\n${currentNote}\\n\\n`;
+  }
+
+  // Add file info if uploaded
   if (uploadedFileName) {
-    message += `*File:* ${uploadedFileName}\n`;
+    message += `📎 *File Design:* ${uploadedFileName}\\n`;
+    message += `_(File akan dikirim terpisah)_\\n\\n`;
   }
 
-  // Get WhatsApp number from settings (injected by PHP) OR category specific
+  message += `Mohon konfirmasi ketersediaan dan estimasi pengerjaan. Terima kasih! 🙏`;
+
+  // Get WhatsApp number
   const waNumber = productData.category_whatsapp || window.EP_SETTINGS?.whatsapp || '6281234567890';
   const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
 
-  // Open WhatsApp in new tab
-  window.open(waUrl, '_blank');
+  // Show confirmation dialog with clear instructions
+  const confirmMessage = `📱 Anda akan diarahkan ke WhatsApp\\n\\n` +
+    `✅ Pesan sudah disiapkan otomatis\\n` +
+    `✅ Tinggal klik tombol "Send" di WhatsApp\\n\\n` +
+    `Lanjutkan ke WhatsApp?`;
 
-  showToast('✓ Membuka WhatsApp...');
+  if (confirm(confirmMessage)) {
+    // Open WhatsApp in new tab
+    window.open(waUrl, '_blank');
+    showToast('✓ Membuka WhatsApp... Silakan klik "Send" untuk mengirim pesanan');
+  }
 }
 
 /**
