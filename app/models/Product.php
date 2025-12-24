@@ -596,7 +596,7 @@ class Product
             throw new Exception("Prepare failed: " . $db->error);
 
         $stmt->bind_param(
-            'isssssdiiisd ssssssi',
+            'isssssdiiisdsssssssi',
             $categoryId,
             $name,
             $slug,
