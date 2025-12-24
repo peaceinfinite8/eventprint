@@ -163,7 +163,10 @@ class Product
                 id, category_id, name, slug,
                 short_description, description,
                 thumbnail, base_price, stock,
-                is_featured, is_active
+                is_featured, is_active,
+                shopee_url, tokopedia_url,
+                currency, work_time, product_notes, specs, upload_rules,
+                discount_type, discount_value
             FROM products
             WHERE slug = ?
               AND is_active = 1
@@ -271,7 +274,9 @@ class Product
     {
         $db = db();
         $stmt = $db->prepare(
-            "SELECT id, name, slug, thumbnail, description, short_description, base_price
+            "SELECT id, name, slug, thumbnail, description, short_description, base_price,
+             shopee_url, tokopedia_url, currency, work_time, product_notes, specs, upload_rules,
+             discount_type, discount_value
             FROM products
             WHERE id = ? AND is_active = 1 AND deleted_at IS NULL
             LIMIT 1"
@@ -498,15 +503,16 @@ class Product
                 (category_id, name, slug, short_description, description,
                  thumbnail, base_price, stock, is_featured, is_active,
                  discount_type, discount_value,
+                 shopee_url, tokopedia_url, currency, work_time, product_notes, specs, upload_rules,
                  created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
 
         $stmt = $db->prepare($sql);
         if (!$stmt)
             throw new Exception("Prepare failed: " . $db->error);
 
         $stmt->bind_param(
-            'isssssdiiisd',
+            'isssssdiiisdsssssss',
             $categoryId,
             $name,
             $slug,
@@ -518,7 +524,14 @@ class Product
             $isFeatured,
             $isActive,
             $data['discount_type'],
-            $data['discount_value']
+            $data['discount_value'],
+            $data['shopee_url'],
+            $data['tokopedia_url'],
+            $data['currency'],
+            $data['work_time'],
+            $data['product_notes'],
+            $data['specs'],
+            $data['upload_rules']
         );
 
         $stmt->execute();
@@ -567,6 +580,13 @@ class Product
                     is_active         = ?,
                     discount_type     = ?,
                     discount_value    = ?,
+                    shopee_url        = ?,
+                    tokopedia_url     = ?,
+                    currency          = ?,
+                    work_time         = ?,
+                    product_notes     = ?,
+                    specs             = ?,
+                    upload_rules      = ?,
                     updated_at        = NOW()
                 WHERE id = ? AND deleted_at IS NULL
                 LIMIT 1";
@@ -576,7 +596,7 @@ class Product
             throw new Exception("Prepare failed: " . $db->error);
 
         $stmt->bind_param(
-            'isssssdiiisdi',
+            'isssssdiiisd ssssssi',
             $categoryId,
             $name,
             $slug,
@@ -589,6 +609,13 @@ class Product
             $isActive,
             $data['discount_type'],
             $data['discount_value'],
+            $data['shopee_url'],
+            $data['tokopedia_url'],
+            $data['currency'],
+            $data['work_time'],
+            $data['product_notes'],
+            $data['specs'],
+            $data['upload_rules'],
             $id
         );
 
