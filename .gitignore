@@ -39,3 +39,19 @@ node_modules/
 # Build artifacts
 /build/
 /dist/
+
+# runtime uploads (jangan masuk repo)
+uploads/
+public/uploads/
+public/assets/frontend/images/
+
+# optional: cache/log
+storage/
+cache/
+*.log
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
