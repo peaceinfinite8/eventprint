@@ -1,0 +1,69 @@
+<?php
+/**
+ * EventPrint - Global Helper Stubs for Intelephense
+ * This file is for IDE autocomplete only, not loaded at runtime
+ */
+
+/**
+ * Generate base URL with optional path
+ * @param string $path Optional path to append
+ * @return string Full URL
+ */
+function baseUrl(string $path = ''): string {}
+
+/**
+ * Get asset URL (for CSS, JS, images)
+ * @param string $path Path relative to assets folder
+ * @return string Full asset URL
+ */
+function assetUrl(string $path = ''): string {}
+
+/**
+ * Get upload URL (for user uploaded files)
+ * @param string $path Path relative to uploads folder
+ * @return string Full upload URL
+ */
+function uploadUrl(string $path = ''): string {}
+
+/**
+ * Escape output for HTML (XSS prevention)
+ * @param mixed $str String to escape
+ * @return string Escaped string
+ */
+function e($str): string {}
+
+/**
+ * Get current route path
+ * @return string Current path without base URL
+ */
+function currentPath(): string {}
+
+/**
+ * Check if current path matches (for active menu)
+ * @param string $path Path to check
+ * @return bool True if current path matches
+ */
+function isActive(string $path): bool {}
+
+/**
+ * Format price to Rupiah
+ * @param float|int $price Price value
+ * @return string Formatted price
+ */
+function formatPrice($price): string {}
+
+/**
+ * Format date to Indonesian format
+ * @param string $date Date string
+ * @param string $format Output format
+ * @return string Formatted date
+ */
+function formatDate(string $date, string $format = 'd M Y'): string {}
+
+/**
+ * Generate image URL with fallback
+ * @param string|null $imagePath Image path from database
+ * @param string $fallback Fallback image path
+ * @return string Image URL
+ */
+function imageUrl(?string $imagePath, string $fallback = 'frontend/images/placeholder.jpg'): string {}

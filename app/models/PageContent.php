@@ -1,0 +1,173 @@
+<?php
+// app/models/PageContent.php
+
+class PageContent
+{
+    protected function db()
+    {
+        return db(); // mysqli
+    }
+
+    private function hasItemKey(): bool
+    {
+        $db = $this->db();
+        $res = $db->query("SHOW COLUMNS FROM page_contents LIKE 'item_key'");
+        return ($res && $res->num_rows > 0);
+    }
+
+    /* =========================
+       BACKWARD (default item)
+       ========================= */
+    public function getValue(string $pageSlug, string $section, string $field, $default = '')
+    {
+        $db = $this->db();
+
+        if ($this->hasItemKey()) {
+            $sql = "SELECT value FROM page_contents
+                    WHERE page_slug=? AND section=? AND item_key='default' AND field=?
+                    LIMIT 1";
+            $stmt = $db->prepare($sql);
+            $stmt->bind_param('sss', $pageSlug, $section, $field);
+        } else {
+            $sql = "SELECT value FROM page_contents
+                    WHERE page_slug=? AND section=? AND field=?
+                    LIMIT 1";
+            $stmt = $db->prepare($sql);
+            $stmt->bind_param('sss', $pageSlug, $section, $field);
+        }
+
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $row = $res ? $res->fetch_assoc() : null;
+        $stmt->close();
+
+        return $row ? $row['value'] : $default;
+    }
+
+    public function saveFields(string $pageSlug, string $section, array $data): void
+    {
+        $db = $this->db();
+
+        if ($this->hasItemKey()) {
+            $sql = "INSERT INTO page_contents (page_slug, section, item_key, field, value)
+                    VALUES (?, ?, 'default', ?, ?)
+                    ON DUPLICATE KEY UPDATE value = VALUES(value)";
+        } else {
+            $sql = "INSERT INTO page_contents (page_slug, section, field, value)
+                    VALUES (?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE value = VALUES(value)";
+        }
+
+        $stmt = $db->prepare($sql);
+        if (!$stmt) throw new Exception("Prepare failed: " . $db->error);
+
+        foreach ($data as $field => $value) {
+            $field = (string)$field;
+            $value = (string)$value;
+
+            if ($this->hasItemKey()) {
+                $stmt->bind_param('ssss', $pageSlug, $section, $field, $value);
+            } else {
+                $stmt->bind_param('ssss', $pageSlug, $section, $field, $value);
+            }
+
+            if (!$stmt->execute()) throw new Exception("Execute failed: " . $stmt->error);
+        }
+
+        $stmt->close();
+    }
+
+    /* =========================
+       MULTI ITEM (hero slides)
+       ========================= */
+
+
+
+    public function getSectionItems(string $pageSlug, string $section): array
+    {
+        $db = db(); // mysqli
+
+        $sql = "
+            SELECT item_key, field, value
+            FROM page_contents
+            WHERE page_slug = ?
+              AND section   = ?
+              AND item_key IS NOT NULL
+              AND item_key <> ''
+            ORDER BY item_key ASC
+        ";
+
+        $stmt = $db->prepare($sql);
+        if (!$stmt) return [];
+
+        $stmt->bind_param('ss', $pageSlug, $section);
+        $stmt->execute();
+        $res = $stmt->get_result();
+
+        $items = [];
+        if ($res) {
+            while ($r = $res->fetch_assoc()) {
+                $key = (string)($r['item_key'] ?? '');
+                $field = (string)($r['field'] ?? '');
+                $value = (string)($r['value'] ?? '');
+
+                if ($key === '') continue;
+
+                if (!isset($items[$key])) $items[$key] = ['item_key' => $key];
+                $items[$key][$field] = $value;
+            }
+        }
+
+        $stmt->close();
+
+        // jadi array numerik
+        return array_values($items);
+    }
+
+    public function deleteItem(string $pageSlug, string $section, string $itemKey): bool
+    {
+        $db = db();
+
+        $sql = "DELETE FROM page_contents WHERE page_slug=? AND section=? AND item_key=?";
+        $stmt = $db->prepare($sql);
+        if (!$stmt) return false;
+
+        $stmt->bind_param('sss', $pageSlug, $section, $itemKey);
+        $stmt->execute();
+
+        $ok = ($stmt->affected_rows >= 1);
+        $stmt->close();
+
+        return $ok;
+    }
+
+
+
+    public function saveItemFields(string $pageSlug, string $section, string $itemKey, array $data): void
+    {
+        $db = $this->db();
+
+        if (!$this->hasItemKey()) {
+            // kalau belum upgrade, jatuhin ke default (cuma 1)
+            $this->saveFields($pageSlug, $section, $data);
+            return;
+        }
+
+        $sql = "INSERT INTO page_contents (page_slug, section, item_key, field, value)
+                VALUES (?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE value = VALUES(value)";
+        $stmt = $db->prepare($sql);
+        if (!$stmt) throw new Exception("Prepare failed: " . $db->error);
+
+        foreach ($data as $field => $value) {
+            $field = (string)$field;
+            $value = (string)$value;
+            $stmt->bind_param('sssss', $pageSlug, $section, $itemKey, $field, $value);
+            if (!$stmt->execute()) throw new Exception("Execute failed: " . $stmt->error);
+        }
+
+        $stmt->close();
+    }
+
+}
+

@@ -1,0 +1,601 @@
+/* ============================================
+   HERO SECTION - 3 BANNER LAYOUT
+   ============================================ */
+
+.hero-section-3banner {
+    padding: 32px 0;
+    background: #f8f9fa;
+}
+
+.hero-grid-3 {
+    display: grid;
+    grid-template-columns: 2.6fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 20px;
+    min-height: 360px;
+}
+
+/* BANNER 1: Large Promotion (LEFT - spans 2 rows) */
+.hero-banner-large {
+    grid-column: 1 / 2;
+    grid-row: 1 / 3;
+    width: 100%;
+    /* aspect-ratio removed to fill grid height */
+}
+
+/* BANNER 2: Product Top (RIGHT TOP) */
+.hero-banner-top {
+    grid-column: 2 / 3;
+    grid-row: 1 / 2;
+}
+
+/* BANNER 3: Product Bottom (RIGHT BOTTOM) */
+.hero-banner-bottom {
+    grid-column: 2 / 3;
+    grid-row: 2 / 3;
+}
+
+/* Banner Base Styles */
+.hero-banner {
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hero-banner:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.hero-slide {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    height: 100%;
+    width: 100%;
+    padding: 0;
+    /* Remove padding for full image */
+}
+
+.hero-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Large Banner Content */
+.hero-content {
+    z-index: 2;
+    color: white;
+}
+
+.hero-title {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: #3DDFFF;
+    margin: 0;
+    line-height: 1.1;
+}
+
+.hero-subtitle {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: #FF1493;
+    margin: 8px 0;
+    line-height: 1.1;
+}
+
+.hero-cta-text {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #FFD700;
+    margin: 16px 0;
+}
+
+.hero-cta-btn {
+    display: inline-block;
+    background: #FFD700;
+    color: #1e3a5f;
+    padding: 14px 32px;
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    text-decoration: none;
+    margin-top: 20px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+}
+
+.hero-cta-btn:hover {
+    background: #FFC700;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+    color: #1e3a5f;
+}
+
+.hero-image {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    max-width: 50%;
+    height: auto;
+}
+
+.hero-image img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+/* Carousel Slide Transitions */
+.hero-slide {
+    transition: opacity 0.5s ease-in-out;
+}
+
+.hero-slide.active {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Small Banner Content */
+.hero-content-compact {
+    z-index: 2;
+    color: white;
+    max-width: 60%;
+}
+
+.hero-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin: 0 0 4px 0;
+    opacity: 0.9;
+}
+
+.hero-title-compact {
+    font-size: 2rem;
+    font-weight: 800;
+    margin: 0 0 8px 0;
+    line-height: 1.1;
+}
+
+.hero-desc {
+    font-size: 0.9rem;
+    margin: 0 0 16px 0;
+    opacity: 0.9;
+}
+
+.hero-btn {
+    background: white;
+    color: #FF1493;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 24px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.hero-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.hero-wa-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #25D366;
+    color: white;
+    text-decoration: none;
+    padding: 12px 20px;
+    border-radius: 24px;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.hero-wa-btn:hover {
+    background: #128C7E;
+    transform: scale(1.05);
+}
+
+.hero-promo-badge {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: #FFD700;
+    color: #1e3a5f;
+    font-weight: 800;
+    font-size: 0.9rem;
+    padding: 8px 16px;
+    border-radius: 20px;
+    z-index: 3;
+}
+
+.hero-image-compact {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    max-width: 45%;
+    height: auto;
+}
+
+.hero-image-compact img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+/* Carousel Controls - Banner 1 Only */
+.hero-carousel-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    touch-action: pan-y;
+}
+
+.hero-carousel {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.hero-carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.6);
+    color: #1e3a5f;
+    border: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.hero-carousel-btn:hover {
+    background: white;
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.hero-carousel-btn.hero-prev {
+    left: 20px;
+}
+
+.hero-carousel-btn.hero-next {
+    right: 20px;
+}
+
+/* Carousel Dots */
+.hero-carousel-dots {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    z-index: 10;
+    padding: 12px 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 30px;
+    backdrop-filter: blur(4px);
+}
+
+/* Small Banner Overrides */
+.hero-banner-small .hero-carousel-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
+}
+
+.hero-banner-small .hero-carousel-dots {
+    bottom: 12px;
+    padding: 6px 12px;
+}
+
+.hero-banner-small .hero-carousel-dot {
+    width: 8px;
+    height: 8px;
+    border-width: 1px;
+}
+
+.hero-carousel-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.hero-carousel-dot::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.hero-carousel-dot.active {
+    background: white;
+    border-color: white;
+    transform: scale(1.5);
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
+}
+
+.hero-carousel-dot.active::before {
+    opacity: 1;
+    animation: dotPulse 2s infinite;
+}
+
+.hero-carousel-dot:hover {
+    background: rgba(255, 255, 255, 0.7);
+    border-color: rgba(255, 255, 255, 0.9);
+    transform: scale(1.2);
+}
+
+@keyframes dotPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.3;
+    }
+
+    50% {
+        transform: scale(1.3);
+        opacity: 0;
+    }
+}
+
+/* Features List - Banner 3 */
+.hero-features-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 16px;
+    max-width: 200px;
+}
+
+.hero-feature-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: white;
+    opacity: 0.95;
+}
+
+.hero-feature-item i {
+    font-size: 0.85rem;
+    color: #FFD700;
+}
+
+.hero-feature-item span {
+    font-weight: 500;
+}
+
+
+/* Responsive - Maintain Desktop Grid Layout */
+@media (max-width: 768px) {
+
+    /* Hero Section Padding */
+    .hero-section-3banner {
+        padding: 16px 0;
+    }
+
+    /* Maintain 2-column grid, adjusted for mobile */
+    .hero-grid-3 {
+        display: grid;
+        grid-template-columns: 2fr 1.2fr;
+        grid-template-rows: 1fr 1fr;
+        gap: 8px;
+        min-height: 260px;
+        height: auto;
+    }
+
+    /* Reset grid placement */
+    .hero-banner-large {
+        grid-column: 1 / 2;
+        grid-row: 1 / 3;
+        width: 100%;
+        aspect-ratio: auto;
+        min-height: 0;
+        height: 100%;
+    }
+
+    .hero-banner-top {
+        grid-column: 2 / 3;
+        grid-row: 1 / 2;
+        width: 100%;
+        min-height: 0;
+        height: 100%;
+    }
+
+    .hero-banner-bottom {
+        grid-column: 2 / 3;
+        grid-row: 2 / 3;
+        width: 100%;
+        min-height: 0;
+        height: 100%;
+    }
+
+    /* Scale down banner content */
+    .hero-slide {
+        padding: 20px;
+    }
+
+    /* Large banner text (Banner 1) */
+    .hero-title {
+        font-size: 1.8rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1.8rem;
+    }
+
+    .hero-cta-text {
+        font-size: 1.2rem;
+        margin: 8px 0;
+    }
+
+    .hero-cta-btn {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+        margin-top: 12px;
+    }
+
+    /* Small banners text (Banner 2 & 3) */
+    .hero-label {
+        font-size: 0.7rem;
+    }
+
+    .hero-title-compact {
+        font-size: 1.2rem;
+    }
+
+    .hero-desc {
+        font-size: 0.75rem;
+        margin-bottom: 10px;
+    }
+
+    .hero-btn {
+        padding: 6px 14px;
+        font-size: 0.75rem;
+    }
+
+    .hero-wa-btn {
+        padding: 8px 12px;
+        font-size: 0.75rem;
+        gap: 4px;
+    }
+
+    .hero-wa-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    /* Promo badge */
+    .hero-promo-badge {
+        top: 8px;
+        right: 8px;
+        font-size: 0.7rem;
+        padding: 4px 10px;
+    }
+
+    /* Images */
+    .hero-image,
+    .hero-image-compact {
+        max-width: 45%;
+    }
+
+    /* Features list */
+    .hero-features-list {
+        gap: 4px;
+        margin-top: 8px;
+        max-width: 140px;
+    }
+
+    .hero-feature-item {
+        font-size: 0.6rem;
+        gap: 4px;
+    }
+
+    .hero-feature-item i {
+        font-size: 0.7rem;
+    }
+
+    /* Content width adjustment */
+    .hero-content-compact {
+        max-width: 70%;
+    }
+
+    /* Carousel controls */
+    .hero-carousel-btn {
+        display: none !important;
+    }
+
+    .hero-carousel-btn.hero-prev {
+        left: 8px;
+    }
+
+    .hero-carousel-btn.hero-next {
+        right: 8px;
+    }
+
+    /* Carousel dots */
+    .hero-carousel-dots {
+        bottom: 12px;
+        padding: 8px 14px;
+        gap: 8px;
+    }
+
+    .hero-carousel-dot {
+        width: 10px;
+        height: 10px;
+    }
+}
+
+/* Extra Small Mobile (< 480px) */
+@media (max-width: 480px) {
+    .hero-grid-3 {
+        min-height: 320px;
+        gap: 8px;
+    }
+
+    .hero-title {
+        font-size: 1.4rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1.4rem;
+    }
+
+    .hero-title-compact {
+        font-size: 1rem;
+    }
+
+    .hero-slide {
+        padding: 16px;
+    }
+
+    .hero-cta-btn {
+        padding: 8px 16px;
+        font-size: 0.8rem;
+    }
+
+    .hero-carousel-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 0.8rem;
+    }
+}

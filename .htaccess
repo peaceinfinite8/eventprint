@@ -1,0 +1,28 @@
+<IfModule mod_rewrite.c>
+RewriteEngine On
+# RewriteBase / (Commented out to support subfolder like /eventprint/)
+
+# FORCE HTTPS + non-WWW (Only for production domain)
+# DISABLED FOR LOCALHOST COMPATIBILITY - Uncomment on Production
+# RewriteCond %{HTTP_HOST} ^(www\.)?infopeaceinfinite\.id$ [NC]
+# RewriteCond %{HTTPS} !=on
+# RewriteRule ^(.*)$ https://infopeaceinfinite.id/$1 [L,R=301]
+
+# RewriteCond %{HTTP_HOST} ^www\.infopeaceinfinite\.id$ [NC]
+# RewriteRule ^(.*)$ https://infopeaceinfinite.id/$1 [L,R=301]
+
+# STOP routing untuk folder static
+RewriteRule ^assets/ - [L]
+RewriteRule ^uploads/ - [L]
+RewriteRule ^data/ - [L]
+
+# kalau file/folder beneran ada, serve langsung
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# sisanya ke CMS
+RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+AddType application/json .json

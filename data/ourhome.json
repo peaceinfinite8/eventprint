@@ -1,0 +1,52 @@
+{
+    "stores": [
+        {
+            "title": "EventPrint Tempat",
+            "image": "",
+            "address": "Jl. Serua Raya No.46, Serua, Kec. Bojongsari, Kota Depok, Jawa Barat 16517",
+            "email": "myorder.eventprint@gmail.com",
+            "whatsapp": "081298984414",
+            "hours": [
+                "Senin – Jum'at : 09.00 – 18.00",
+                "Sabtu : 08.00 – 18.00",
+                "Minggu & Tanggal Merah : Libur"
+            ]
+        },
+        {
+            "title": "EventPrint Tempat",
+            "image": "",
+            "address": "Jl. Serua Raya No.46, Serua, Kec. Bojongsari, Kota Depok, Jawa Barat 16517",
+            "email": "myorder.eventprint@gmail.com",
+            "whatsapp": "081298984414",
+            "hours": [
+                "Senin – Jum'at : 09.00 – 18.00",
+                "Sabtu : 08.00 – 18.00",
+                "Minggu & Tanggal Merah : Libur"
+            ]
+        },
+        {
+            "title": "EventPrint Tempat",
+            "image": "",
+            "address": "Jl. Serua Raya No.46, Serua, Kec. Bojongsari, Kota Depok, Jawa Barat 16517",
+            "email": "myorder.eventprint@gmail.com",
+            "whatsapp": "081298984414",
+            "hours": [
+                "Senin – Jum'at : 09.00 – 18.00",
+                "Sabtu : 08.00 – 18.00",
+                "Minggu & Tanggal Merah : Libur"
+            ]
+        },
+        {
+            "title": "EventPrint Tempat",
+            "image": "",
+            "address": "Jl. Serua Raya No.46, Serua, Kec. Bojongsari, Kota Depok, Jawa Barat 16517",
+            "email": "myorder.eventprint@gmail.com",
+            "whatsapp": "081298984414",
+            "hours": [
+                "Senin – Jum'at : 09.00 – 18.00",
+                "Sabtu : 08.00 – 18.00",
+                "Minggu & Tanggal Merah : Libur"
+            ]
+        }
+    ]
+}
