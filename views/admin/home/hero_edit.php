@@ -1,7 +1,7 @@
 <?php
 // views/admin/home/hero_edit.php
 
-$baseUrl   = $vars['baseUrl'] ?? '/eventprint/public';
+$baseUrl   = $vars['baseUrl'] ?? '/eventprint';
 $csrfToken = $vars['csrfToken'] ?? ''; // WAJIB dikirim dari controller
 
 $mode  = $vars['mode']  ?? 'index';   // index | create | edit

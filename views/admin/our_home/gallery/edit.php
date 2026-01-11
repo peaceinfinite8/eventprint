@@ -1,7 +1,7 @@
 <?php
 // views/admin/our_home/gallery/edit.php
 
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 $item = $item ?? null;
 $stores = $stores ?? [];
 
@@ -93,9 +93,18 @@ $val = function (string $key, $default = '') use ($old, $item) {
 
                         <div class="mt-4">
                             <label class="dash-form-label mb-2">GANTI GAMBAR (OPSIONAL)</label>
-                            <input type="file" name="image" class="form-control" accept="image/*">
-                            <div class="form-text mt-2 small">Format: JPG/PNG/WEBP. Kosongkan jika tidak ingin
-                                mengganti.</div>
+                            <input type="file" name="image" class="form-control"
+                                accept="image/jpeg,image/png,image/webp" data-cropper="true" data-aspect-ratio="1.3333">
+                            <div class="form-text mt-2 small">Format: JPG/PNG/WEBP. Rasio 4:3. <br>Kosongkan jika tidak
+                                ingin mengganti.</div>
+                        </div>
+
+                        <!-- Live Preview -->
+                        <div id="imgPreviewContainer" class="mt-3" style="display:none">
+                            <label class="form-label small text-muted text-uppercase fw-bold">Preview Baru</label>
+                            <div class="p-2 border rounded bg-light d-inline-block">
+                                <img id="imgPreview" style="max-width: 100%; max-height: 200px; object-fit: contain;">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -112,3 +121,5 @@ $val = function (string $key, $default = '') use ($old, $item) {
         </form>
     </div>
 </div>
+
+<!-- Include Cropper Modal & Handler -->

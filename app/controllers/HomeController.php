@@ -1,40 +1,50 @@
 <?php
 // app/controllers/HomeController.php
 
-require_once __DIR__ . '/../core/Controller.php';
-require_once __DIR__ . '/../helpers/Security.php';
+$controllerPath = realpath(__DIR__ . '/../../core/Controller.php');
+if ($controllerPath)
+    require_once $controllerPath;
+
+$securityPath = realpath(__DIR__ . '/../../helpers/Security.php');
+if ($securityPath)
+    require_once $securityPath;
 
 class HomeController extends Controller
 {
 
     public function index(): void
     {
-        $baseUrl = rtrim($this->config['base_url'] ?? '/eventprint/public', '/');
+        $baseUrl = rtrim($this->config['base_url'] ?? '/eventprint', '/');
         $db = db();
 
         // ===== 1) categories (dropdown mapping) =====
         // ===== 1) categories (dropdown mapping) =====
         $categories = [];
-        // Fetch ALL categories (active & inactive) so admin can map them freely
-        $res = $db->query("SELECT id, name, slug, icon FROM product_categories ORDER BY sort_order ASC, id ASC");
+        // Fetch ALL categories with product count
+        $res = $db->query("
+            SELECT c.id, c.name, c.slug, c.icon, COUNT(p.id) as product_count
+            FROM product_categories c
+            LEFT JOIN products p ON p.category_id = c.id AND p.is_active = 1 AND p.deleted_at IS NULL
+            GROUP BY c.id, c.name, c.slug, c.icon
+            ORDER BY c.sort_order ASC, c.id ASC
+        ");
         if ($res)
             while ($r = $res->fetch_assoc())
                 $categories[] = $r;
 
         // ===== 2) home_content (mapping + contact + cta) =====
-        $homeContent = [];
-        if ($stmt = $db->prepare("SELECT field, value FROM page_contents WHERE page_slug='home' AND section='home_content'")) {
-            $stmt->execute();
-            $rs = $stmt->get_result();
-            while ($r = $rs->fetch_assoc()) {
-                $homeContent[(string) $r['field']] = (string) ($r['value'] ?? '');
-            }
-            $stmt->close();
-        }
+        require_once __DIR__ . '/../models/Setting.php';
+        $settingModel = new Setting();
+        $globalSettings = $settingModel->getAll();
 
-        $printId = (int) ($homeContent['home_print_category_id'] ?? 0);
-        $mediaId = (int) ($homeContent['home_media_category_id'] ?? 0);
-        $merchId = (int) ($homeContent['home_merch_category_id'] ?? 0);
+        // Use global settings for mapping
+        $printId = (int) ($globalSettings['home_print_category_id'] ?? 0);
+        $mediaId = (int) ($globalSettings['home_media_category_id'] ?? 0);
+        $merchId = (int) ($globalSettings['home_merch_category_id'] ?? 0);
+
+        // Fallback for contact info (if needed for views, though redundant with layout)
+        // Fallback for contact info (if needed for views, though redundant with layout)
+        $homeContent = $globalSettings; // Use global settings as content source
 
         // ===== 3) hero stats =====
         $heroTotal = 0;
@@ -186,7 +196,7 @@ class HomeController extends Controller
 
     public function content(): void
     {
-        $baseUrl = rtrim($this->config['base_url'] ?? '/eventprint/public', '/');
+        $baseUrl = rtrim($this->config['base_url'] ?? '/eventprint', '/');
         $db = db();
 
         $page = 'home';
@@ -225,7 +235,7 @@ class HomeController extends Controller
         Security::requireCsrfToken();
 
         $db = db();
-        $baseUrl = rtrim($this->config['base_url'] ?? '/eventprint/public', '/');
+        $baseUrl = rtrim($this->config['base_url'] ?? '/eventprint', '/');
 
         $page = 'home';
         $section = 'home_content';
@@ -249,20 +259,89 @@ class HomeController extends Controller
 
     public function updateHomeCategoryMap(): void
     {
-        Security::requireCsrfToken();
+        $this->requireAuth();
+        $this->validateCsrf();
 
-        $db = db();
-        $printId = (int) ($_POST['home_print_category_id'] ?? 0);
-        $mediaId = (int) ($_POST['home_media_category_id'] ?? 0);
-        $merchId = (int) ($_POST['home_merch_category_id'] ?? 0);
+        require_once __DIR__ . '/../models/Setting.php';
+        $settingModel = new Setting();
 
-        $this->upsertPageContent($db, 'home', 'home_content', 'home_print_category_id', (string) $printId);
-        $this->upsertPageContent($db, 'home', 'home_content', 'home_media_category_id', (string) $mediaId);
-        $this->upsertPageContent($db, 'home', 'home_content', 'home_merch_category_id', (string) $merchId);
+        // Ensure upload directory exists
+        $uploadDir = __DIR__ . '/../../public/uploads/banners/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
 
-        log_admin_action('Update Home Map', "Updated homepage category mapping", ['print_id' => $printId, 'media_id' => $mediaId, 'merch_id' => $merchId]);
+        // New Logic: Dynamic Sections
+        $sections = $_POST['sections'] ?? [];
+        if (is_array($sections)) {
+            $cleanSections = [];
+            foreach ($sections as $index => $s) {
+                if (!empty($s['category_id'])) { // Only save if cat is selected
 
-        $this->redirectWithSuccess('admin/home', 'Mapping kategori Home berhasil disimpan.');
+                    // Handle Image Upload
+                    $imagePath = $s['existing_image'] ?? '';
+
+                    if (
+                        isset($_FILES['sections']['name'][$index]['image']) &&
+                        $_FILES['sections']['error'][$index]['image'] === UPLOAD_ERR_OK
+                    ) {
+
+                        $tmpName = $_FILES['sections']['tmp_name'][$index]['image'];
+                        $name = basename($_FILES['sections']['name'][$index]['image']);
+                        $size = $_FILES['sections']['size'][$index]['image'];
+                        $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+                        $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+                        // Limit 2MB
+                        if ($size > 2 * 1024 * 1024) {
+                            $this->redirectWithError('admin/home', 'Gagal: Ukuran gambar pada Section #' . ($index + 1) . ' melebihi 2MB.');
+                            return;
+                        }
+
+                        if (in_array($ext, $allowed)) {
+                            $newName = 'banner_' . time() . '_' . uniqid() . '.' . $ext;
+                            if (move_uploaded_file($tmpName, $uploadDir . $newName)) {
+                                $imagePath = 'uploads/banners/' . $newName;
+                            } else {
+                                $this->redirectWithError('admin/home', 'Gagal mengupload gambar untuk Section #' . ($index + 1));
+                                return;
+                            }
+                        } else {
+                            $this->redirectWithError('admin/home', 'Format gambar tidak didukung (gunakan jpg, png, webp).');
+                            return;
+                        }
+                    } elseif (
+                        isset($_FILES['sections']['error'][$index]['image']) &&
+                        $_FILES['sections']['error'][$index]['image'] !== UPLOAD_ERR_NO_FILE &&
+                        $_FILES['sections']['error'][$index]['image'] !== UPLOAD_ERR_OK
+                    ) {
+                        // File upload error (e.g. exceeds php.ini directive)
+                        $this->redirectWithError('admin/home', 'Gagal upload: File mungkin terlalu besar (Max server config).');
+                        return;
+                    }
+
+                    $cleanSections[] = [
+                        'id' => $s['id'] ?? uniqid('sec_'),
+                        'label' => strip_tags($s['label'] ?? 'Section'),
+                        'category_id' => (int) $s['category_id'],
+                        'theme' => strip_tags($s['theme'] ?? 'red'),
+                        'layout' => strip_tags($s['layout'] ?? 'standard'),
+                        'overlay_style' => strip_tags($s['overlay_style'] ?? 'dark'),
+                        'custom_title' => strip_tags($s['custom_title'] ?? ''),
+                        'custom_description' => strip_tags($s['custom_description'] ?? ''),
+                        'custom_button_text' => strip_tags($s['custom_button_text'] ?? ''),
+                        'image' => $imagePath
+                    ];
+                }
+            }
+            // Save JSON
+            $settingModel->saveAll(['home_sections' => json_encode($cleanSections)]);
+        } else {
+            // Fallback or Empty save
+            $settingModel->saveAll(['home_sections' => json_encode([])]);
+        }
+
+        $this->redirectWithSuccess('admin/home', 'Mapping kategori dan banner berhasil disimpan.');
     }
 
     private function upsertPageContent(mysqli $db, string $page, string $section, string $field, string $value): void
@@ -326,9 +405,18 @@ class HomeController extends Controller
         $ext = $allowed[$mime];
         $name = 'hero_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
 
-        // target folder (public/uploads/hero)
-        $publicDir = rtrim($_SERVER['DOCUMENT_ROOT'], '/\\') . '/eventprint/public';
-        // kalau project kamu beda, ganti '/eventprint/public' di atas sesuai lokasi public kamu.
+        $name = 'hero_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+
+        // Dynamic Path Detection V3 (Robust for all environments)
+        // We want to save to the directory where index.php lives (the web root).
+        // $_SERVER['SCRIPT_FILENAME'] usually points to public/index.php or public_html/index.php
+        $publicDir = dirname($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['DOCUMENT_ROOT']);
+
+        // Fallback or adjustment if needed (sanity check)
+        // If that dir is somehow empty, fall back to DOCUMENT_ROOT
+        if (empty($publicDir) || $publicDir === '.') {
+            $publicDir = rtrim($_SERVER['DOCUMENT_ROOT'], '/\\');
+        }
 
         $targetDir = $publicDir . '/uploads/hero';
         if (!is_dir($targetDir)) {
@@ -410,6 +498,11 @@ class HomeController extends Controller
         // upload image (kalau tidak upload => '')
         $image = $this->uploadHeroImage('image_file', '');
 
+        if (empty($image)) {
+            $this->redirectWithError('admin/home/hero/create', 'Gambar slide wajib diupload.');
+            return;
+        }
+
         $stmt = $db->prepare("INSERT INTO hero_slides (page_slug,title,subtitle,badge,cta_text,cta_link,image,position,is_active)
                           VALUES (?,?,?,?,?,?,?,?,?)");
         $stmt->bind_param('sssssssii', $page, $title, $subtitle, $badge, $ctaText, $ctaLink, $image, $pos, $active);
@@ -465,7 +558,25 @@ class HomeController extends Controller
         $oldImage = trim((string) ($_POST['old_image'] ?? ''));
 
         // kalau upload baru, replace + delete old
-        $image = $this->uploadHeroImage('image_file', $oldImage);
+        try {
+            $newImage = $this->uploadHeroImage('image_file', $oldImage);
+        } catch (Exception $e) {
+            $this->redirectWithError('admin/home/hero/edit/' . $id, $e->getMessage());
+            return;
+        }
+
+        // Keep old image if upload returns empty (and we had an old image)
+        // uploadHeroImage logic: if no file, returns $oldPath. So $newImage should be $oldImage.
+        // But if $oldImage was empty, and no file, it returns empty.
+        // We should enforce that we don't save empty unless it's intended (which it never is for Hero).
+        $image = $newImage;
+        if (empty($image) && !empty($oldImage)) {
+            $image = $oldImage;
+        }
+
+        // Final guard: If completely empty, do not allow update if it was strict? 
+        // Actually, if it's empty, we might just have to accept it or throw error.
+        // But let's assume if it returns empty, it means no file & no old file.
 
         $stmt = $db->prepare("UPDATE hero_slides
                           SET title=?, subtitle=?, badge=?, cta_text=?, cta_link=?, image=?, position=?, is_active=?, updated_at=CURRENT_TIMESTAMP
@@ -510,7 +621,7 @@ class HomeController extends Controller
 
         // delete file (kalau lokal)
         if ($img !== '' && !preg_match('#^https?://#i', $img)) {
-            $publicDir = rtrim($_SERVER['DOCUMENT_ROOT'], '/\\') . '/eventprint/public';
+            $publicDir = rtrim($_SERVER['DOCUMENT_ROOT'], '/\\') . '/eventprint';
             $abs = $publicDir . '/' . ltrim($img, '/');
             if (is_file($abs))
                 @unlink($abs);
@@ -525,7 +636,7 @@ class HomeController extends Controller
 
     public function whyChoose(): void
     {
-        $baseUrl = rtrim($this->config['base_url'] ?? '/eventprint/public', '/');
+        $baseUrl = rtrim($this->config['base_url'] ?? '/eventprint', '/');
         $db = db();
 
         $page = 'home';
@@ -736,7 +847,7 @@ class HomeController extends Controller
         }
 
         if ($img !== '' && !preg_match('#^https?://#i', $img)) {
-            $publicDir = rtrim($_SERVER['DOCUMENT_ROOT'], '/\\') . '/eventprint/public';
+            $publicDir = rtrim($_SERVER['DOCUMENT_ROOT'], '/\\') . '/eventprint';
             $abs = $publicDir . '/' . ltrim($img, '/');
             if (is_file($abs))
                 @unlink($abs);

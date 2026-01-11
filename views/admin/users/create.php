@@ -1,4 +1,4 @@
-<?php $baseUrl = $baseUrl ?? '/eventprint/public'; ?>
+<?php $baseUrl = $baseUrl ?? '/eventprint'; ?>
 
 <div class="d-flex align-items-center justify-content-between mb-4 fade-in">
   <div>

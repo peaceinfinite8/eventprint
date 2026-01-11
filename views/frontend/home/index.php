@@ -1,6 +1,6 @@
 <?php
 // views/frontend/home/index.php
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 ?>
 
 <!-- Banner Carousel -->
@@ -37,41 +37,110 @@ $baseUrl = $baseUrl ?? '/eventprint/public';
   </div>
 </section>
 
-<!-- Print Warna & Hitam Putih -->
-<section class="section">
-  <div class="container">
-    <div class="section-header">
-      <h2 class="section-title">Print Warna & Hitam Putih</h2>
-    </div>
-    <div id="printProducts" class="grid grid-4">
-      <!-- Rendered by JS -->
-    </div>
-  </div>
-</section>
+<!-- Custom CSS for Marketplace Layout -->
+<link rel="stylesheet" href="<?= $baseUrl ?>/assets/frontend/css/home-marketplace.css?v=<?= time() ?>">
 
-<!-- Cetak Media Promosi -->
-<section class="section">
-  <div class="container">
-    <div class="section-header">
-      <h2 class="section-title">Cetak Media Promosi</h2>
-    </div>
-    <div id="mediaProducts" class="grid grid-4">
-      <!-- Rendered by JS -->
-    </div>
-  </div>
-</section>
+<!-- ==============================================
+     DYNAMIC SECTIONS LOOP
+     ============================================== -->
+<?php if (!empty($dynamicSections)): ?>
+  <?php foreach ($dynamicSections as $sec): ?>
+    <?php
+    $reverseClass = ($sec['layout'] === 'reverse') ? 'reverse' : '';
 
-<!-- Merchandise & Souvenir -->
-<section class="section">
-  <div class="container">
-    <div class="section-header">
-      <h2 class="section-title">Merchandise & Souvenir</h2>
-    </div>
-    <div id="merchProducts" class="grid grid-4">
-      <!-- Rendered by JS -->
-    </div>
-  </div>
-</section>
+    // Theme Logic: Support Hex or Legacy Class
+    $themeValue = $sec['theme'] ?? 'red';
+    $themeClass = '';
+    $customGradientStyle = '';
+
+    if (strpos($themeValue, '#') === 0) {
+      // It is a Hex Color (Custom)
+      // Generate a simple gradient: Color -> Darker Variant
+      // Simple darker color calculation for PHP 7 lines
+      // (We assume valid 6-char hex for simplicity or fallback)
+      $hex = ltrim($themeValue, '#');
+      if (strlen($hex) == 3) {
+        $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+      }
+      $r = hexdec(substr($hex, 0, 2));
+      $g = hexdec(substr($hex, 2, 2));
+      $b = hexdec(substr($hex, 4, 2));
+
+      // Darken by 20%
+      $r2 = max(0, $r - 50);
+      $g2 = max(0, $g - 50);
+      $b2 = max(0, $b - 50);
+
+      $color2 = sprintf("#%02x%02x%02x", $r2, $g2, $b2);
+
+      $customGradientStyle = "background: linear-gradient(135deg, $themeValue, $color2) !important;";
+    } else {
+      // Legacy Class
+      $themeClass = 'theme-' . $themeValue;
+    }
+
+    $products = array_slice($sec['products'], 0, 6);
+
+    // Custom Text Logic (No Fallbacks for Desc/Button as per request)
+    $bannerTitle = !empty($sec['custom_title']) ? $sec['custom_title'] : $sec['category_name'];
+    $bannerDesc = $sec['custom_description'] ?? '';
+    $bannerBtn = $sec['custom_button_text'] ?? '';
+    ?>
+    <section class="section">
+      <div class="container">
+        <div class="section-split-layout <?= $reverseClass ?>">
+
+          <!-- Banner Card -->
+          <?php
+          $bgStyle = '';
+          if (!empty($sec['image'])) {
+            // Determine full URL for image
+            $imgPath = $baseUrl . '/' . ltrim($sec['image'], '/');
+            $overlayStyle = $sec['overlay_style'] ?? 'dark';
+
+            if ($overlayStyle === 'light') {
+              // No dark overlay ("Bright" / "Asli")
+              $bgStyle = 'style="background: url(\'' . $imgPath . '\') center/cover no-repeat !important;"';
+            } else {
+              // Default Dark Overlay (for contrast)
+              $bgStyle = 'style="background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.6) 100%), url(\'' . $imgPath . '\') center/cover no-repeat !important;"';
+            }
+          } elseif ($customGradientStyle) {
+            // Use Custom Color Gradient if no image is present
+            $bgStyle = 'style="' . $customGradientStyle . '"';
+          }
+          ?>
+          <div class="section-banner-card <?= $themeClass ?>" <?= $bgStyle ?>>
+            <!-- Click Overlay (Partial Height to exclude bottom curve) -->
+            <a href="<?= $baseUrl ?>/products?category=<?= $sec['category_slug'] ?>" class="banner-click-overlay"
+              style="position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 140px); z-index: 5;"
+              aria-label="Belanja <?= htmlspecialchars($sec['category_name']) ?>"></a>
+
+            <h3><?= htmlspecialchars($bannerTitle) ?></h3>
+
+            <?php if (!empty($bannerDesc)): ?>
+              <p class="mb-4 text-white opacity-75"><?= htmlspecialchars($bannerDesc) ?></p>
+            <?php endif; ?>
+
+            <?php if (!empty($bannerBtn)): ?>
+              <span class="banner-link">
+                <?= htmlspecialchars($bannerBtn) ?> <i class="fa-solid fa-arrow-right"></i>
+              </span>
+            <?php endif; ?>
+          </div>
+
+          <!-- Product Grid -->
+          <div class="section-product-grid">
+            <?php foreach ($products as $p): ?>
+              <?php include __DIR__ . '/../partials/product_card.php'; ?>
+            <?php endforeach; ?>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  <?php endforeach; ?>
+<?php endif; ?>
 
 
 <!-- Kata Mereka (Testimonials) -->

@@ -1,7 +1,7 @@
 <?php
 // views/admin/our_home/gallery/index.php
 
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 $items = $items ?? [];
 $pagination = $pagination ?? ['total' => 0, 'page' => 1, 'per_page' => 20];
 

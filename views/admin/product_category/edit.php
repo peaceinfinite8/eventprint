@@ -1,5 +1,5 @@
 <?php
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 $category = $category ?? null;
 
 if (!$category) {
@@ -38,7 +38,8 @@ if (!empty($old)) {
   <div class="dash-body">
 
     <form method="post"
-      action="<?php echo $baseUrl; ?>/admin/product-categories/update/<?php echo (int) $category['id']; ?>">
+      action="<?php echo $baseUrl; ?>/admin/product-categories/update/<?php echo (int) $category['id']; ?>"
+      enctype="multipart/form-data">
 
       <input type="hidden" name="_token"
         value="<?php echo htmlspecialchars($csrfToken ?? Security::csrfToken(), ENT_QUOTES, 'UTF-8'); ?>">
@@ -70,7 +71,8 @@ if (!empty($old)) {
             <input type="text" name="slug" class="form-control"
               value="<?php echo htmlspecialchars($old['slug'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
             <div class="form-text">Current:
-              <code><?php echo htmlspecialchars($category['slug'], ENT_QUOTES, 'UTF-8'); ?></code></div>
+              <code><?php echo htmlspecialchars($category['slug'], ENT_QUOTES, 'UTF-8'); ?></code>
+            </div>
           </div>
         </div>
       </div>
@@ -99,6 +101,40 @@ if (!empty($old)) {
         </div>
       </div>
 
+      <div class="mb-3">
+        <label class="form-label fw-bold text-muted small text-uppercase">Service Icon (Optional)</label>
+
+        <?php if (!empty($category['icon'])): ?>
+          <div class="mb-2 p-2 border rounded bg-light d-inline-block text-center">
+            <?php if (preg_match('/^bi-/', $category['icon'])): ?>
+              <!-- Text Icon (Legacy) -->
+              <i class="<?php echo htmlspecialchars($category['icon']); ?> fs-2 text-primary"></i>
+              <div class="small text-muted mt-1">Icon Bootstrap:
+                <code><?php echo htmlspecialchars($category['icon']); ?></code>
+              </div>
+            <?php else: ?>
+              <!-- Image Icon -->
+              <img src="<?php echo $baseUrl . '/' . htmlspecialchars($category['icon']); ?>" alt="Icon"
+                style="width: 64px; height: 64px; object-fit: contain;">
+            <?php endif; ?>
+          </div>
+        <?php endif; ?>
+
+        <input type="file" name="icon" class="form-control" accept="image/jpeg,image/png,image/webp,image/svg+xml"
+          data-cropper="true" data-aspect-ratio="1">
+        <div class="form-text small">
+          <i class="fas fa-info-circle me-1"></i> Rasio 1:1. Ukuran disarankan 96x96px. Format: JPG, PNG, WebP, SVG.
+        </div>
+
+        <!-- Live Preview -->
+        <div id="imgPreviewContainer" class="mt-3" style="display:none">
+          <label class="form-label small text-muted text-uppercase fw-bold">Preview (Will be saved)</label>
+          <div class="p-2 border rounded bg-light d-inline-block">
+            <img id="imgPreview" style="max-width: 150px; max-height: 150px; object-fit: contain;">
+          </div>
+        </div>
+      </div>
+
       <div class="form-check form-switch mb-3">
         <input type="checkbox" name="is_active" value="1" class="form-check-input" id="activeCheck" <?php echo !empty($category['is_active']) ? 'checked' : ''; ?>>
         <label class="form-check-label" for="activeCheck">Active Status</label>
@@ -113,3 +149,5 @@ if (!empty($old)) {
 
   </div>
 </div>
+
+<!-- Include Cropper Modal & Handler -->

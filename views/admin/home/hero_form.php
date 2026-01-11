@@ -1,6 +1,6 @@
 <?php
 // views/admin/home/hero_form.php
-$baseUrl = $vars['baseUrl'] ?? '/eventprint/public';
+$baseUrl = $vars['baseUrl'] ?? '/eventprint';
 $baseUrl = rtrim($baseUrl, '/');
 $mode = $vars['mode'] ?? 'create'; // create|edit
 $item = $vars['item'] ?? [];
@@ -33,7 +33,7 @@ $currentImage = (string) ($item['image'] ?? ''); // path relatif di DB
         <div class="col-lg-8">
           <div class="mb-4">
             <label class="dash-form-label">JUDUL SLIDE</label>
-            <input class="form-control" name="title" required value="<?= htmlspecialchars($item['title'] ?? '') ?>"
+            <input class="form-control" name="title" value="<?= htmlspecialchars($item['title'] ?? '') ?>"
               placeholder="Masukkan judul menarik...">
           </div>
 
@@ -62,17 +62,17 @@ $currentImage = (string) ($item['image'] ?? ''); // path relatif di DB
           <div class="bg-light p-3 rounded-3 mb-4 border">
             <label class="dash-form-label mb-2">IMAGE SLIDE</label>
 
-            <?php if ($currentImage): ?>
-              <div class="mb-3 text-center">
-                <img src="<?= htmlspecialchars($baseUrl . '/' . ltrim($currentImage, '/')) ?>" alt="Preview"
-                  class="img-fluid rounded shadow-sm border" style="max-height: 150px; object-fit: cover;">
-              </div>
-            <?php endif; ?>
+            <div class="mb-3 text-center" id="imgPreviewContainer" <?= empty($currentImage) ? 'style="display:none;"' : '' ?>>
+              <img id="imgPreview"
+                src="<?= !empty($currentImage) ? htmlspecialchars($baseUrl . '/' . ltrim($currentImage, '/')) : '#' ?>"
+                alt="Preview" class="img-fluid rounded shadow-sm border" style="max-height: 150px; object-fit: cover;">
+            </div>
 
-            <input class="form-control form-control-sm" type="file" name="image_file"
-              accept="image/jpeg,image/png,image/webp">
+            <input class="form-control form-control-sm" type="file" name="image_file" id="imageInput"
+              accept="image/jpeg,image/png,image/webp" <?= $mode === 'create' ? 'required' : '' ?> data-cropper="true"
+              data-aspect-ratio="2.6666">
             <div class="text-muted extra-small mt-2">
-              <i class="fas fa-info-circle me-1"></i> Opsional. Format: JPG/PNG/WebP.
+              <i class="fas fa-info-circle me-1"></i> Wajib diisi. Rasio otomatis 8:3 (Wide).
             </div>
           </div>
 
@@ -99,14 +99,16 @@ $currentImage = (string) ($item['image'] ?? ''); // path relatif di DB
         </div>
       </div>
 
-      <div class="d-flex gap-2 mt-5 pt-3 border-top">
-        <button class="btn btn-primary px-4" type="submit">
-          <i class="fas fa-save me-2"></i>Simpan Slide
+      <div class="d-flex justify-content-end mt-4 pt-3 border-top">
+        <a href="<?= $baseUrl ?>/admin/home" class="btn btn-light border px-4 me-2">Batal</a>
+        <button type="submit" class="btn btn-primary px-4 fw-bold">
+          <i class="fas fa-save me-2"></i><?= $mode === 'edit' ? 'Update Slide' : 'Simpan Slide' ?>
         </button>
-        <a class="btn btn-outline-secondary px-4" href="<?= $baseUrl ?>/admin/home/hero">
-          <i class="fas fa-arrow-left me-2"></i>Kembali
-        </a>
       </div>
     </form>
   </div>
 </div>
+
+<!-- Include Cropper Modal & Handler -->
+
+<!-- End of file -->

@@ -1,5 +1,5 @@
 <?php
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 $product = $product ?? [];
 $allMaterials = $allMaterials ?? [];
 $allLaminations = $allLaminations ?? [];

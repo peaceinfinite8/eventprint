@@ -1,5 +1,5 @@
 <?php
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 $messages = $messages ?? [];
 $total = $total ?? 0;
 $page = $page ?? 1;

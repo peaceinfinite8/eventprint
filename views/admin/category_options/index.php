@@ -1,5 +1,5 @@
 <?php
-$baseUrl              = $baseUrl ?? '/eventprint/public';
+$baseUrl              = $baseUrl ?? '/eventprint';
 $categories           = $categories ?? [];
 $selectedCategoryId   = $selectedCategoryId ?? null;
 $selectedCategory     = $selectedCategory ?? null;

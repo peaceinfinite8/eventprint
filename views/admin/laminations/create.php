@@ -1,5 +1,5 @@
 <?php
-$baseUrl       = $baseUrl ?? '/eventprint/public';
+$baseUrl       = $baseUrl ?? '/eventprint';
 $nextSortOrder = $nextSortOrder ?? 1;
 $errors = $errors ?? [];
 $old    = $old ?? [];
@@ -15,7 +15,7 @@ $csrfToken = $csrfToken ?? (class_exists('Security') ? Security::csrfToken() : '
 
 <div class="dash-container-card fade-in delay-1">
   <div class="p-4">
-    <form method="post" action="<?php echo $baseUrl; ?>/admin/laminations/store">
+    <form method="post" action="<?php echo $baseUrl; ?>/admin/laminations/store" enctype="multipart/form-data">
       <input type="hidden" name="_token"
              value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
 
@@ -60,6 +60,12 @@ $csrfToken = $csrfToken ?? (class_exists('Security') ? Security::csrfToken() : '
               <div class="p-4 bg-light rounded border border-light h-100">
                   <h6 class="fw-bold text-primary mb-3">Pengaturan Tampilan</h6>
                   
+                  <div class="mb-3">
+                    <label class="dash-form-label">GAMBAR ILUSTRASI</label>
+                    <input type="file" name="image" class="form-control" accept="image/*">
+                    <div class="form-text small">Opsional. Muncul saat laminasi dipilih.</div>
+                  </div>
+
                   <div class="mb-3">
                     <label class="dash-form-label">URUTAN TAMPIL</label>
                     <input type="number" name="sort_order" class="form-control"

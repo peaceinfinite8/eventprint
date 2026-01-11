@@ -1,5 +1,5 @@
 <?php
-$baseUrl = $vars['baseUrl'] ?? '/eventprint/public';
+$baseUrl = $vars['baseUrl'] ?? '/eventprint';
 $content = $vars['content'] ?? [];
 $csrfToken = $vars['csrfToken'] ?? '';
 ?>
@@ -53,9 +53,20 @@ $csrfToken = $vars['csrfToken'] ?? '';
                             </div>
                         <?php endif; ?>
 
-                        <input class="form-control form-control-sm" type="file" name="image_file" accept="image/*">
+                        <input class="form-control form-control-sm" type="file" name="image_file"
+                            accept="image/jpeg,image/png,image/webp" data-cropper="true" data-aspect-ratio="1.3333">
                         <div class="text-muted extra-small mt-2">
-                            <i class="fas fa-info-circle me-1"></i> Biarkan kosong jika tidak ingin mengubah gambar.
+                            <i class="fas fa-info-circle me-1"></i> Rasio 4:3. Biarkan kosong jika tidak ingin mengubah
+                            gambar.
+                        </div>
+
+                        <!-- Live Preview -->
+                        <div id="imgPreviewContainer" class="mt-3" style="display:none">
+                            <label class="form-label small text-muted text-uppercase fw-bold">Preview (Akan
+                                disimpan)</label>
+                            <div class="p-2 border rounded bg-light d-inline-block">
+                                <img id="imgPreview" style="max-width: 200px; max-height: 150px; object-fit: contain;">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -72,3 +83,5 @@ $csrfToken = $vars['csrfToken'] ?? '';
         </form>
     </div>
 </div>
+
+<!-- Include Cropper Modal & Handler -->

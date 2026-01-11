@@ -1,7 +1,7 @@
 <?php
 // views/admin/blog/edit.php
 
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 $post = $post ?? null;
 
 if (!$post) {

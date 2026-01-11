@@ -1,6 +1,6 @@
 <?php
 // views/admin/contact-messages/view.php
-$baseUrl = $vars['baseUrl'] ?? '/eventprint/public';
+$baseUrl = $vars['baseUrl'] ?? '/eventprint';
 $baseUrl = rtrim($baseUrl, '/');
 $message = $vars['message'] ?? [];
 ?>
@@ -74,11 +74,25 @@ $message = $vars['message'] ?? [];
                     <h5 class="card-title mb-0">Quick Reply</h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted small">Open email client:</p>
-                    <a href="mailto:<?= htmlspecialchars($message['email']) ?>?subject=Re: <?= urlencode($message['subject']) ?>"
+                    <p class="text-muted small">Balas pesan melalui email:</p>
+                    <button
+                        onclick="replyViaEmail('<?= htmlspecialchars($message['email']) ?>', '<?= htmlspecialchars($message['subject']) ?>', '<?= htmlspecialchars($message['name']) ?>')"
                         class="btn btn-success w-100">
                         <i class="fas fa-envelope"></i> Reply via Email
-                    </a>
+                    </button>
+                    <p class="text-muted small mt-2">Akan membuka aplikasi email Anda</p>
+
+                    <?php if (!empty($message['phone'])): ?>
+                        <hr class="my-3">
+
+                        <p class="text-muted small">Balas pesan melalui WhatsApp:</p>
+                        <button
+                            onclick="replyViaWhatsApp('<?= htmlspecialchars($message['phone']) ?>', '<?= htmlspecialchars($message['name']) ?>', '<?= htmlspecialchars($message['subject']) ?>')"
+                            class="btn btn-success w-100" style="background-color: #25D366; border-color: #25D366;">
+                            <i class="fab fa-whatsapp"></i> Reply via WhatsApp
+                        </button>
+                        <p class="text-muted small mt-2">Akan membuka WhatsApp Web/App</p>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -89,6 +103,19 @@ $message = $vars['message'] ?? [];
     document.addEventListener('DOMContentLoaded', function () {
         const baseUrl = '<?= $baseUrl ?>';
         const messageId = <?= (int) $message['id'] ?>;
+
+        // Initialize Toast
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer)
+                toast.addEventListener('mouseleave', Swal.resumeTimer)
+            }
+        });
 
         // Toggle read/unread
         document.getElementById('btnToggleRead')?.addEventListener('click', async function () {
@@ -102,16 +129,32 @@ $message = $vars['message'] ?? [];
                 if (data.success) {
                     location.reload();
                 } else {
-                    alert('Failed to update status');
+                    Toast.fire({
+                        icon: 'error',
+                        title: 'Failed to update status'
+                    });
                 }
             } catch (error) {
-                alert('Error: ' + error.message);
+                Toast.fire({
+                    icon: 'error',
+                    title: 'Error: ' + error.message
+                });
             }
         });
 
         // Delete message
         document.getElementById('btnDelete')?.addEventListener('click', async function () {
-            if (!confirm('Are you sure you want to delete this message?')) return;
+            const result = await Swal.fire({
+                title: 'Delete Message?',
+                text: 'Are you sure you want to delete this message?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!'
+            });
+
+            if (!result.isConfirmed) return;
 
             try {
                 const response = await fetch(`${baseUrl}/admin/contact-messages/${messageId}/delete`, {
@@ -121,13 +164,88 @@ $message = $vars['message'] ?? [];
 
                 const data = await response.json();
                 if (data.success) {
-                    window.location.href = `${baseUrl}/admin/contact-messages`;
+                    Toast.fire({
+                        icon: 'success',
+                        title: 'Message deleted successfully'
+                    });
+                    setTimeout(() => {
+                        window.location.href = `${baseUrl}/admin/contact-messages`;
+                    }, 500);
                 } else {
-                    alert('Failed to delete message');
+                    Toast.fire({
+                        icon: 'error',
+                        title: 'Failed to delete message'
+                    });
                 }
             } catch (error) {
-                alert('Error: ' + error.message);
+                Toast.fire({
+                    icon: 'error',
+                    title: 'Error: ' + error.message
+                });
             }
         });
+
+        /**
+         * Reply via Email with mailto link
+         * Includes fallback if mailto doesn't work
+         */
+        window.replyViaEmail = function (email, subject, name) {
+            // Create mailto link with pre-filled subject
+            const mailtoLink = `mailto:${email}?subject=Re: ${encodeURIComponent(subject)}`;
+
+            // Try to open default email client
+            window.location.href = mailtoLink;
+
+            // Show helpful message after short delay
+            setTimeout(() => {
+                const opened = confirm(
+                    `Email client will open to send reply to:\n\n` +
+                    `To: ${name} (${email})\n` +
+                    `Subject: Re: ${subject}\n\n` +
+                    `If email client didn't open, click OK to copy email address.`
+                );
+
+                if (opened) {
+                    // Copy email to clipboard
+                    navigator.clipboard.writeText(email).then(() => {
+                        Toast.fire({
+                            icon: 'success',
+                            title: `Email address copied: ${email}`
+                        });
+                    }).catch(() => {
+                        // Fallback if clipboard API fails
+                        prompt('Copy email address:', email);
+                    });
+                }
+            }, 1000);
+        };
+
+        /**
+         * Reply via WhatsApp
+         * Normalizes phone number and opens WhatsApp with pre-filled message
+         */
+        window.replyViaWhatsApp = function (phone, name, subject) {
+            // Normalize phone number (remove non-digits, add 62 prefix)
+            let waNumber = phone.replace(/\D/g, '');
+
+            // Convert 08xxx to 628xxx
+            if (waNumber.startsWith('0')) {
+                waNumber = '62' + waNumber.substring(1);
+            } else if (!waNumber.startsWith('62')) {
+                waNumber = '62' + waNumber;
+            }
+
+            // Create pre-filled message
+            const message =
+                `Halo ${name},\n\n` +
+                `Terima kasih telah menghubungi kami mengenai: "${subject}".\n\n` +
+                `Kami ingin membalas pesan Anda...\n\n` +
+                `---\n` +
+                `Event Print Admin`;
+
+            // Open WhatsApp
+            const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+            window.open(waUrl, '_blank');
+        };
     });
 </script>

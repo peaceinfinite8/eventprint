@@ -1,256 +1,216 @@
 <?php
-$baseUrl = $baseUrl ?? '/eventprint/public';
-$settings = $settings ?? [];
+$baseUrl   = $baseUrl ?? '/eventprint';
+$settings  = $settings ?? [];
 $csrfToken = $csrfToken ?? (class_exists('Security') ? Security::csrfToken() : '');
+
+require_once __DIR__ . '/../../../app/helpers/settings_helpers.php';
+$currentLogo = buildLogoPreviewUrl((string)$baseUrl, (array)$settings);
 ?>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
+
+<link rel="stylesheet" href="<?= htmlspecialchars(rtrim($baseUrl, '/') . '/assets/admin/css/settings.css') ?>">
+<script defer src="<?= htmlspecialchars(rtrim($baseUrl, '/') . '/assets/admin/js/settings.js') ?>"></script>
 
 <div class="d-flex align-items-center justify-content-between mb-4 fade-in">
   <div>
-    <h1 class="h4 mb-1 fw-bold text-gradient">General Settings</h1>
-    <p class="text-muted small mb-0">Pengaturan utama informasi website & kontak</p>
+    <h1 class="h4 mb-1 fw-bold text-gradient">Website & Business Settings</h1>
+    <p class="text-muted small mb-0">Pusat pengaturan brand, kontak, dan mesin penjualan EventPrint</p>
   </div>
 </div>
 
 <div class="dash-container-card fade-in delay-1">
   <div class="p-4">
-    <form action="<?php echo $baseUrl; ?>/admin/settings/update" method="post" enctype="multipart/form-data">
-      <input type="hidden" name="_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+    <form id="settingsForm"
+          action="<?= htmlspecialchars($baseUrl) ?>/admin/settings/update"
+          method="post"
+          enctype="multipart/form-data"
+          novalidate>
+
+      <input type="hidden" name="_token" value="<?= htmlspecialchars($csrfToken) ?>">
 
       <div class="row g-5">
-        <!-- Left Column: Site Info & Contact -->
         <div class="col-lg-6">
           <h5 class="fw-bold text-primary mb-4"><i class="fas fa-info-circle me-2"></i>Informasi Website</h5>
 
           <div class="mb-3">
-            <label class="dash-form-label">NAMA WEBSITE</label>
+            <label class="dash-form-label">Nama Website</label>
             <input type="text" name="site_name" class="form-control" placeholder="EventPrint"
-              value="<?php echo htmlspecialchars($settings['site_name'] ?? ''); ?>">
+                   value="<?= htmlspecialchars($settings['site_name'] ?? '') ?>">
           </div>
 
           <div class="mb-3">
-            <label class="dash-form-label">TAGLINE</label>
-            <input type="text" name="site_tagline" class="form-control" placeholder="Your Trusted Printing Partner"
-              value="<?php echo htmlspecialchars($settings['site_tagline'] ?? ''); ?>">
+            <label class="dash-form-label">Tagline</label>
+            <input type="text" name="site_tagline" class="form-control" placeholder="Layanan cetak event, pameran, dan promosi brand"
+                   value="<?= htmlspecialchars($settings['site_tagline'] ?? '') ?>">
           </div>
 
           <div class="mb-4">
-            <label class="dash-form-label">LOGO WEBSITE</label>
-            <div class="d-flex align-items-center gap-3">
-              <?php if (!empty($settings['logo'])): ?>
-                <div class="bg-white p-2 rounded border text-center"
-                  style="width: 100px; height: 100px; border-style: dashed !important;">
-                  <img src="<?php echo $baseUrl . '/' . htmlspecialchars($settings['logo']); ?>" alt="Logo"
-                    class="h-100 w-100 object-fit-contain">
-                </div>
-              <?php else: ?>
-                <div class="bg-light p-2 rounded border d-flex align-items-center justify-content-center text-muted"
-                  style="width: 100px; height: 100px;">
-                  <i class="fas fa-image fa-2x opacity-25"></i>
-                </div>
-              <?php endif; ?>
+            <label class="dash-form-label">Logo Website</label>
+
+            <div class="d-flex align-items-start gap-3">
+              <div id="logoBox" class="logo-box rounded border d-flex align-items-center justify-content-center position-relative overflow-hidden" title="Klik untuk ganti logo">
+                <?php if ($currentLogo): ?>
+                  <img id="logoPreview" src="<?= htmlspecialchars($currentLogo) ?>" alt="Logo">
+                  <div id="logoEmpty" class="d-none text-muted">
+                    <i class="fas fa-image fa-2x opacity-25"></i>
+                  </div>
+                <?php else: ?>
+                  <div id="logoEmpty" class="text-muted">
+                    <i class="fas fa-image fa-2x opacity-25"></i>
+                  </div>
+                  <img id="logoPreview" src="" alt="Logo" class="d-none">
+                <?php endif; ?>
+                <div class="logo-hint position-absolute bottom-0 start-0 end-0 text-center py-1">Klik untuk ganti</div>
+              </div>
+
               <div class="flex-grow-1">
-                <input type="file" name="logo" class="form-control text-sm" accept="image/*">
-                <small class="text-muted d-block mt-1">Format: PNG/JPG. Kosongkan jika tidak ingin mengubah.</small>
+                <input id="logoInput" type="file" name="logo" class="form-control form-control-sm" accept="image/png,image/jpeg,image/webp">
+                <div class="small text-muted mt-1">PNG/JPG/WEBP, maks 2MB.</div>
+                <div id="logoError" class="small text-danger d-none mt-1"></div>
+
+                <div id="logoActions" class="d-none mt-2 d-flex gap-2">
+                  <button type="button" id="logoChangeBtn" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-sync-alt me-1"></i> Ganti
+                  </button>
+                  <button type="button" id="logoClearBtn" class="btn btn-sm btn-outline-danger">
+                    <i class="fas fa-trash me-1"></i> Reset
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
           <hr class="border-light my-4">
 
-          <h5 class="fw-bold text-primary mb-4"><i class="fas fa-address-book me-2"></i>Informasi Kontak</h5>
+          <div class="d-flex align-items-start justify-content-between mb-3">
+            <div>
+              <h5 class="fw-bold text-primary mb-1">
+                <i class="fas fa-address-book me-2"></i>Kontak & Lokasi Bisnis
+              </h5>
+              <p class="text-muted small mb-0">Data ini tampil di website (footer, halaman kontak, tombol WhatsApp).</p>
+            </div>
+          </div>
 
           <div class="mb-3">
-            <label class="dash-form-label">JAM OPERASIONAL (TOPBAR)</label>
+            <label class="dash-form-label">Jam Operasional</label>
             <input type="text" name="operating_hours" class="form-control"
-              placeholder="Contoh: Senin – Sabtu: 08:00 – 17:00"
-              value="<?php echo htmlspecialchars($settings['operating_hours'] ?? ''); ?>">
+                   placeholder="Senin–Sabtu • 08.00–19.00"
+                   value="<?= htmlspecialchars($settings['operating_hours'] ?? '') ?>">
+            <div class="small text-muted mt-1">Ditampilkan di header & halaman kontak.</div>
           </div>
 
           <div class="row g-3">
             <div class="col-md-6">
-              <label class="dash-form-label">NO. TELEPON</label>
+              <label class="dash-form-label">Telepon Kantor</label>
               <div class="input-group">
                 <span class="input-group-text bg-white"><i class="fas fa-phone"></i></span>
-                <input type="text" name="phone" class="form-control"
-                  value="<?php echo htmlspecialchars($settings['phone'] ?? ''); ?>">
+                <input type="text" name="phone" class="form-control" placeholder="0815xxxxxxx"
+                       value="<?= htmlspecialchars($settings['phone'] ?? '') ?>">
               </div>
+              <div class="small text-muted mt-1">Untuk panggilan. Bisa berbeda dari WhatsApp.</div>
             </div>
+
             <div class="col-md-6">
-              <label class="dash-form-label">WHATSAPP</label>
+              <label class="dash-form-label">WhatsApp Utama</label>
               <div class="input-group">
                 <span class="input-group-text bg-white"><i class="fab fa-whatsapp"></i></span>
-                <input type="text" name="whatsapp" class="form-control" placeholder="628..."
-                  value="<?php echo htmlspecialchars($settings['whatsapp'] ?? ''); ?>">
+                <input type="text" name="whatsapp" class="form-control" placeholder="62812xxxxxxx"
+                       value="<?= htmlspecialchars($settings['whatsapp'] ?? '') ?>">
               </div>
+              <div class="small text-muted mt-1">Gunakan format 62 tanpa spasi. Contoh: 6281234567890</div>
             </div>
           </div>
 
           <div class="mb-3 mt-3">
-            <label class="dash-form-label">EMAIL UTAMA</label>
+            <label class="dash-form-label">Email Bisnis</label>
             <div class="input-group">
               <span class="input-group-text bg-white"><i class="fas fa-envelope"></i></span>
-              <input type="email" name="email" class="form-control"
-                value="<?php echo htmlspecialchars($settings['email'] ?? ''); ?>">
+              <input type="email" name="email" class="form-control" placeholder="cs@eventprint.id"
+                     value="<?= htmlspecialchars($settings['email'] ?? '') ?>">
             </div>
+            <div class="small text-muted mt-1">Untuk permintaan penawaran & administrasi.</div>
           </div>
 
           <div class="mb-3">
-            <label class="dash-form-label">ALAMAT LENGKAP</label>
-            <textarea name="address" rows="3" class="form-control"><?php
-            echo htmlspecialchars($settings['address'] ?? '');
-            ?></textarea>
+            <label class="dash-form-label">Alamat</label>
+            <textarea name="address" rows="3" class="form-control"
+                      placeholder="Tulis alamat lengkap (jalan, kota, provinsi)."><?= htmlspecialchars($settings['address'] ?? '') ?></textarea>
+            <div class="small text-muted mt-1">Tampil di footer & halaman kontak.</div>
           </div>
 
           <div class="mb-3">
-            <label class="dash-form-label">LINK GOOGLE MAPS</label>
+            <label class="dash-form-label">Link Google Maps</label>
             <div class="input-group">
               <span class="input-group-text bg-white"><i class="fas fa-map-marker-alt"></i></span>
-              <input type="text" name="maps_link" class="form-control" placeholder="https://maps.app.goo.gl/..."
-                value="<?php echo htmlspecialchars($settings['maps_link'] ?? ''); ?>">
+              <input id="mapsLinkInput" type="text" name="maps_link" class="form-control" placeholder="https://maps.app.goo.gl/..."
+                     value="<?= htmlspecialchars($settings['maps_link'] ?? '') ?>">
             </div>
+            <div class="small text-muted mt-1">Gunakan link share dari Google Maps.</div>
           </div>
 
           <div class="mb-3">
-            <label class="dash-form-label">GOOGLE MAPS EMBED (IFRAME HTML)</label>
-            <textarea name="gmaps_embed" rows="3" class="form-control font-monospace small text-muted"
-              placeholder='<iframe src="...'> <?php
-              echo htmlspecialchars($settings['gmaps_embed'] ?? '');
-              ?></textarea>
+            <label class="dash-form-label">Embed Maps (Iframe)</label>
+            <textarea id="gmapsEmbedInput" name="gmaps_embed" rows="4" class="form-control font-monospace small text-muted"
+                      placeholder='<iframe src="https://www.google.com/maps/embed?pb=..." loading="lazy"></iframe>'><?= htmlspecialchars($settings['gmaps_embed'] ?? '') ?></textarea>
+            <div class="small text-muted mt-1">Opsional. Tempel kode iframe dari Google Maps.</div>
+            <div id="gmapsEmbedError" class="small text-danger d-none mt-2"></div>
           </div>
-
         </div>
 
-        <!-- Right Column: Social Media & Extra -->
         <div class="col-lg-6">
-          <h5 class="fw-bold text-primary mb-4"><i class="fas fa-share-alt me-2"></i>Social Media Links</h5>
-
-          <div class="row g-3 mb-3">
-            <div class="col-md-6">
-              <label class="dash-form-label">FACEBOOK</label>
-              <div class="input-group">
-                <span class="input-group-text bg-white"><i class="fab fa-facebook-f"></i></span>
-                <input type="text" name="facebook" class="form-control"
-                  value="<?php echo htmlspecialchars($settings['facebook'] ?? ''); ?>">
-              </div>
-            </div>
-            <div class="col-md-6">
-              <label class="dash-form-label">TWITTER / X</label>
-              <div class="input-group">
-                <span class="input-group-text bg-white"><i class="fab fa-twitter"></i></span>
-                <input type="text" name="twitter" class="form-control"
-                  value="<?php echo htmlspecialchars($settings['twitter'] ?? ''); ?>">
-              </div>
-            </div>
-          </div>
-
-          <div class="row g-3 mb-3">
-            <div class="col-md-6">
-              <label class="dash-form-label">INSTAGRAM</label>
-              <div class="input-group">
-                <span class="input-group-text bg-white"><i class="fab fa-instagram"></i></span>
-                <input type="text" name="instagram" class="form-control"
-                  value="<?php echo htmlspecialchars($settings['instagram'] ?? ''); ?>">
-              </div>
-            </div>
-            <div class="col-md-6">
-              <label class="dash-form-label">TIKTOK</label>
-              <div class="input-group">
-                <span class="input-group-text bg-white"><i class="fab fa-tiktok"></i></span>
-                <input type="text" name="tiktok" class="form-control"
-                  value="<?php echo htmlspecialchars($settings['tiktok'] ?? ''); ?>">
-              </div>
-            </div>
-          </div>
-
-          <div class="row g-3 mb-4">
-            <div class="col-md-6">
-              <label class="dash-form-label">YOUTUBE</label>
-              <div class="input-group">
-                <span class="input-group-text bg-white"><i class="fab fa-youtube"></i></span>
-                <input type="text" name="youtube" class="form-control"
-                  value="<?php echo htmlspecialchars($settings['youtube'] ?? ''); ?>">
-              </div>
-            </div>
-            <div class="col-md-6">
-              <label class="dash-form-label">LINKEDIN</label>
-              <div class="input-group">
-                <span class="input-group-text bg-white"><i class="fab fa-linkedin-in"></i></span>
-                <input type="text" name="linkedin" class="form-control"
-                  value="<?php echo htmlspecialchars($settings['linkedin'] ?? ''); ?>">
-              </div>
-            </div>
-          </div>
+          <?php include __DIR__ . '/_social_links.php'; ?>
 
           <hr class="border-light my-4">
 
-          <h5 class="fw-bold text-primary mb-3"><i class="fas fa-headset me-2"></i>Kontak Sales Tambahan</h5>
-          <div class="p-3 bg-light rounded border border-light">
-            <div id="contacts-container">
-              <?php
-              $contacts = json_decode($settings['sales_contacts'] ?? '[]', true);
-              if (!is_array($contacts))
-                $contacts = [];
-              foreach ($contacts as $c):
-                ?>
-                <div class="row g-2 mb-2 contact-row">
-                  <div class="col-5">
-                    <input type="text" name="sales_contacts[name][]" class="form-control form-control-sm"
-                      placeholder="Nama / Label" value="<?= htmlspecialchars($c['name'] ?? '') ?>">
-                  </div>
-                  <div class="col-5">
-                    <input type="text" name="sales_contacts[number][]" class="form-control form-control-sm"
-                      placeholder="Nomor WA (e.g 6281...)" value="<?= htmlspecialchars($c['number'] ?? '') ?>">
-                  </div>
-                  <div class="col-2">
-                    <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-contact"><i
-                        class="fas fa-times"></i></button>
-                  </div>
-                </div>
-              <?php endforeach; ?>
-            </div>
-            <button type="button" class="btn btn-sm btn-outline-primary mt-2 w-100 border-dashed" id="add-contact">
-              <i class="fas fa-plus me-1"></i> Tambah Kontak Sales
-            </button>
-          </div>
+          <?php include __DIR__ . '/_contacts_block.php'; ?>
 
+          <div class="mt-4">
+            <div class="ep-preview-card">
+              <div class="ep-preview-head">
+                <div class="fw-semibold small text-muted">
+                  <i class="fas fa-map-location-dot me-2"></i>Preview Lokasi
+                </div>
+                <a id="gmapsOpenNewTab" class="small text-decoration-none d-none" href="#" target="_blank" rel="noopener">
+                  Buka di Google Maps <i class="fas fa-arrow-up-right-from-square ms-1"></i>
+                </a>
+              </div>
+
+              <div class="p-2">
+                <div class="ep-ratio-16x9 rounded overflow-hidden border">
+                  <iframe
+                    id="gmapsPreviewFrame"
+                    src=""
+                    style="border:0;"
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+
+                <div id="gmapsPreviewEmpty" class="text-muted small mt-2 px-1">
+                  Tempel embed Google Maps untuk melihat preview.
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       <div class="d-flex justify-content-end mt-5 pt-3 border-top">
-        <button type="submit" class="btn btn-primary px-5 py-2 shadow-sm">
-          <i class="fas fa-save me-2"></i> Simpan Pengaturan
+        <button id="saveBtn" type="submit" class="btn btn-primary px-5 py-2 shadow-sm">
+          <span class="btn-text"><i class="fas fa-save me-2"></i> Simpan Pengaturan</span>
         </button>
       </div>
     </form>
   </div>
 </div>
 
+<?php include __DIR__ . '/_logo_crop_modal.php'; ?>
+
 <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    const container = document.getElementById('contacts-container');
-    const addBtn = document.getElementById('add-contact');
-
-    addBtn.addEventListener('click', function () {
-      const div = document.createElement('div');
-      div.className = 'row g-2 mb-2 contact-row fade-in';
-      div.innerHTML = `
-      <div class="col-5">
-        <input type="text" name="sales_contacts[name][]" class="form-control form-control-sm" placeholder="Nama / Label">
-      </div>
-      <div class="col-5">
-        <input type="text" name="sales_contacts[number][]" class="form-control form-control-sm" placeholder="Nomor WA (e.g 6281...)">
-      </div>
-      <div class="col-2">
-        <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-contact"><i class="fas fa-times"></i></button>
-      </div>
-    `;
-      container.appendChild(div);
-    });
-
-    container.addEventListener('click', function (e) {
-      if (e.target.closest('.remove-contact')) {
-        e.target.closest('.contact-row').remove();
-      }
-    });
-  });
+  window.__SETTINGS_PAGE__ = {
+    initialLogoSrc: <?= json_encode($currentLogo ? $currentLogo : '') ?>
+  };
 </script>

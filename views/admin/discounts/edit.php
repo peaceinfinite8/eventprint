@@ -1,5 +1,5 @@
 <?php
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 $item = $item ?? null;
 $products = $products ?? [];
 $csrfToken = $csrfToken ?? '';

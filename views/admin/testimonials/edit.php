@@ -1,5 +1,5 @@
 <?php
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 $item = $item ?? null;
 $errors = $errors ?? [];
 $old = $old ?? [];
@@ -39,7 +39,7 @@ if (!$item) {
       <input type="hidden" name="_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
 
        <div class="row g-4">
-        <div class="col-lg-8">
+        <div class="col-lg-12">
             <h5 class="fw-bold text-primary mb-3"><i class="fas fa-comment-alt me-2"></i>Konten Testimonial</h5>
             
             <div class="row g-3 mb-3">
@@ -61,7 +61,7 @@ if (!$item) {
             </div>
             
              <div class="row g-3">
-                 <div class="col-md-6">
+                 <div class="col-md-4">
                      <label class="dash-form-label">RATING</label>
                      <select name="rating" class="form-select">
                         <?php for ($i = 5; $i >= 1; $i--): ?>
@@ -69,46 +69,20 @@ if (!$item) {
                         <?php endfor; ?>
                      </select>
                  </div>
-                 <div class="col-md-6">
+                 <div class="col-md-4">
                     <label class="dash-form-label">URUTAN TAMPIL</label>
                     <input type="number" name="sort_order" class="form-control" min="0"
                            value="<?php echo htmlspecialchars($old['sort_order'] ?? $item['sort_order'], ENT_QUOTES, 'UTF-8'); ?>">
                  </div>
-            </div>
-        </div>
-
-        <div class="col-lg-4">
-             <div class="card border border-light bg-light mt-0">
-                 <div class="card-body">
-                    <label class="dash-form-label mb-2">FOTO PROFIL</label>
-                    
-                     <?php if (!empty($item['photo'])): ?>
-                      <div class="mb-3 text-center p-3 bg-white rounded border">
-                        <img src="<?php echo $baseUrl . '/' . htmlspecialchars($item['photo'], ENT_QUOTES, 'UTF-8'); ?>"
-                             alt="Photo"
-                             class="rounded-circle shadow-sm object-fit-cover"
-                             style="width: 100px; height: 100px;">
-                        <input type="hidden" name="old_photo" value="<?php echo htmlspecialchars($item['photo'], ENT_QUOTES, 'UTF-8'); ?>">
-                        <div class="small text-muted mt-2">Foto Saat Ini</div>
-                      </div>
-                    <?php else: ?>
-                        <div class="mb-3 text-center p-4 border border-dashed rounded bg-white">
-                            <i class="fas fa-user-circle fa-3x text-muted opacity-25"></i>
-                            <div class="small text-muted mt-2">Belum ada foto</div>
-                        </div>
-                    <?php endif; ?>
-
-                    <label class="form-label small text-muted">Ganti Foto (Opsional)</label>
-                    <input type="file" name="photo" class="form-control text-sm" accept="image/*">
-                    <small class="text-muted d-block mt-1">Biarkan kosong jika tidak ingin mengubah.</small>
-
-                    <div class="form-check form-switch mt-4">
+                 <div class="col-md-4">
+                    <label class="dash-form-label">STATUS</label>
+                    <div class="form-check form-switch mt-2">
                         <input type="checkbox" name="is_active" class="form-check-input" id="is_active" value="1"
                                <?php echo ($old['is_active'] ?? $item['is_active']) ? 'checked' : ''; ?>>
-                        <label class="form-check-label fw-medium" for="is_active">Status Aktif</label>
+                        <label class="form-check-label fw-medium" for="is_active">Aktif</label>
                     </div>
                  </div>
-             </div>
+            </div>
         </div>
       </div>
 

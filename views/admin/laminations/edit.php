@@ -1,5 +1,5 @@
 <?php
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 $lamination = $lamination ?? [];
 $errors = $errors ?? [];
 $old = $old ?? [];

@@ -1,5 +1,5 @@
 <?php
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 $material = $material ?? [];
 $errors = $errors ?? [];
 $old = $old ?? [];
@@ -15,7 +15,8 @@ $csrfToken = $csrfToken ?? (class_exists('Security') ? Security::csrfToken() : '
 
 <div class="dash-container-card fade-in delay-1">
   <div class="p-4">
-    <form method="post" action="<?php echo $baseUrl; ?>/admin/materials/update/<?php echo $material['id']; ?>">
+    <form method="post" action="<?php echo $baseUrl; ?>/admin/materials/update/<?php echo $material['id']; ?>"
+      enctype="multipart/form-data">
       <input type="hidden" name="_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
 
       <?php if (!empty($errors)): ?>
@@ -64,6 +65,18 @@ $csrfToken = $csrfToken ?? (class_exists('Security') ? Security::csrfToken() : '
         <div class="col-md-5">
           <div class="p-4 bg-light rounded border border-light h-100">
             <h6 class="fw-bold text-primary mb-3">Pengaturan Tampilan</h6>
+
+            <div class="mb-3">
+              <label class="dash-form-label">GAMBAR ILUSTRASI</label>
+              <?php if (!empty($material['image_path'])): ?>
+                <div class="mb-2">
+                  <img src="<?php echo $baseUrl . '/' . htmlspecialchars($material['image_path']); ?>" alt="Current Image"
+                    class="img-thumbnail" style="max-height: 100px;">
+                </div>
+              <?php endif; ?>
+              <input type="file" name="image" class="form-control" accept="image/*">
+              <div class="form-text small">Upload untuk mengganti gambar. Opsional.</div>
+            </div>
 
             <div class="mb-3">
               <label class="dash-form-label">URUTAN TAMPIL</label>

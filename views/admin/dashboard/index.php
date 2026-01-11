@@ -1,7 +1,7 @@
 <?php
 // views/admin/dashboard/index.php
 
-$baseUrl = $vars['baseUrl'] ?? '/eventprint/public';
+$baseUrl = $vars['baseUrl'] ?? '/eventprint';
 $stats = $vars['stats'] ?? [
   'products_active' => 0,
   'categories_active' => 0,

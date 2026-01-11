@@ -1,5 +1,5 @@
 <?php
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 $editUser = $editUser ?? [];
 $csrfToken = $csrfToken ?? (class_exists('Security') ? Security::csrfToken() : '');
 $id = (int) ($editUser['id'] ?? 0);

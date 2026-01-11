@@ -1,5 +1,5 @@
 <?php
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 $categories = $categories ?? [];
 
 $errors = Validation::errors();
@@ -135,7 +135,10 @@ $csrfToken = $csrfToken ?? (class_exists('Security') ? Security::csrfToken() : '
 
             <div class="mb-3">
               <label class="form-label fw-bold text-muted small text-uppercase">Thumbnail</label>
-              <input type="file" name="thumbnail" class="form-control">
+              <input type="file" name="thumbnail" class="form-control" accept="image/jpeg,image/png,image/webp">
+              <div class="text-muted extra-small mt-2">
+                <i class="fas fa-info-circle me-1"></i> Format: Jpg/WebP. Max 2MB.
+              </div>
             </div>
 
             <hr>

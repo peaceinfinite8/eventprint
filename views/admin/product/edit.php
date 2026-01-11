@@ -1,5 +1,5 @@
 <?php
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 $product = $product ?? null;
 $categories = $categories ?? [];
 
@@ -144,7 +144,10 @@ $csrfToken = $csrfToken ?? (class_exists('Security') ? Security::csrfToken() : '
 
             <div class="mb-3">
               <label class="form-label fw-bold text-muted small text-uppercase">Thumbnail</label>
-              <input type="file" name="thumbnail" class="form-control mb-2">
+              <input type="file" name="thumbnail" class="form-control mb-2" accept="image/jpeg,image/png,image/webp">
+              <div class="text-muted extra-small mt-2">
+                <i class="fas fa-info-circle me-1"></i> Format: Jpg/WebP. Max 2MB.
+              </div>
               <?php if (!empty($product['thumbnail'])): ?>
                 <div class="card p-1">
                   <img src="<?php echo $baseUrl . '/' . htmlspecialchars($product['thumbnail'], ENT_QUOTES, 'UTF-8'); ?>"
@@ -197,7 +200,59 @@ $csrfToken = $csrfToken ?? (class_exists('Security') ? Security::csrfToken() : '
   </div>
 </div>
 
+<!-- Product Gallery Section -->
+<div class="dash-container-card mt-4">
+  <div class="dash-header d-flex justify-content-between align-items-center">
+    <h5 class="dash-title">Product Gallery</h5>
+  </div>
+  <div class="dash-body">
 
+    <!-- Upload Form -->
+    <form action="<?php echo $baseUrl; ?>/admin/products/gallery/upload/<?php echo $product['id']; ?>" method="post"
+      enctype="multipart/form-data" class="mb-4">
+      <!-- Manual CSRF token since this is separate form -->
+      <input type="hidden" name="_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-9">
+          <label class="form-label fw-bold text-muted small text-uppercase">Add Photos</label>
+          <input type="file" name="gallery[]" class="form-control" multiple accept="image/jpeg,image/png,image/webp">
+          <div class="text-muted extra-small mt-1">Bisa pilih banyak foto sekaligus.</div>
+        </div>
+        <div class="col-md-3">
+          <button type="submit" class="btn btn-primary w-100"><i class="fas fa-upload me-2"></i> Upload</button>
+        </div>
+      </div>
+    </form>
+
+    <hr>
+
+    <!-- Gallery Grid -->
+    <div class="row g-3">
+      <?php if (!empty($gallery)): ?>
+        <?php foreach ($gallery as $img): ?>
+          <div class="col-6 col-md-4 col-lg-3">
+            <div class="card h-100 border position-relative">
+              <img src="<?php echo $baseUrl . '/' . htmlspecialchars($img['image_path'], ENT_QUOTES, 'UTF-8'); ?>"
+                class="card-img-top" style="height: 150px; object-fit: cover;" alt="Gallery Image">
+              <div class="card-body p-2 text-center">
+                <a href="<?php echo $baseUrl; ?>/admin/products/gallery/delete/<?php echo $img['id']; ?>"
+                  class="btn btn-sm btn-danger w-100 delete-btn" onclick="return confirm('Hapus foto ini?')">
+                  <i class="fas fa-trash"></i> Hapus
+                </a>
+              </div>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      <?php else: ?>
+        <div class="col-12 text-center py-4 text-muted">
+          <i class="far fa-images fa-3x mb-3 text-gray-300"></i>
+          <p>Belum ada foto galeri tambahan.</p>
+        </div>
+      <?php endif; ?>
+    </div>
+
+  </div>
+</div>
 
 <!-- Price Tiers Section -->
 <div class="dash-container-card mt-4 fade-in delay-2" id="tier-pricing">

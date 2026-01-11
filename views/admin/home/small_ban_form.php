@@ -1,5 +1,5 @@
 <?php
-$baseUrl = $vars['baseUrl'] ?? '/eventprint/public';
+$baseUrl = $vars['baseUrl'] ?? '/eventprint';
 $csrfToken = $vars['csrfToken'] ?? '';
 $mode = $vars['mode'] ?? 'create'; // create | edit
 $item = $vars['item'] ?? [];
@@ -60,10 +60,21 @@ $actionUrl = ($mode === 'edit')
                             </div>
                         <?php endif; ?>
 
-                        <input type="file" class="form-control form-control-sm" name="image_file" accept="image/*"
-                            <?= ($mode === 'create') ? 'required' : '' ?>>
+                        <input type="file" class="form-control form-control-sm" name="image_file"
+                            accept="image/jpeg,image/png,image/webp" <?= ($mode === 'create') ? 'required' : '' ?>
+                            data-cropper="true" data-aspect-ratio="3">
                         <div class="text-muted extra-small mt-2">
-                            <i class="fas fa-info-circle me-1"></i> Format: JPG, PNG, WebP. Max 3MB.
+                            <i class="fas fa-info-circle me-1"></i> Rasio 3:1 (1200x400px). Format: JPG, PNG, WebP. Max
+                            3MB.
+                        </div>
+
+                        <!-- Live Preview -->
+                        <div id="imgPreviewContainer" class="mt-3" style="display:none">
+                            <label class="form-label small text-muted text-uppercase fw-bold">Preview (Akan
+                                disimpan)</label>
+                            <div class="p-2 border rounded bg-light d-inline-block">
+                                <img id="imgPreview" style="max-width: 300px; max-height: 100px; object-fit: contain;">
+                            </div>
                         </div>
                     </div>
 
@@ -95,3 +106,5 @@ $actionUrl = ($mode === 'edit')
         </form>
     </div>
 </div>
+
+<!-- Include Cropper Modal & Handler -->

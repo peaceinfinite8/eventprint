@@ -1,5 +1,5 @@
 <?php
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 $message = $message ?? null;
 $csrfToken = $csrfToken ?? (class_exists('Security') ? Security::csrfToken() : '');
 

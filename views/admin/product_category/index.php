@@ -1,5 +1,5 @@
 <?php
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 $categories = $categories ?? [];
 ?>
 
@@ -55,12 +55,12 @@ $categories = $categories ?? [];
                     <i class="fa-solid fa-pen-to-square"></i>
                   </a>
                   <form action="<?php echo $baseUrl; ?>/admin/product-categories/delete/<?php echo $cat['id']; ?>"
-                    method="post" class="d-inline" onsubmit="return confirm('Delete this category?');">
+                    method="post" class="d-inline form-delete">
 
                     <input type="hidden" name="_token"
                       value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
 
-                    <button type="submit" class="btn btn-sm btn-light text-danger" title="Delete">
+                    <button type="button" class="btn btn-sm btn-light text-danger btn-delete" title="Delete">
                       <i class="fa-solid fa-trash"></i>
                     </button>
                   </form>
@@ -78,3 +78,32 @@ $categories = $categories ?? [];
     <?php endif; ?>
   </div>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const deleteBtns = document.querySelectorAll('.btn-delete');
+
+    deleteBtns.forEach(btn => {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        const form = this.closest('form');
+
+        Swal.fire({
+          title: 'Hapus Kategori?',
+          text: "Data yang dihapus tidak dapat dikembalikan!",
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#3085d6',
+          confirmButtonText: 'Ya, Hapus!',
+          cancelButtonText: 'Batal',
+          position: 'top'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            form.submit();
+          }
+        });
+      });
+    });
+  });
+</script>

@@ -1,5 +1,12 @@
 <?php
-$baseUrl = $vars['baseUrl'] ?? '/eventprint/public';
+// Load config for production baseUrl
+$configPath = __DIR__ . '/../../../app/config/app.php';
+$config = file_exists($configPath) ? require $configPath : [];
+$baseUrl = $config['base_url'] ?? 'https://infopeaceinfinite.id';
+
+// Load image helper
+require_once __DIR__ . '/../../../app/helpers/url.php';
+
 $csrfToken = $vars['csrfToken'] ?? '';
 $items = $vars['items'] ?? [];
 ?>
@@ -52,8 +59,10 @@ $items = $vars['items'] ?? [];
                 <?php if ($image): ?>
                   <img src="<?= $baseUrl . '/' . ltrim($image, '/') ?>" alt="Thumb" class="rounded border"
                     style="width: 60px; height: 36px; object-fit: cover;">
+                  <div class="small text-muted mt-1" style="font-size: 9px;"><?= htmlspecialchars($image) ?></div>
                 <?php else: ?>
-                  <span class="badge bg-light text-secondary">No img</span>
+                  <span class="badge bg-light text-secondary"
+                    title="Path: '<?= htmlspecialchars($image, ENT_QUOTES, 'UTF-8') ?>'">No img</span>
                 <?php endif; ?>
               </td>
               <td class="fw-medium text-dark"><?= htmlspecialchars($title) ?></td>

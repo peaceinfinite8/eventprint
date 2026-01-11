@@ -1,5 +1,5 @@
 <?php
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 $laminations = $laminations ?? [];
 $csrfToken = $csrfToken ?? (class_exists('Security') ? Security::csrfToken() : '');
 ?>

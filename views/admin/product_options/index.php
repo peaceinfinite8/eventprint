@@ -4,7 +4,7 @@
  * Path: views/admin/product_options/index.php
  */
 
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 $product = $product ?? [];
 $groups = $groups ?? [];
 $isSuper = $isSuper ?? false;

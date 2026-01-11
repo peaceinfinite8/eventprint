@@ -1,7 +1,7 @@
 <?php
 // views/admin/our_home/gallery/create.php
 
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 $stores = $stores ?? [];
 
 $errors = $errors ?? (class_exists('Validation') ? Validation::errors() : []);
@@ -78,8 +78,21 @@ $csrfToken = $csrfToken ?? (class_exists('Security') ? Security::csrfToken() : '
                         <label class="dash-form-label mb-2">UPLOAD GAMBAR <span class="text-danger">*</span></label>
                         <div class="mb-3 text-center p-5 border-2 border-dashed rounded bg-white">
                             <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-3"></i>
-                            <input type="file" name="image" class="form-control" accept="image/*" required>
-                            <div class="form-text mt-2">Format: JPG/PNG/WEBP. <br>Recommended: 800x600px+</div>
+                            <input type="file" name="image" class="form-control"
+                                accept="image/jpeg,image/png,image/webp" required data-cropper="true"
+                                data-aspect-ratio="1.3333">
+                            <div class="form-text mt-2">Format: JPG/PNG/WEBP. <br>Rasio 4:3 (Recommended 800x600px).
+                            </div>
+
+                            <!-- Live Preview Container -->
+                            <div id="imgPreviewContainer" class="mt-3" style="display:none">
+                                <label class="form-label small text-muted text-uppercase fw-bold">Preview (Akan
+                                    disimpan)</label>
+                                <div class="p-2 border rounded bg-light d-inline-block">
+                                    <img id="imgPreview"
+                                        style="max-width: 100%; max-height: 200px; object-fit: contain;">
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -96,3 +109,5 @@ $csrfToken = $csrfToken ?? (class_exists('Security') ? Security::csrfToken() : '
         </form>
     </div>
 </div>
+
+<!-- Include Cropper Modal & Handler -->

@@ -1,30 +1,26 @@
 <?php
-// views/admin/layout/sidebar.php
+/* ============================================================================
+   views/admin/layout/sidebar.php — Admin Sidebar
+   ========================================================================== */
 
-$baseUrl = $vars['baseUrl'] ?? '/eventprint/public';
-$baseUrl = rtrim($baseUrl, '/');
+$baseUrl = rtrim((string)($vars['baseUrl'] ?? '/eventprint'), '/');
 
 require_once __DIR__ . '/../../../app/core/Auth.php';
 $authUser = Auth::user();
 
-$role = strtolower((string) ($authUser['role'] ?? ($_SESSION['user']['role'] ?? '')));
+$role = strtolower((string)($authUser['role'] ?? ($_SESSION['user']['role'] ?? '')));
 $isAdmin = ($role === 'admin');
 $isSuper = ($role === 'super_admin');
 
 $roleLabel = $isSuper ? 'Super Admin' : ($isAdmin ? 'Admin' : ucfirst($role));
 
-/**
- * ===== Active state helper =====
- * Cocok buat MVC kamu yang pakai baseUrl /eventprint/public
- */
-$reqUri = $_SERVER['REQUEST_URI'] ?? '/';
+/* ACTIVE STATE */
+$reqUri  = $_SERVER['REQUEST_URI'] ?? '/';
 $reqPath = parse_url($reqUri, PHP_URL_PATH) ?: '/';
 
-// ambil path base (misal /eventprint/public)
 $basePath = parse_url($baseUrl, PHP_URL_PATH) ?: '';
 $basePath = rtrim($basePath, '/');
 
-// normalisasi current path tanpa basePath
 $current = $reqPath;
 if ($basePath && str_starts_with($current, $basePath)) {
   $current = substr($current, strlen($basePath));
@@ -32,12 +28,7 @@ if ($basePath && str_starts_with($current, $basePath)) {
 $current = '/' . ltrim($current, '/');
 $current = rtrim($current, '/') ?: '/';
 
-// Note: isActive() function is now defined in app/helpers/url.php
-
-/**
- * ===== Unread badge =====
- * Aman kalau table/kolom belum ada.
- */
+/* UNREAD BADGE */
 $unreadCount = 0;
 try {
   $db = db();
@@ -46,14 +37,12 @@ try {
     $colIsRead = $db->query("SHOW COLUMNS FROM contact_messages LIKE 'is_read'");
     if ($colIsRead && $colIsRead->num_rows > 0) {
       $r = $db->query("SELECT COUNT(*) AS c FROM contact_messages WHERE is_read=0");
-      if ($r)
-        $unreadCount = (int) ($r->fetch_assoc()['c'] ?? 0);
+      if ($r) $unreadCount = (int)($r->fetch_assoc()['c'] ?? 0);
     } else {
       $colStatus = $db->query("SHOW COLUMNS FROM contact_messages LIKE 'status'");
       if ($colStatus && $colStatus->num_rows > 0) {
         $r = $db->query("SELECT COUNT(*) AS c FROM contact_messages WHERE status='unread'");
-        if ($r)
-          $unreadCount = (int) ($r->fetch_assoc()['c'] ?? 0);
+        if ($r) $unreadCount = (int)($r->fetch_assoc()['c'] ?? 0);
       }
     }
   }
@@ -79,7 +68,6 @@ try {
 
     <ul class="sidebar-nav">
 
-      <!-- Dashboard -->
       <li class="sidebar-item <?= isActive('/admin/dashboard') ? 'active' : '' ?>">
         <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/dashboard">
           <i class="align-middle" data-feather="home"></i>
@@ -88,7 +76,6 @@ try {
       </li>
 
       <?php if ($isSuper): ?>
-        <!-- PRODUK & KATALOG (Consolidated) -->
         <li class="sidebar-header">Produk & Katalog</li>
 
         <li class="sidebar-item <?= isActive('/admin/products') ? 'active' : '' ?>">
@@ -134,7 +121,6 @@ try {
         </li>
       <?php endif; ?>
 
-      <!-- KONTEN WEBSITE -->
       <?php if ($isSuper || $isAdmin): ?>
         <li class="sidebar-header">Konten Website</li>
 
@@ -146,28 +132,38 @@ try {
             </a>
           </li>
 
-          <li
-            class="sidebar-item <?= (isActive('/admin/our-home/stores') || isActive('/admin/our-home/gallery')) ? 'active' : '' ?>">
-            <a data-bs-target="#ourHomeSubmenu" data-bs-toggle="collapse"
-              class="sidebar-link <?= (isActive('/admin/our-home/stores') || isActive('/admin/our-home/gallery')) ? '' : 'collapsed' ?>">
+          <?php
+            $ourHomeOpen = isActive('/admin/our-home/stores') || isActive('/admin/our-home/gallery') || isActive('/admin/our-home/content');
+          ?>
+          <li class="sidebar-item <?= $ourHomeOpen ? 'active' : '' ?>">
+            <a
+              data-bs-target="#ourHomeSubmenu"
+              data-bs-toggle="collapse"
+              class="sidebar-link <?= $ourHomeOpen ? '' : 'collapsed' ?>"
+            >
               <i class="align-middle" data-feather="map"></i>
               <span class="align-middle sidebar-text">Our Home</span>
             </a>
-            <ul id="ourHomeSubmenu"
-              class="sidebar-dropdown list-unstyled collapse <?= (isActive('/admin/our-home/stores') || isActive('/admin/our-home/gallery')) ? 'show' : '' ?>"
-              data-bs-parent="#sidebar">
+
+            <ul
+              id="ourHomeSubmenu"
+              class="sidebar-dropdown list-unstyled collapse <?= $ourHomeOpen ? 'show' : '' ?>"
+              data-bs-parent="#sidebar"
+            >
               <li class="sidebar-item <?= isActive('/admin/our-home/stores') ? 'active' : '' ?>">
                 <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/our-home/stores">
                   <i class="align-middle" data-feather="map-pin"></i>
                   <span class="sidebar-text">Stores</span>
                 </a>
               </li>
+
               <li class="sidebar-item <?= isActive('/admin/our-home/gallery') ? 'active' : '' ?>">
                 <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/our-home/gallery">
                   <i class="align-middle" data-feather="image"></i>
                   <span class="sidebar-text">Gallery</span>
                 </a>
               </li>
+
               <li class="sidebar-item <?= isActive('/admin/our-home/content') ? 'active' : '' ?>">
                 <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/our-home/content">
                   <i class="align-middle" data-feather="edit"></i>
@@ -185,7 +181,6 @@ try {
           </li>
         <?php endif; ?>
 
-        <!-- Blog accessible by Admin & Super -->
         <li class="sidebar-item <?= isActive('/admin/blog') ? 'active' : '' ?>">
           <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/blog">
             <i class="align-middle" data-feather="file-text"></i>
@@ -202,25 +197,23 @@ try {
           </li>
         <?php endif; ?>
 
-        <!-- KOMUNIKASI -->
         <li class="sidebar-header">Komunikasi</li>
 
         <li class="sidebar-item <?= isActive('/admin/contact-messages') ? 'active' : '' ?>">
-          <a class="sidebar-link d-flex align-items-center justify-content-between"
-            href="<?= $baseUrl; ?>/admin/contact-messages">
+          <a class="sidebar-link d-flex align-items-center justify-content-between" href="<?= $baseUrl; ?>/admin/contact-messages">
             <span class="d-flex align-items-center gap-2">
               <i class="align-middle" data-feather="mail"></i>
               <span class="align-middle sidebar-text">Messages</span>
             </span>
+
             <?php if ($unreadCount > 0): ?>
-              <span class="badge bg-danger" style="font-size:.7rem;"><?= (int) $unreadCount ?></span>
+              <span class="badge bg-danger" style="font-size:.7rem;"><?= (int)$unreadCount ?></span>
             <?php endif; ?>
           </a>
         </li>
       <?php endif; ?>
 
       <?php if ($isSuper): ?>
-        <!-- SYSTEM -->
         <li class="sidebar-header">System</li>
 
         <li class="sidebar-item <?= isActive('/admin/settings') ? 'active' : '' ?>">
@@ -245,7 +238,6 @@ try {
         </li>
       <?php endif; ?>
 
-      <!-- LOGOUT -->
       <li class="sidebar-item mt-3">
         <a class="sidebar-link" href="<?= $baseUrl; ?>/admin/logout" onclick="return confirm('Yakin ingin logout?');">
           <i class="align-middle" data-feather="log-out"></i>

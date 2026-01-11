@@ -1,5 +1,5 @@
 <?php
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 $posts = $posts ?? [];
 $filter_q = $filter_q ?? '';
 $pagination = $pagination ?? ['total' => 0, 'page' => 1, 'per_page' => 10];

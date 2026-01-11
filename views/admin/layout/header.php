@@ -2,7 +2,7 @@
 // views/admin/layout/header.php
 
 $title = $vars['title'] ?? 'Admin Panel';
-$baseUrl = $vars['baseUrl'] ?? '/eventprint/public';
+$baseUrl = $vars['baseUrl'] ?? '/eventprint';
 
 // ambil settings dari DB
 require_once __DIR__ . '/../../../app/models/Setting.php';
@@ -38,6 +38,10 @@ if ($siteName)
 
   <!-- Premium Dashboard CSS -->
   <link rel="stylesheet" href="<?php echo $baseUrl; ?>/assets/admin/css/admin-dashboard.css">
+
+  <!-- SweetAlert2 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>

@@ -1,6 +1,6 @@
 <?php
 // views/admin/contact-messages/index.php
-$baseUrl = $vars['baseUrl'] ?? '/eventprint/public';
+$baseUrl = $vars['baseUrl'] ?? '/eventprint';
 $baseUrl = rtrim($baseUrl, '/');
 $messages = $vars['messages'] ?? [];
 $currentPage = $vars['currentPage'] ?? 1;
@@ -28,12 +28,12 @@ $total = $vars['total'] ?? 0;
                     <thead>
                         <tr>
                             <th class="ps-4" style="width: 70px;">ID</th>
-                            <th>Name</th>
-                            <th>Email & Phone</th>
-                            <th>Subject</th>
+                            <th>Nama</th>
+                            <th>Email & Telepon</th>
+                            <th>Subjek</th>
                             <th style="width: 100px;">Status</th>
-                            <th style="width: 180px;">Received</th>
-                            <th class="text-end pe-4" style="width: 140px;">Actions</th>
+                            <th style="width: 180px;">Diterima</th>
+                            <th class="text-end pe-4" style="width: 140px;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -41,14 +41,16 @@ $total = $vars['total'] ?? 0;
                             <tr class="<?= $msg['is_read'] ? '' : 'table-warning_custom' // Optional custom class if needed ?>">
                                 <td class="ps-4 text-muted small">#<?= (int) $msg['id'] ?></td>
                                 <td>
-                                    <div class="fw-bold text-dark"><?= htmlspecialchars($msg['name']) ?></div>
+                                    <div class="fw-bold text-dark text-break" style="min-width: 150px;">
+                                        <?= htmlspecialchars($msg['name']) ?></div>
                                 </td>
                                 <td>
-                                    <div class="small text-dark"><?= htmlspecialchars($msg['email']) ?></div>
+                                    <div class="small text-dark text-break" style="max-width: 200px;">
+                                        <?= htmlspecialchars($msg['email']) ?></div>
                                     <div class="small text-muted"><?= htmlspecialchars($msg['phone'] ?? '-') ?></div>
                                 </td>
                                 <td>
-                                    <div class="text-truncate" style="max-width: 250px;">
+                                    <div class="text-truncate" style="max-width: 150px;"> <!-- Reduced width for better fit -->
                                         <?= htmlspecialchars($msg['subject']) ?>
                                     </div>
                                 </td>
