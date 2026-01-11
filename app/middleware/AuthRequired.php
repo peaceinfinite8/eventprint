@@ -1,7 +1,7 @@
 <?php
 // app/middleware/AuthRequired.php
 
-require_once __DIR__ . '/../core/Auth.php';
+require_once __DIR__ . '/../core/auth.php';
 
 class AuthRequired
 {
@@ -30,7 +30,7 @@ class AuthRequired
             }
 
             // For regular pages: redirect to login
-            $basePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
+            $basePath = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/index.php'), '/\\');
             header('Location: ' . $basePath . '/admin/login');
             exit;
         }

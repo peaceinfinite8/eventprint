@@ -48,6 +48,13 @@ $jamOperasional = explode("\n", $operatingHours);
             margin-bottom: 20px;
         }
 
+        .footer-payment-icons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
         .payment-icon img {
             height: 30px;
             object-fit: contain;
@@ -63,6 +70,17 @@ $jamOperasional = explode("\n", $operatingHours);
         @media (max-width: 768px) {
             .footer-content {
                 grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .footer-column {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .footer-payment-icons {
+                justify-content: center;
             }
         }
     </style>
@@ -88,7 +106,7 @@ $jamOperasional = explode("\n", $operatingHours);
                 <ul class="footer-links">
                     <?php if (!empty($productLinks)): ?>
                         <?php foreach ($productLinks as $link): ?>
-                            <li><a href="<?= e($link['url']) ?>"><?= e($link['label']) ?></a></li>
+                            <li><a href="<?= baseUrl($link['url']) ?>"><?= e($link['label']) ?></a></li>
                         <?php endforeach; ?>
                     <?php else: ?>
                         <li><a href="<?= baseUrl('/products') ?>">Print Warna</a></li>

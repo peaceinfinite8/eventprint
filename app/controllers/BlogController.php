@@ -145,18 +145,16 @@ class BlogController extends Controller
             'link_target' => $link_target,
         ];
 
-        // simpan ke DB via model
+        // simpan to DB via model
         $this->post->create($data);
 
-        // bersihkan old_input karena sudah sukses
+        // bersihkan old_input because success
         unset($_SESSION['old_input'], $_SESSION['validation_errors']);
 
         // Log activity
         log_admin_action('CREATE', "Menambah artikel: $title", ['entity' => 'post', 'title' => $title]);
 
-        $_SESSION['flash_success'] = 'Artikel berhasil ditambahkan.';
-        header('Location: ' . $this->baseUrl('admin/blog'));
-        exit;
+        $this->redirectWithSuccess('admin/blog', 'Artikel berhasil ditambahkan.');
     }
 
     /* ================== EDIT FORM ================== */
@@ -258,8 +256,7 @@ class BlogController extends Controller
 
         if (!empty($errors)) {
             $_SESSION['validation_errors'] = $errors;
-            header('Location: ' . $this->baseUrl('admin/blog/edit/' . $id));
-            exit;
+            $this->redirect('admin/blog/edit/' . $id);
         }
 
         $newThumb = $this->handleUpload($_FILES['thumbnail'] ?? null);
@@ -295,9 +292,7 @@ class BlogController extends Controller
         // Log activity
         log_admin_action('UPDATE', "Mengubah artikel: $title", ['entity' => 'post', 'id' => $id, 'title' => $title]);
 
-        $_SESSION['flash_success'] = 'Artikel berhasil diperbarui.';
-        header('Location: ' . $this->baseUrl('admin/blog'));
-        exit;
+        $this->redirectWithSuccess('admin/blog', 'Artikel berhasil diperbarui.');
     }
 
     /* ================== DELETE ================== */
@@ -312,25 +307,19 @@ class BlogController extends Controller
 
         $id = (int) $id;
         if ($id <= 0) {
-            $_SESSION['flash_error'] = 'ID artikel tidak valid.';
-            header('Location: ' . $this->baseUrl('admin/blog'));
-            exit;
+            $this->redirectWithError('admin/blog', 'ID artikel tidak valid.');
         }
 
         // CSRF (jangan echo doang, redirect biar UX bener)
         try {
             Security::requireCsrfToken();
         } catch (Exception $e) {
-            $_SESSION['flash_error'] = 'CSRF token tidak valid atau sesi kadaluarsa.';
-            header('Location: ' . $this->baseUrl('admin/blog'));
-            exit;
+            $this->redirectWithError('admin/blog', 'CSRF token tidak valid atau sesi kadaluarsa.');
         }
 
         $post = $this->post->find($id);
         if (!$post) {
-            $_SESSION['flash_error'] = 'Artikel tidak ditemukan.';
-            header('Location: ' . $this->baseUrl('admin/blog'));
-            exit;
+            $this->redirectWithError('admin/blog', 'Artikel tidak ditemukan.');
         }
 
         try {
@@ -347,17 +336,14 @@ class BlogController extends Controller
             if ($ok) {
                 // Log activity
                 log_admin_action('DELETE', "Menghapus artikel: " . $post['title'], ['entity' => 'post', 'id' => $id, 'title' => $post['title']]);
-                $_SESSION['flash_success'] = 'Artikel berhasil dihapus.';
+                $this->redirectWithSuccess('admin/blog', 'Artikel berhasil dihapus.');
             } else {
-                $_SESSION['flash_error'] = 'Gagal hapus artikel (mungkin sudah terhapus).';
+                $this->redirectWithError('admin/blog', 'Gagal hapus artikel (mungkin sudah terhapus).');
             }
 
         } catch (Exception $e) {
-            $_SESSION['flash_error'] = 'Gagal hapus: ' . $e->getMessage();
+            $this->redirectWithError('admin/blog', 'Gagal hapus: ' . $e->getMessage());
         }
-
-        header('Location: ' . $this->baseUrl('admin/blog'));
-        exit;
     }
 
 
@@ -391,4 +377,5 @@ class BlogController extends Controller
         // path relatif dari public/
         return 'uploads/blog/' . $name;
     }
+
 }

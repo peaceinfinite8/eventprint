@@ -151,15 +151,15 @@ class CategoryOptionsController extends Controller
 
             $this->db->commit();
 
-            $_SESSION['flash_success'] = 'Mapping opsi berhasil disimpan. ' . count($selectedMaterials) . ' bahan, ' . count($selectedLaminations) . ' laminasi.';
+            $this->db->commit();
+
+            $msg = 'Mapping berhasil disimpan. ' . count($selectedMaterials) . ' bahan, ' . count($selectedLaminations) . ' laminasi.';
+            $this->redirectWithSuccess('admin/category-options?category=' . $categoryId, $msg);
 
         } catch (Exception $e) {
             $this->db->rollback();
-            $_SESSION['flash_error'] = 'Gagal menyimpan mapping: ' . $e->getMessage();
+            $this->redirectWithError('admin/category-options?category=' . $categoryId, 'Gagal menyimpan mapping: ' . $e->getMessage());
         }
-
-        header('Location: ' . $this->baseUrl('admin/category-options?category=' . $categoryId));
-        exit;
     }
 
     /**
@@ -207,14 +207,14 @@ class CategoryOptionsController extends Controller
 
             $this->db->commit();
 
-            $_SESSION['flash_success'] = 'Mapping berhasil dicopy ke kategori tujuan.';
+            $this->db->commit();
+
+            $msg = 'Mapping berhasil dicopy ke kategori tujuan.';
+            $this->redirectWithSuccess('admin/category-options?category=' . $toCategoryId, $msg);
 
         } catch (Exception $e) {
             $this->db->rollback();
-            $_SESSION['flash_error'] = 'Gagal mencopy mapping: ' . $e->getMessage();
+            $this->redirectWithError('admin/category-options', 'Gagal mencopy mapping: ' . $e->getMessage());
         }
-
-        header('Location: ' . $this->baseUrl('admin/category-options?category=' . $toCategoryId));
-        exit;
     }
 }

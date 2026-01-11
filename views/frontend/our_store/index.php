@@ -1,6 +1,6 @@
 <?php
 // views/frontend/our_store/index.php
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 ?>
 
 <style>

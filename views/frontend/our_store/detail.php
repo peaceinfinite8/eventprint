@@ -1,5 +1,5 @@
 <?php
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 $item    = $item ?? null;
 if (!$item) {
     echo "<p>Data tidak ditemukan.</p>";

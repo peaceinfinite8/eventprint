@@ -15,14 +15,34 @@ if (!function_exists('safeImageUrl')) {
     {
         // Auto-detect baseUrl if not provided
         if ($baseUrl === null) {
-            global $config;
-            $baseUrl = rtrim($config['base_url'] ?? '/eventprint/public', '/');
+            // Load config to get production baseUrl
+            $configPath = __DIR__ . '/../config/app.php';
+            if (file_exists($configPath)) {
+                $config = require $configPath;
+                $baseUrl = rtrim($config['base_url'] ?? 'https://infopeaceinfinite.id', '/');
+            } else {
+                $baseUrl = 'https://infopeaceinfinite.id';
+            }
         }
 
-        // Get public directory path
-        $publicPath = realpath(__DIR__ . '/../../public');
-        if (!$publicPath) {
-            $publicPath = __DIR__ . '/../../public';
+        // Get base directory (2 levels up from app/helpers/)
+        $baseDir = realpath(__DIR__ . '/../..');
+        if (!$baseDir) {
+            $baseDir = __DIR__ . '/../..';
+        }
+
+        // Detect structure: flat (production) vs nested (localhost)
+        // Flat: /public_html/ has uploads/ directly
+        // Nested: /eventprint/ has public/ subfolder with uploads/ inside
+        if (is_dir($baseDir . '/uploads')) {
+            // Flat structure (production): baseDir IS the public folder
+            $publicPath = $baseDir;
+        } elseif (is_dir($baseDir . '/public')) {
+            // Nested structure (localhost): has public/ subfolder
+            $publicPath = $baseDir . '/public';
+        } else {
+            // Fallback
+            $publicPath = $baseDir;
         }
 
         // Empty or whitespace-only path -> return placeholder
@@ -40,14 +60,15 @@ if (!function_exists('safeImageUrl')) {
         $normalized = ltrim(str_replace('\\', '/', $trimmed), '/');
 
         // If just a filename (no directory separator), prefix with uploads/{type}/
-        if (!str_contains($normalized, '/') && preg_match('/\.(jpg|jpeg|png|gif|webp|svg)$/i', $normalized)) {
-            // Map type to upload subdirectory
-            $uploadDir = match ($type) {
-                'our_store', 'store' => 'uploads/our_store/',
+        if (strpos($normalized, '/') === false && preg_match('/\.(jpg|jpeg|png|gif|webp|svg)$/i', $normalized)) {
+            // Map type to upload subdirectory - PHP 7.4 compatible
+            $uploadDirs = [
+                'our_store' => 'uploads/our_store/',
+                'store' => 'uploads/our_store/',
                 'blog' => 'uploads/blog/',
                 'testimonial' => 'uploads/testimonials/',
-                default => 'uploads/products/',
-            };
+            ];
+            $uploadDir = $uploadDirs[$type] ?? 'uploads/products/';
             $normalized = $uploadDir . $normalized;
         }
 
@@ -55,6 +76,8 @@ if (!function_exists('safeImageUrl')) {
         $fullPath = $publicPath . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $normalized);
 
         // Check file existence
+
+
         if (file_exists($fullPath) && is_file($fullPath)) {
             return $baseUrl . '/' . $normalized;
         }
@@ -74,15 +97,15 @@ if (!function_exists('getPlaceholderUrl')) {
      */
     function getPlaceholderUrl(string $type, string $baseUrl): string
     {
-        $placeholders = [
+        $placeholders = array(
             'product' => '/assets/frontend/images/product-placeholder.jpg',
             'blog' => '/assets/frontend/images/blog-placeholder.jpg',
             'store' => '/assets/frontend/images/placeholder-store.png',
             'favicon' => '/assets/frontend/images/favicon.png',
             'logo' => '/assets/frontend/images/placeholder-logo.png',
-        ];
+        );
 
-        $path = $placeholders[$type] ?? $placeholders['product'];
+        $path = isset($placeholders[$type]) ? $placeholders[$type] : $placeholders['product'];
         return $baseUrl . $path;
     }
 }

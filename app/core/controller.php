@@ -13,11 +13,25 @@ class Controller
         // Load helpers
         require_once __DIR__ . '/../helpers/url.php';
         require_once __DIR__ . '/../helpers/view.php';
+        require_once __DIR__ . '/auth.php';
+        require_once __DIR__ . '/../helpers/Security.php';
+    }
+
+    protected function requireAuth(): void
+    {
+        if (!Auth::check()) {
+            $this->redirect('admin/login');
+        }
+    }
+
+    protected function validateCsrf(): void
+    {
+        Security::requireCsrfToken();
     }
 
     protected function baseUrl(string $path = ''): string
     {
-        $base = rtrim($this->config['base_url'] ?? '/eventprint/public', '/');
+        $base = rtrim($this->config['base_url'] ?? '/eventprint', '/');
         return $base . '/' . ltrim($path, '/');
     }
 
@@ -41,7 +55,7 @@ class Controller
         if (preg_match('#^https?://#i', $pathOrUrl))
             return $pathOrUrl;
 
-        $base = rtrim($this->config['base_url'] ?? '/eventprint/public', '/');
+        $base = rtrim($this->config['base_url'] ?? '/eventprint', '/');
 
         if (str_starts_with($pathOrUrl, '/'))
             return $base . $pathOrUrl;
@@ -121,7 +135,7 @@ class Controller
             exit('View not found: ' . $viewPath);
         }
 
-        $baseUrl = rtrim($this->config['base_url'] ?? '/eventprint/public', '/');
+        $baseUrl = rtrim($this->config['base_url'] ?? '/eventprint', '/');
 
         // Auto-inject settings to all frontend views
         $settings = $this->getSettings();
@@ -148,7 +162,7 @@ class Controller
         if ($title !== '')
             $data['title'] = $title;
 
-        $data['baseUrl'] = rtrim($this->config['base_url'] ?? '/eventprint/public', '/');
+        $data['baseUrl'] = rtrim($this->config['base_url'] ?? '/eventprint', '/');
         $data['flash'] = $this->pullFlash();
 
         $viewFile = __DIR__ . '/../../views/admin/' . $view . '.php';

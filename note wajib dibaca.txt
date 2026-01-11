@@ -1,0 +1,21 @@
+Berikut adalah file-file yang telah diubah dalam 2 jam terakhir (sejak pukul 03:00):
+
+Fitur Kustomisasi Teks & Warna (Baru Saja):
+
+views/admin/home/index.php
+ (Menambahkan Color Picker & Input Teks)
+views/frontend/home/index.php
+ (Menampilkan Banner & Teks Kustom)
+app/controllers/HomeController.php
+ (Menyimpan setting admin baru)
+app/controllers/HomePublicController.php
+ (Mengirim data setting ke frontend)
+Perbaikan Tampilan & Bug (Sebelumnya): 5. 
+views/frontend/partials/product_card.php
+ (Menambahkan tombol wishlist & icon hati) 6. 
+app/controllers/ProductPublicController.php
+ (Fix redirect jika produk tidak ditemukan) 7. 
+routes/web.php
+ (Menambahkan route detail produk berdasarkan slug) 8. 
+public/assets/frontend/css/main.css
+ (Style untuk tema warna, gradient, & layout mobile)

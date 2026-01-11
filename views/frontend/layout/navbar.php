@@ -1,5 +1,5 @@
 <?php
-$baseUrl = rtrim(($vars['baseUrl'] ?? '/eventprint/public'), '/');
+$baseUrl = rtrim(($vars['baseUrl'] ?? '/eventprint'), '/');
 
 // ambil data menu dari site.json (optional tapi rapi)
 $site = [

@@ -1,6 +1,6 @@
 <?php
 // views/frontend/contact/index.php
-$baseUrl = $baseUrl ?? '/eventprint/public';
+$baseUrl = $baseUrl ?? '/eventprint';
 ?>
 
 <!-- Contact Content -->

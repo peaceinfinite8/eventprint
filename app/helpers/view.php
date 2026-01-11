@@ -8,7 +8,7 @@ if (!function_exists('assetUrl')) {
     function assetUrl(string $path): string
     {
         global $config;
-        $baseUrl = rtrim($config['base_url'] ?? '/eventprint/public', '/');
+        $baseUrl = rtrim($config['base_url'] ?? '/eventprint', '/');
         $path = ltrim($path, '/');
         $fullPath = $baseUrl . '/assets/' . $path;
 
@@ -40,22 +40,23 @@ if (!function_exists('baseUrl')) {
     function baseUrl(string $path = ''): string
     {
         global $config;
-        $base = rtrim($config['base_url'] ?? '/eventprint/public', '/');
-        if (empty($path))
+        $base = rtrim($config['base_url'] ?? '/eventprint', '/');
+
+        if (empty($path) || $path === '/')
             return $base;
+
         return $base . '/' . ltrim($path, '/');
     }
 }
 
 if (!function_exists('uploadUrl')) {
     /**
-     * Generate upload URL  
-     * Handles paths that may or may not already include 'uploads/' prefix
+     * Generate upload URL
      */
     function uploadUrl(string $path): string
     {
         global $config;
-        $baseUrl = rtrim($config['base_url'] ?? '/eventprint/public', '/');
+        $baseUrl = rtrim($config['base_url'] ?? '/eventprint', '/');
         $path = ltrim($path, '/');
 
         // If path already starts with 'uploads/', don't add it again
@@ -68,6 +69,7 @@ if (!function_exists('uploadUrl')) {
 }
 
 if (!function_exists('currentPath')) {
+
     /**
      * Get current URL path
      */
@@ -209,6 +211,22 @@ if (!function_exists('renderPagination')) {
         $html .= '</div>';
 
         return $html;
+    }
+}
+
+if (!function_exists('safeImageUrl')) {
+    /**
+     * Get safe image URL with fallback
+     */
+    function safeImageUrl(string $path, string $type = 'product'): string
+    {
+        if (empty($path)) {
+            return assetUrl('assets/frontend/img/no-image.jpg');
+        }
+        if (preg_match('#^https?://#i', $path)) {
+            return $path;
+        }
+        return assetUrl($path);
     }
 }
 

@@ -29,7 +29,7 @@ $waUrl = normalizeWhatsApp($settings['whatsapp'] ?? '');
         <ul class="fab-menu-list">
             <li>
                 <a href="<?= baseUrl('/') ?>"
-                    class="fab-link <?= (currentPath() === '/' || currentPath() === '/eventprint/public/' || currentPath() === '/eventprint/public') ? 'active' : '' ?>">
+                    class="fab-link <?= (currentPath() === '/' || currentPath() === '/eventprint/' || currentPath() === '/eventprint') ? 'active' : '' ?>">
                     <i class="fas fa-home me-2"></i> Home
                 </a>
             </li>

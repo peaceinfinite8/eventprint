@@ -11,7 +11,7 @@ class Setting
     }
 
     /**
-     * Ambil row settings pertama (global config).
+     * Returns the first settings row (global configuration).
      */
     public function getAll(): array
     {
@@ -26,12 +26,12 @@ class Setting
     }
 
     /**
-     * Insert/update semua field settings dalam satu kali jalan.
-     * Kalau belum ada row, INSERT. Kalau sudah ada, UPDATE by id.
+     * Inserts/updates settings fields in a single operation.
+     * If no row exists, INSERT; otherwise UPDATE by id.
      */
     public function saveAll(array $data): bool
     {
-        // field yang diizinkan (sesuai struktur tabel)
+        // Whitelisted fields based on the current table schema.
         $fields = [
             'site_name',
             'site_tagline',
@@ -52,7 +52,7 @@ class Setting
             'sales_contacts',
         ];
 
-        // sanitasi & ambil hanya field yang ada di $data
+        // Sanitize and keep only whitelisted keys.
         $clean = [];
         foreach ($fields as $field) {
             if (array_key_exists($field, $data)) {
@@ -61,16 +61,15 @@ class Setting
         }
 
         if (empty($clean)) {
-            return true; // nothing to save
+            return true;
         }
 
-        // cek apakah sudah ada row settings
+        // Check for an existing settings row.
         $sqlCheck = "SELECT id FROM settings ORDER BY id ASC LIMIT 1";
         $res = $this->db->query($sqlCheck);
         $row = ($res && $res->num_rows > 0) ? $res->fetch_assoc() : null;
 
         if ($row) {
-            // ================= UPDATE =================
             $id = (int) $row['id'];
             $setParts = [];
 
@@ -80,7 +79,6 @@ class Setting
 
             $sql = "UPDATE settings SET " . implode(', ', $setParts) . " WHERE id = {$id}";
         } else {
-            // ================= INSERT =================
             $columns = [];
             $values = [];
 

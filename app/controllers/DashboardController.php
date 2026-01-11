@@ -39,7 +39,7 @@ class DashboardController extends Controller
 
     public function index(): void
     {
-        $baseUrl = rtrim($this->config['base_url'] ?? '/eventprint/public', '/');
+        $baseUrl = rtrim($this->config['base_url'] ?? '/eventprint', '/');
         $db = $this->db;
 
         // ====== COUNTS ======

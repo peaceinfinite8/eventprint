@@ -753,7 +753,7 @@ class OurStoreController extends Controller
 
     public function content(): void
     {
-        $baseUrl = rtrim($this->config['base_url'] ?? '/eventprint/public', '/');
+        $baseUrl = rtrim($this->config['base_url'] ?? '/eventprint', '/');
         $db = db();
         $page = 'our-home';
 

@@ -31,8 +31,20 @@ class FooterController extends Controller
             }
         }
 
+        // Fetch Categories for Dropdown
+        // Use Model Pattern if possible, or direct query matching the Model
+        // Model doesn't use Soft Deletes (deleted_at), so we remove that check.
+        $categories = [];
+        $catRes = $this->db->query("SELECT id, name, slug FROM product_categories ORDER BY sort_order ASC");
+        if ($catRes) {
+            while ($c = $catRes->fetch_assoc()) {
+                $categories[] = $c;
+            }
+        }
+
         $this->renderAdmin('footer/index', [
             'content' => $content,
+            'categories' => $categories,
             'title' => 'Manage Footer'
         ], 'Manage Footer');
     }
@@ -47,7 +59,6 @@ class FooterController extends Controller
             $this->saveContent('copyright', $copyright);
 
             // 2. Product Links (JSON)
-            // Expecting arrays: product_names[], product_urls[]
             $productLinks = [];
             $pNames = $_POST['product_names'] ?? [];
             $pUrls = $_POST['product_urls'] ?? [];
@@ -64,27 +75,19 @@ class FooterController extends Controller
             $this->saveContent('product_links', json_encode($productLinks));
 
             // 3. Payment Methods (JSON with Images)
-            // Existing data to preserve images if not updated
-            $existingPaymentMethodsRaw = $this->getContent('payment_methods');
-            $existingPaymentMethods = json_decode($existingPaymentMethodsRaw, true) ?? [];
-
             $paymentMethods = [];
             $payLabels = $_POST['payment_labels'] ?? [];
             $payOldImages = $_POST['payment_old_images'] ?? [];
 
-            // Handle new uploads key: payment_images[]
-            // Since file inputs in repeater are tricky, we rely on index matching if possible,
-            // OR simpler: we iterate over posted indices.
+            // Debug Logging
+            $errors = [];
 
             if (is_array($payLabels)) {
                 foreach ($payLabels as $i => $label) {
                     $label = trim($label);
-                    // if ($label === '') continue; // Allow empty label if image exists? Better enforce label.
-
-                    $imagePath = $payOldImages[$i] ?? ''; // Keep old image by default
+                    $imagePath = $payOldImages[$i] ?? '';
 
                     // Check for new upload at this index
-                    // $_FILES['payment_images']['name'][$i]
                     if (!empty($_FILES['payment_images']['name'][$i])) {
                         $file = [
                             'name' => $_FILES['payment_images']['name'][$i],
@@ -95,14 +98,21 @@ class FooterController extends Controller
                         ];
 
                         if ($file['error'] === UPLOAD_ERR_OK) {
-                            $uploadRes = $this->uploadPaymentIcon($file);
-                            if ($uploadRes) {
-                                // Delete old image if it existed and is local
-                                if ($imagePath && file_exists(__DIR__ . '/../../public/' . $imagePath)) {
-                                    @unlink(__DIR__ . '/../../public/' . $imagePath);
+                            try {
+                                $uploadRes = $this->uploadPaymentIcon($file);
+                                if ($uploadRes) {
+                                    // Delete old image if it existed and is local
+                                    if ($imagePath && file_exists(__DIR__ . '/../../' . $imagePath)) {
+                                        @unlink(__DIR__ . '/../../' . $imagePath);
+                                    }
+                                    $imagePath = $uploadRes;
                                 }
-                                $imagePath = $uploadRes;
+                            } catch (Exception $uploadErr) {
+                                $errors[] = "Error uploading {$label}: " . $uploadErr->getMessage();
+                                error_log("Upload Error for $label: " . $uploadErr->getMessage());
                             }
+                        } else {
+                            $errors[] = "Upload failed for {$label} with error code: " . $file['error'];
                         }
                     }
 
@@ -115,7 +125,11 @@ class FooterController extends Controller
 
             log_admin_action('UPDATE', 'Updated footer settings', ['page' => 'footer']);
 
-            $this->redirectWithSuccess($this->baseUrl('admin/footer'), 'Footer content updated successfully.');
+            if (!empty($errors)) {
+                $this->redirectWithError($this->baseUrl('admin/footer'), 'Some uploads failed: ' . implode(', ', $errors));
+            } else {
+                $this->redirectWithSuccess($this->baseUrl('admin/footer'), 'Footer content updated successfully.');
+            }
 
         } catch (Exception $e) {
             $this->redirectWithError($this->baseUrl('admin/footer'), $e->getMessage());
@@ -137,7 +151,6 @@ class FooterController extends Controller
         $field = $this->db->real_escape_string($field);
         $value = $this->db->real_escape_string($value);
 
-        // UPSERT
         $check = $this->db->query("SELECT id FROM page_contents WHERE page_slug='footer' AND section='main' AND field='$field'");
 
         if ($check && $check->num_rows > 0) {
@@ -154,18 +167,26 @@ class FooterController extends Controller
         $mime = finfo_file($finfo, $file['tmp_name']);
         finfo_close($finfo);
 
-        if (!in_array($mime, $allowed))
-            return false;
+        if (!in_array($mime, $allowed)) {
+            throw new Exception("Invalid file type: $mime. Allowed: " . implode(', ', $allowed));
+        }
 
         $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
         $name = 'payment_' . time() . '_' . rand(100, 999) . '.' . $ext;
-        $targetDir = __DIR__ . '/../../public/uploads/payment';
+        // CORRECTED: Upload to root/uploads/payment, not public/uploads/payment
+        $targetDir = __DIR__ . '/../../uploads/payment';
 
         if (!is_dir($targetDir))
             mkdir($targetDir, 0777, true);
 
         $targetPath = $targetDir . '/' . $name;
         if (move_uploaded_file($file['tmp_name'], $targetPath)) {
+            return 'uploads/payment/' . $name;
+        }
+
+        throw new Exception("Failed to move uploaded file.");
+    }
+}
             return 'uploads/payment/' . $name;
         }
         return false;

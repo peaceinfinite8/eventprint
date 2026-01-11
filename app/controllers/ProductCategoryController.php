@@ -63,6 +63,70 @@ class ProductCategoryController extends Controller
         ], 'Tambah Kategori Produk');
     }
 
+    /* ===================== HELPER: UPLOAD ICON ===================== */
+    private function uploadIcon(string $inputName, string $oldPath = ''): string
+    {
+        if (empty($_FILES[$inputName]) || ($_FILES[$inputName]['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            return (string) $oldPath;
+        }
+
+        $f = $_FILES[$inputName];
+        if (($f['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+            throw new Exception('Upload gagal. Kode error: ' . (int) $f['error']);
+        }
+
+        // Limit 2MB
+        $max = 2 * 1024 * 1024;
+        if (($f['size'] ?? 0) > $max) {
+            throw new Exception('Ukuran gambar terlalu besar. Maksimal 2MB.');
+        }
+
+        $tmp = $f['tmp_name'] ?? '';
+        if (!$tmp || !is_uploaded_file($tmp)) {
+            throw new Exception('File upload tidak valid.');
+        }
+
+        $fi = new finfo(FILEINFO_MIME_TYPE);
+        $mime = $fi->file($tmp) ?: '';
+        $allowed = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            'image/svg+xml' => 'svg',
+        ];
+
+        if (!isset($allowed[$mime])) {
+            throw new Exception('Format gambar tidak didukung. Gunakan JPG, PNG, WebP, atau SVG.');
+        }
+
+        $ext = $allowed[$mime];
+        $name = 'cat_icon_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+
+        $publicDir = rtrim($_SERVER['DOCUMENT_ROOT'], '/\\') . '/eventprint';
+        $targetDir = $publicDir . '/uploads/categories';
+
+        if (!is_dir($targetDir)) {
+            @mkdir($targetDir, 0775, true);
+        }
+
+        $dest = $targetDir . '/' . $name;
+        if (!move_uploaded_file($tmp, $dest)) {
+            throw new Exception('Gagal memindahkan file icon.');
+        }
+
+        // Delete old file
+        $oldPath = trim((string) $oldPath);
+        if ($oldPath !== '' && !preg_match('#^https?://#i', $oldPath)) {
+            $oldAbs = $publicDir . '/' . ltrim($oldPath, '/');
+            if (is_file($oldAbs))
+                @unlink($oldAbs);
+        }
+
+        return 'uploads/categories/' . $name;
+    }
+
+    /* ===================== STORE ===================== */
+
     public function store()
     {
         try {
@@ -76,7 +140,7 @@ class ProductCategoryController extends Controller
         $rules = [
             'name' => 'required|min:2|max:100',
             'slug' => 'nullable|max:150',
-            'description' => 'nullable|max:255',
+            'description' => 'nullable|max:5000',
             'sort_order' => 'nullable|integer',
             'is_active' => 'nullable|boolean',
         ];
@@ -94,6 +158,13 @@ class ProductCategoryController extends Controller
         $is_active = !empty($input['is_active']) ? 1 : 0;
         $wa = trim($_POST['whatsapp_number'] ?? '');
 
+        // Handle Icon Upload
+        try {
+            $icon = $this->uploadIcon('icon', '');
+        } catch (Exception $e) {
+            $this->redirectWithError('admin/product-categories/create', $e->getMessage());
+        }
+
         $baseSlug = $slugInput !== '' ? $slugInput : $name;
         $slug = $this->generateUniqueSlug($baseSlug);
 
@@ -104,17 +175,15 @@ class ProductCategoryController extends Controller
             'sort_order' => $sort_order,
             'is_active' => $is_active,
             'whatsapp_number' => $wa !== '' ? $wa : null,
+            'icon' => $icon
         ]);
 
         if ($ok) {
             log_admin_action('CREATE', "Menambah kategori: $name", ['entity' => 'category', 'name' => $name]);
-            $_SESSION['flash_success'] = 'Kategori berhasil ditambahkan.';
-            header('Location: ' . $this->baseUrl('admin/product-categories'));
+            $this->redirectWithSuccess('admin/product-categories', 'Kategori berhasil ditambahkan.');
         } else {
-            $_SESSION['flash_error'] = 'Gagal menyimpan kategori.';
-            header('Location: ' . $this->baseUrl('admin/product-categories/create'));
+            $this->redirectWithError('admin/product-categories/create', 'Gagal menyimpan kategori.');
         }
-        exit;
     }
 
     /* ===================== EDIT ===================== */
@@ -134,6 +203,8 @@ class ProductCategoryController extends Controller
             'category' => $cat,
         ], 'Edit Kategori Produk');
     }
+
+    /* ===================== UPDATE ===================== */
 
     public function update($id)
     {
@@ -157,7 +228,7 @@ class ProductCategoryController extends Controller
         $rules = [
             'name' => 'required|min:2|max:100',
             'slug' => 'nullable|max:150',
-            'description' => 'nullable|max:255',
+            'description' => 'nullable|max:5000',
             'sort_order' => 'nullable|integer',
             'is_active' => 'nullable|boolean',
         ];
@@ -175,6 +246,13 @@ class ProductCategoryController extends Controller
         $is_active = !empty($input['is_active']) ? 1 : 0;
         $wa = trim($_POST['whatsapp_number'] ?? '');
 
+        // Handle Icon Upload
+        try {
+            $icon = $this->uploadIcon('icon', $cat['icon'] ?? '');
+        } catch (Exception $e) {
+            $this->redirectWithError('admin/product-categories/edit/' . $id, $e->getMessage());
+        }
+
         if ($slugInput === '') {
             $slug = $cat['slug'];
         } else {
@@ -188,17 +266,15 @@ class ProductCategoryController extends Controller
             'sort_order' => $sort_order,
             'is_active' => $is_active,
             'whatsapp_number' => $wa !== '' ? $wa : null,
+            'icon' => $icon
         ]);
 
         if ($ok) {
             log_admin_action('UPDATE', "Mengubah kategori: $name", ['entity' => 'category', 'id' => $id, 'name' => $name]);
-            $_SESSION['flash_success'] = 'Kategori berhasil diperbarui.';
-            header('Location: ' . $this->baseUrl('admin/product-categories'));
+            $this->redirectWithSuccess('admin/product-categories', 'Kategori berhasil diperbarui.');
         } else {
-            $_SESSION['flash_error'] = 'Gagal memperbarui kategori.';
-            header('Location: ' . $this->baseUrl('admin/product-categories/edit/' . $id));
+            $this->redirectWithError('admin/product-categories/edit/' . $id, 'Gagal memperbarui kategori.');
         }
-        exit;
     }
 
     /* ===================== DELETE ===================== */
@@ -224,18 +300,36 @@ class ProductCategoryController extends Controller
 
         $count = $this->category->hasProducts($id);
         if ($count > 0) {
-            $_SESSION['flash_error'] = "Tidak bisa menghapus kategori. Masih digunakan oleh {$count} produk.";
-            header('Location: ' . $this->baseUrl('admin/product-categories'));
-            exit;
+            $this->redirectWithError('admin/product-categories', "Tidak bisa menghapus kategori. Masih digunakan oleh {$count} produk.");
         }
 
         $catName = $cat['name'];
-        $this->category->delete($id);
+        $iconPath = $cat['icon'] ?? '';
+
+        try {
+            $this->category->delete($id);
+
+            // Delete icon file if exists
+            if ($iconPath !== '' && !preg_match('#^https?://#i', $iconPath)) {
+                $publicDir = rtrim($_SERVER['DOCUMENT_ROOT'], '/\\') . '/eventprint';
+                $abs = $publicDir . '/' . ltrim($iconPath, '/');
+                if (is_file($abs))
+                    @unlink($abs);
+            }
+        } catch (Exception $e) {
+            // Check for Integrity Constraint Violation
+            if (strpos($e->getMessage(), 'Integrity constraint violation') !== false) {
+                $msg = "Gagal menghapus: Kategori ini masih digunakan oleh Produk atau data lain.";
+            } else {
+                $msg = "Terjadi kesalahan sistem saat menghapus kategori.";
+            }
+            // Use native error_log if log_error generic helper is missing
+            error_log("Delete Category Error: " . $e->getMessage());
+            $this->redirectWithError('admin/product-categories', $msg);
+        }
 
         log_admin_action('DELETE', "Menghapus kategori: $catName", ['entity' => 'category', 'id' => $id, 'name' => $catName]);
 
-        $_SESSION['flash_success'] = 'Kategori berhasil dihapus.';
-        header('Location: ' . $this->baseUrl('admin/product-categories'));
-        exit;
+        $this->redirectWithSuccess('admin/product-categories', 'Kategori berhasil dihapus.');
     }
 }

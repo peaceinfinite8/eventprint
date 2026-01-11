@@ -94,7 +94,7 @@ class SystemLogsController extends Controller
                 SELECT id, level, source, message, context, created_at
                 FROM activity_logs
                 {$where}
-                ORDER BY id DESC
+                ORDER BY created_at DESC
                 LIMIT ?
             ";
 

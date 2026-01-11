@@ -3,6 +3,8 @@
 
 require_once __DIR__ . '/../helpers/Security.php';
 require_once __DIR__ . '/../helpers/Validation.php';
+require_once __DIR__ . '/../helpers/Validation.php';
+require_once __DIR__ . '/../helpers/Upload.php';
 require_once __DIR__ . '/../helpers/logging.php';
 
 class LaminationController extends Controller
@@ -47,6 +49,14 @@ class LaminationController extends Controller
         }
 
         return $slug;
+    }
+
+    protected function uploadImage(?array $file): ?string
+    {
+        if (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            return null;
+        }
+        return Upload::image($file, 'laminations');
     }
 
     /* ===================== INDEX ===================== */
@@ -109,23 +119,26 @@ class LaminationController extends Controller
         $sortOrder = (int) ($input['sort_order'] ?? 0);
         $isActive = !empty($input['is_active']) ? 1 : 0;
 
+        // Handle Image Upload
+        $imagePath = null;
+        if (!empty($_FILES['image']['name'])) {
+            $imagePath = $this->uploadImage($_FILES['image']);
+        }
+
         $stmt = $this->db->prepare("
-            INSERT INTO laminations (name, slug, price_delta, sort_order, is_active)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO laminations (name, slug, price_delta, sort_order, is_active, image_path)
+            VALUES (?, ?, ?, ?, ?, ?)
         ");
-        $stmt->bind_param('ssdii', $name, $slug, $priceDelta, $sortOrder, $isActive);
+        $stmt->bind_param('ssdiis', $name, $slug, $priceDelta, $sortOrder, $isActive, $imagePath);
         $ok = $stmt->execute();
         $stmt->close();
 
         if ($ok) {
             log_admin_action('CREATE', "Menambah laminasi: $name", ['entity' => 'lamination', 'name' => $name]);
-            $_SESSION['flash_success'] = 'Laminasi berhasil ditambahkan.';
-            header('Location: ' . $this->baseUrl('admin/laminations'));
+            $this->redirectWithSuccess('admin/laminations', 'Laminasi berhasil ditambahkan.');
         } else {
-            $_SESSION['flash_error'] = 'Gagal menyimpan laminasi.';
-            header('Location: ' . $this->baseUrl('admin/laminations/create'));
+            $this->redirectWithError('admin/laminations/create', 'Gagal menyimpan laminasi.');
         }
-        exit;
     }
 
     /* ===================== EDIT ===================== */
@@ -180,24 +193,54 @@ class LaminationController extends Controller
         $sortOrder = (int) ($input['sort_order'] ?? 0);
         $isActive = !empty($input['is_active']) ? 1 : 0;
 
-        $stmt = $this->db->prepare("
-            UPDATE laminations 
-            SET name = ?, slug = ?, price_delta = ?, sort_order = ?, is_active = ?
-            WHERE id = ?
-        ");
-        $stmt->bind_param('ssdiii', $name, $slug, $priceDelta, $sortOrder, $isActive, $id);
+        // Handle Image Upload
+        $imagePath = null;
+
+        // Get existing image to delete if replaced
+        $stmt = $this->db->prepare("SELECT image_path FROM laminations WHERE id = ?");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $existing = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        $currentImage = $existing['image_path'] ?? null;
+
+        if (!empty($_FILES['image']['name'])) {
+            $newImage = $this->uploadImage($_FILES['image']);
+            if ($newImage) {
+                // Delete old image
+                if ($currentImage && is_file(__DIR__ . '/../../public/' . $currentImage)) {
+                    @unlink(__DIR__ . '/../../public/' . $currentImage);
+                }
+                $imagePath = $newImage;
+            }
+        }
+
+        // Build Update Query
+        if ($imagePath) {
+            $stmt = $this->db->prepare("
+                UPDATE laminations 
+                SET name = ?, slug = ?, price_delta = ?, sort_order = ?, is_active = ?, image_path = ?
+                WHERE id = ?
+            ");
+            $stmt->bind_param('ssdiisi', $name, $slug, $priceDelta, $sortOrder, $isActive, $imagePath, $id);
+        } else {
+            $stmt = $this->db->prepare("
+                UPDATE laminations 
+                SET name = ?, slug = ?, price_delta = ?, sort_order = ?, is_active = ?
+                WHERE id = ?
+            ");
+            $stmt->bind_param('ssdiii', $name, $slug, $priceDelta, $sortOrder, $isActive, $id);
+        }
+
         $ok = $stmt->execute();
         $stmt->close();
 
         if ($ok) {
             log_admin_action('UPDATE', "Mengubah laminasi: $name", ['entity' => 'lamination', 'id' => $id, 'name' => $name]);
-            $_SESSION['flash_success'] = 'Laminasi berhasil diperbarui.';
-            header('Location: ' . $this->baseUrl('admin/laminations'));
+            $this->redirectWithSuccess('admin/laminations', 'Laminasi berhasil diperbarui.');
         } else {
-            $_SESSION['flash_error'] = 'Gagal memperbarui laminasi.';
-            header('Location: ' . $this->baseUrl('admin/laminations/edit/' . $id));
+            $this->redirectWithError('admin/laminations/edit/' . $id, 'Gagal memperbarui laminasi.');
         }
-        exit;
     }
 
     /* ===================== DELETE ===================== */
@@ -221,9 +264,7 @@ class LaminationController extends Controller
         $stmt->close();
 
         if ($row['cnt'] > 0) {
-            $_SESSION['flash_error'] = "Tidak bisa menghapus. Laminasi masih digunakan oleh {$row['cnt']} kategori.";
-            header('Location: ' . $this->baseUrl('admin/laminations'));
-            exit;
+            $this->redirectWithError('admin/laminations', "Tidak bisa menghapus. Laminasi masih digunakan oleh {$row['cnt']} kategori.");
         }
 
         // Get name before delete
@@ -232,17 +273,21 @@ class LaminationController extends Controller
         $stmt->execute();
         $lam = $stmt->get_result()->fetch_assoc();
         $stmt->close();
+        $stmt->close();
         $lamName = $lam['name'] ?? 'Unknown';
+        $oldImage = $lam['image_path'] ?? null;
 
         $stmt = $this->db->prepare("DELETE FROM laminations WHERE id = ?");
         $stmt->bind_param('i', $id);
-        $stmt->execute();
+        $ok = $stmt->execute();
         $stmt->close();
+
+        if ($ok && $oldImage && is_file(__DIR__ . '/../../public/' . $oldImage)) {
+            @unlink(__DIR__ . '/../../public/' . $oldImage);
+        }
 
         log_admin_action('DELETE', "Menghapus laminasi: $lamName", ['entity' => 'lamination', 'id' => $id, 'name' => $lamName]);
 
-        $_SESSION['flash_success'] = 'Laminasi berhasil dihapus.';
-        header('Location: ' . $this->baseUrl('admin/laminations'));
-        exit;
+        $this->redirectWithSuccess('admin/laminations', 'Laminasi berhasil dihapus.');
     }
 }

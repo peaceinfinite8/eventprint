@@ -19,21 +19,21 @@ class ContactController extends Controller
 
     public function adminIndex()
     {
-        $total  = $this->message->countAll();
+        $total = $this->message->countAll();
         $unread = $this->message->countUnread();
         $latest = $this->message->getLatest(5);
 
         $sections = [
             [
-                'key'         => 'messages',
-                'name'        => 'Pesan Masuk',
+                'key' => 'messages',
+                'name' => 'Pesan Masuk',
                 'description' => 'Semua pesan yang dikirim dari form Contact di website.',
-                'stats'       => [
-                    'total'  => $total,
+                'stats' => [
+                    'total' => $total,
                     'unread' => $unread,
                 ],
-                'latest'      => $latest,
-                'manage_url'  => $this->baseUrl('admin/contact/messages'),
+                'latest' => $latest,
+                'manage_url' => $this->baseUrl('admin/contact/messages'),
             ],
         ];
 
@@ -46,22 +46,22 @@ class ContactController extends Controller
 
     public function adminMessages()
     {
-        $page    = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        $page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
         $perPage = 20;
 
         $data = $this->message->paginate($page, $perPage);
 
         $this->renderAdmin('contact/messages', [
             'messages' => $data['items'],
-            'total'    => $data['total'],
-            'page'     => $data['page'],
-            'perPage'  => $data['per_page'],
+            'total' => $data['total'],
+            'page' => $data['page'],
+            'perPage' => $data['per_page'],
         ], 'Pesan Kontak');
     }
 
     public function adminShow($id)
     {
-        $id      = (int)$id;
+        $id = (int) $id;
         $message = $this->message->find($id);
 
         if (!$message) {
@@ -92,17 +92,13 @@ class ContactController extends Controller
         try {
             Security::requireCsrfToken();
         } catch (Exception $e) {
-            http_response_code(419);
-            echo "CSRF token tidak valid atau sesi kadaluarsa.";
-            return;
+            $this->redirectWithError('admin/contact/messages', 'CSRF token tidak valid atau sesi kadaluarsa.');
         }
 
-        $id = (int)$id;
+        $id = (int) $id;
         $this->message->delete($id);
 
-        $_SESSION['flash_success'] = 'Pesan berhasil dihapus.';
-        header('Location: ' . $this->baseUrl('admin/contact/messages'));
-        exit;
+        $this->redirectWithSuccess('admin/contact/messages', 'Pesan berhasil dihapus.');
     }
 
     /* ===================== PUBLIC SEND (FRONTEND) ===================== */
@@ -117,15 +113,15 @@ class ContactController extends Controller
 
         // aturan validasi
         $rules = [
-            'name'    => 'required|min:3|max:150',
-            'email'   => 'required|email|max:150',
-            'phone'   => 'nullable|max:50',
+            'name' => 'required|min:3|max:150',
+            'email' => 'required|email|max:150',
+            'phone' => 'nullable|max:50',
             'subject' => 'nullable|max:150',
             'message' => 'required|min:5',
         ];
 
         // jalankan validasi pakai helper
-        $clean  = Validation::validate($_POST, $rules);
+        $clean = Validation::validate($_POST, $rules);
         $errors = Validation::errors();
 
         if (!empty($errors)) {
@@ -139,9 +135,9 @@ class ContactController extends Controller
 
         // pakai data yang sudah dibersihkan
         $payload = [
-            'name'    => $clean['name'],
-            'email'   => $clean['email'],
-            'phone'   => $clean['phone']   ?? null,
+            'name' => $clean['name'],
+            'email' => $clean['email'],
+            'phone' => $clean['phone'] ?? null,
             'subject' => $clean['subject'] ?? null,
             'message' => $clean['message'],
         ];

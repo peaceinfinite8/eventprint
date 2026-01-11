@@ -74,8 +74,8 @@ class ProductCategory
     public function create(array $data): bool
     {
         $sql = "INSERT INTO product_categories
-                (name, slug, description, sort_order, is_active, whatsapp_number)
-                VALUES (?, ?, ?, ?, ?, ?)";
+                (name, slug, description, sort_order, is_active, whatsapp_number, icon)
+                VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         $stmt = $this->db->prepare($sql);
 
@@ -85,15 +85,17 @@ class ProductCategory
         $sort_order = (int) ($data['sort_order'] ?? 0);
         $is_active = (int) ($data['is_active'] ?? 1);
         $wa = $data['whatsapp_number'] ?? null;
+        $icon = $data['icon'] ?? null;
 
         $stmt->bind_param(
-            'sssiss',
+            'sssisss',
             $name,
             $slug,
             $description,
             $sort_order,
             $is_active,
-            $wa
+            $wa,
+            $icon
         );
 
         return $stmt->execute();
@@ -102,7 +104,7 @@ class ProductCategory
     public function update(int $id, array $data): bool
     {
         $sql = "UPDATE product_categories
-                SET name = ?, slug = ?, description = ?, sort_order = ?, is_active = ?, whatsapp_number = ?
+                SET name = ?, slug = ?, description = ?, sort_order = ?, is_active = ?, whatsapp_number = ?, icon = ?
                 WHERE id = ?";
 
         $stmt = $this->db->prepare($sql);
@@ -113,15 +115,17 @@ class ProductCategory
         $sort_order = (int) ($data['sort_order'] ?? 0);
         $is_active = (int) ($data['is_active'] ?? 1);
         $wa = $data['whatsapp_number'] ?? null;
+        $icon = $data['icon'] ?? null;
 
         $stmt->bind_param(
-            'sssissi',
+            'sssisssi',
             $name,
             $slug,
             $description,
             $sort_order,
             $is_active,
             $wa,
+            $icon,
             $id
         );
 

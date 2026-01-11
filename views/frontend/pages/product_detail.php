@@ -543,3 +543,19 @@ echo "<!-- EP_VIEW_USED: " . __FILE__ . " -->";
         </div>
     </div>
 </section>
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- Data Injection -->
+<script>
+    window.productData = <?= json_encode($product ?? []) ?>;
+    window.productGallery = <?= json_encode($gallery ?? []) ?>;
+    window.optionGroups = <?= json_encode($optionGroups ?? []) ?>;
+    window.productDiscount = <?= json_encode($discount ?? null) ?>;
+
+    // Inject WhatsApp Number from Settings if category specific not found
+    window.EP_SETTINGS = {
+        whatsapp: "<?= e($whatsapp ?? '') ?>"
+    };
+</script>

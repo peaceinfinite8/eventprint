@@ -42,7 +42,7 @@ class FrontendDataController extends Controller
         header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 
         try {
-            $baseUrl = rtrim($this->config['base_url'] ?? ($this->config['baseUrl'] ?? '/eventprint/public'), '/');
+            $baseUrl = rtrim($this->config['base_url'] ?? ($this->config['baseUrl'] ?? '/eventprint'), '/');
 
             // 1) categories (no subcategories in your schema)
             $categories = $this->fetchCategories();

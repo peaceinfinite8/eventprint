@@ -15,7 +15,7 @@ class UserController extends Controller
             exit;
         }
 
-        $baseUrl = rtrim($this->config['base_url'] ?? '/eventprint/public', '/');
+        $baseUrl = rtrim($this->config['base_url'] ?? '/eventprint', '/');
         $csrf = Security::csrfToken();
         $flash = $_SESSION['flash'] ?? ['success' => null, 'error' => null];
         unset($_SESSION['flash']);
@@ -28,18 +28,14 @@ class UserController extends Controller
         try {
             Security::requireCsrfToken();
         } catch (Exception $e) {
-            $_SESSION['flash'] = ['success' => null, 'error' => $e->getMessage()];
-            header('Location: ' . $this->baseUrl('admin/login'));
-            exit;
+            $this->redirectWithError('admin/login', $e->getMessage());
         }
 
         $email = trim($_POST['email'] ?? '');
         $password = (string) ($_POST['password'] ?? '');
 
         if ($email === '' || $password === '') {
-            $_SESSION['flash'] = ['success' => null, 'error' => 'Email dan password wajib diisi.'];
-            header('Location: ' . $this->baseUrl('admin/login'));
-            exit;
+            $this->redirectWithError('admin/login', 'Email dan password wajib diisi.');
         }
 
         $db = db();
@@ -54,15 +50,10 @@ class UserController extends Controller
         // 1. Check if User Exists
         if (!$user) {
             // Generic error to prevent enumeration
-            $_SESSION['flash'] = ['success' => null, 'error' => 'Email atau password salah.'];
-            header('Location: ' . $this->baseUrl('admin/login'));
-            exit;
+            $this->redirectWithError('admin/login', 'Email atau password salah.');
         }
 
         // 2. Check Lock Status (Managed by is_active now)
-        // If account was deactivated, is_active check below handles it.
-        // We can remove the 'locked_until' check or keep it as legacy data cleanup?
-        // Let's remove specific locked_until check to rely on is_active.
 
         // 3. Verify Password
         if (!password_verify($password, (string) $user['password'])) {
@@ -86,32 +77,25 @@ class UserController extends Controller
                 $errorMsg = "Password salah. Sisa percobaan: {$remaining}";
             }
 
-            $_SESSION['flash'] = ['success' => null, 'error' => $errorMsg];
-            header('Location: ' . $this->baseUrl('admin/login'));
-            exit;
+            $this->redirectWithError('admin/login', $errorMsg);
         }
 
         // 4. Check Active Status
         if (empty($user['is_active'])) {
-            // This catches manually deactivated users AND automatically deactivated users
-            $_SESSION['flash'] = ['success' => null, 'error' => 'Akun dinonaktifkan. Hubungi Super Admin untuk mengaktifkan kembali.'];
-            header('Location: ' . $this->baseUrl('admin/login'));
-            exit;
+            $this->redirectWithError('admin/login', 'Akun dinonaktifkan. Hubungi Super Admin untuk mengaktifkan kembali.');
         }
 
         // 5. Success - Reset counters
         $uid = (int) $user['id'];
-        // Also ensure is_active stays 1 (redundant but safe) and clear failed_attempts
         $db->query("UPDATE users SET last_login_at = NOW(), failed_attempts = 0, locked_until = NULL WHERE id = {$uid}");
 
-        // Login (Using updated Auth supporting concurrent sessions)
+        // Login
         Auth::login($user);
 
         // Log login
         log_event('info', 'auth', "User logged in: {$user['name']}", ['user_id' => $uid, 'email' => $user['email']]);
 
-        header('Location: ' . $this->baseUrl('admin/dashboard'));
-        exit;
+        $this->redirect('admin/dashboard');
     }
 
     public function logout()
@@ -122,10 +106,20 @@ class UserController extends Controller
         }
 
         Auth::logout();
-        session_start(); // karena logout destroy session
-        $_SESSION['flash'] = ['success' => 'Logout berhasil.', 'error' => null];
+        session_start(); // restart session
 
-        header('Location: ' . $this->baseUrl('admin/login'));
-        exit;
+        $this->redirectWithSuccess('admin/login', 'Logout berhasil.');
+    }
+
+    /**
+     * Handle /admin redirect logic
+     */
+    public function adminRoot()
+    {
+        if (Auth::check()) {
+            $this->redirect('admin/dashboard');
+        }
+
+        $this->redirect('admin/login');
     }
 }

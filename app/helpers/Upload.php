@@ -16,7 +16,7 @@ class Upload
     public static function image(
         array $file,
         string $subDir,
-        array $allowedExt = ['jpg','jpeg','png','webp'],
+        array $allowedExt = ['jpg', 'jpeg', 'png', 'webp'],
         int $maxSize = 5242880
     ): ?string {
         // tidak ada file yang diupload
@@ -40,7 +40,7 @@ class Upload
         }
 
         $originalName = $file['name'];
-        $tmpPath      = $file['tmp_name'];
+        $tmpPath = $file['tmp_name'];
 
         $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
         if (!in_array($ext, $allowedExt, true)) {
@@ -59,7 +59,7 @@ class Upload
 
         // generate nama unik
         try {
-            $rand    = bin2hex(random_bytes(4));
+            $rand = bin2hex(random_bytes(4));
         } catch (\Throwable $t) {
             // kalau random_bytes gagal, fallback nama biasa
             $rand = mt_rand(1000, 9999);
@@ -67,9 +67,21 @@ class Upload
 
         $newName = date('Ymd_His') . '_' . $rand . '.' . $ext;
 
-        // base dir = root project (eventprint/)
-        $baseDir   = dirname(__DIR__, 2); // dari app/helpers → naik 2x → /eventprint
-        $uploadDir = $baseDir . '/public/uploads/' . trim($subDir, '/');
+        // Detect structure: nested (localhost) vs flat (production)
+        $baseDir = dirname(__DIR__, 2); // from app/helpers → up 2 levels
+
+        // Check if we're in flat structure (public_html/app/) or nested (eventprint/app/)
+        // In flat: baseDir = /public_html/, uploads at /public_html/uploads/
+        // In nested: baseDir = /eventprint/, uploads at /eventprint/uploads/
+
+        if (basename($baseDir) === 'public_html' || is_dir($baseDir . '/uploads')) {
+            // Flat structure: already in public_html, use uploads directly
+            $uploadDir = $baseDir . '/uploads/' . trim($subDir, '/');
+        } else {
+            // Nested structure: need to add public/ folder
+            $publicFolder = is_dir($baseDir . '/public_html') ? 'public_html' : 'public';
+            $uploadDir = $baseDir . '/' . $publicFolder . '/uploads/' . trim($subDir, '/');
+        }
 
         if (!is_dir($uploadDir)) {
             // coba bikin folder; kalau gagal, return null, bukan exception

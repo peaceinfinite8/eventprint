@@ -24,7 +24,7 @@ class Router
     protected function addRoute(string $method, string $path, string $action, array $middlewares): void
     {
         $this->routes[$method][$path] = [
-            'action'      => $action,
+            'action' => $action,
             'middlewares' => $middlewares,
         ];
     }
@@ -50,10 +50,10 @@ class Router
                 return;
             }
         }
-        
 
-    http_response_code(404);
-    echo "404 Not Found";
+
+        http_response_code(404);
+        echo "404 Not Found";
     }
 
     protected function runRoute(array $routeInfo, array $params = []): void

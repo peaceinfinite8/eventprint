@@ -91,9 +91,7 @@ class TestimonialController extends Controller
 
         log_admin_action('CREATE', "Menambah testimonial dari: $name", ['entity' => 'testimonial', 'name' => $name]);
 
-        $_SESSION['flash_success'] = 'Testimonial berhasil ditambahkan.';
-        header('Location: ' . $this->baseUrl('admin/testimonials'));
-        exit;
+        $this->redirectWithSuccess('admin/testimonials', 'Testimonial berhasil ditambahkan.');
     }
 
     public function edit($id)
@@ -151,8 +149,7 @@ class TestimonialController extends Controller
         if (!empty($errors)) {
             $_SESSION['validation_errors'] = $errors;
             $_SESSION['old_input'] = $_POST;
-            header('Location: ' . $this->baseUrl('admin/testimonials/edit/' . $id));
-            exit;
+            $this->redirect('admin/testimonials/edit/' . $id);
         }
 
         $photo = $item['photo'];
@@ -171,8 +168,7 @@ class TestimonialController extends Controller
             } catch (Exception $e) {
                 $_SESSION['validation_errors'] = ['photo' => [$e->getMessage()]];
                 $_SESSION['old_input'] = $_POST;
-                header('Location: ' . $this->baseUrl('admin/testimonials/edit/' . $id));
-                exit;
+                $this->redirect('admin/testimonials/edit/' . $id);
             }
         }
 
@@ -188,9 +184,7 @@ class TestimonialController extends Controller
 
         log_admin_action('UPDATE', "Mengubah testimonial dari: $name", ['entity' => 'testimonial', 'id' => $id, 'name' => $name]);
 
-        $_SESSION['flash_success'] = 'Testimonial berhasil diperbarui.';
-        header('Location: ' . $this->baseUrl('admin/testimonials'));
-        exit;
+        $this->redirectWithSuccess('admin/testimonials', 'Testimonial berhasil diperbarui.');
     }
 
     public function delete($id)
@@ -198,17 +192,13 @@ class TestimonialController extends Controller
         $id = (int) $id;
         $item = $this->testimonial->find($id);
         if (!$item) {
-            $_SESSION['flash_error'] = 'Testimonial tidak ditemukan.';
-            header('Location: ' . $this->baseUrl('admin/testimonials'));
-            exit;
+            $this->redirectWithError('admin/testimonials', 'Testimonial tidak ditemukan.');
         }
 
         try {
             Security::requireCsrfToken();
         } catch (Exception $e) {
-            $_SESSION['flash_error'] = 'CSRF token invalid.';
-            header('Location: ' . $this->baseUrl('admin/testimonials'));
-            exit;
+            $this->redirectWithError('admin/testimonials', 'CSRF token invalid.');
         }
 
         // Delete photo
@@ -222,8 +212,6 @@ class TestimonialController extends Controller
 
         log_admin_action('DELETE', "Menghapus testimonial dari: " . $item['name'], ['entity' => 'testimonial', 'id' => $id, 'name' => $item['name']]);
 
-        $_SESSION['flash_success'] = 'Testimonial berhasil dihapus.';
-        header('Location: ' . $this->baseUrl('admin/testimonials'));
-        exit;
+        $this->redirectWithSuccess('admin/testimonials', 'Testimonial berhasil dihapus.');
     }
 }

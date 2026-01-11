@@ -3,6 +3,8 @@
 
 require_once __DIR__ . '/../helpers/Security.php';
 require_once __DIR__ . '/../helpers/Validation.php';
+require_once __DIR__ . '/../helpers/Validation.php';
+require_once __DIR__ . '/../helpers/Upload.php';
 require_once __DIR__ . '/../helpers/logging.php';
 
 class MaterialController extends Controller
@@ -47,6 +49,14 @@ class MaterialController extends Controller
         }
 
         return $slug;
+    }
+
+    protected function uploadImage(?array $file): ?string
+    {
+        if (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            return null;
+        }
+        return Upload::image($file, 'materials');
     }
 
     /* ===================== INDEX ===================== */
@@ -110,23 +120,26 @@ class MaterialController extends Controller
         $sortOrder = (int) ($input['sort_order'] ?? 0);
         $isActive = !empty($input['is_active']) ? 1 : 0;
 
+        // Handle Image Upload
+        $imagePath = null;
+        if (!empty($_FILES['image']['name'])) {
+            $imagePath = $this->uploadImage($_FILES['image']);
+        }
+
         $stmt = $this->db->prepare("
-            INSERT INTO materials (name, slug, price_delta, sort_order, is_active)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO materials (name, slug, price_delta, sort_order, is_active, image_path)
+            VALUES (?, ?, ?, ?, ?, ?)
         ");
-        $stmt->bind_param('ssdii', $name, $slug, $priceDelta, $sortOrder, $isActive);
+        $stmt->bind_param('ssdiis', $name, $slug, $priceDelta, $sortOrder, $isActive, $imagePath);
         $ok = $stmt->execute();
         $stmt->close();
 
         if ($ok) {
             log_admin_action('CREATE', "Menambah bahan: $name", ['entity' => 'material', 'name' => $name]);
-            $_SESSION['flash_success'] = 'Bahan berhasil ditambahkan.';
-            header('Location: ' . $this->baseUrl('admin/materials'));
+            $this->redirectWithSuccess('admin/materials', 'Bahan berhasil ditambahkan.');
         } else {
-            $_SESSION['flash_error'] = 'Gagal menyimpan bahan.';
-            header('Location: ' . $this->baseUrl('admin/materials/create'));
+            $this->redirectWithError('admin/materials/create', 'Gagal menyimpan bahan.');
         }
-        exit;
     }
 
     /* ===================== EDIT ===================== */
@@ -181,24 +194,54 @@ class MaterialController extends Controller
         $sortOrder = (int) ($input['sort_order'] ?? 0);
         $isActive = !empty($input['is_active']) ? 1 : 0;
 
-        $stmt = $this->db->prepare("
-            UPDATE materials 
-            SET name = ?, slug = ?, price_delta = ?, sort_order = ?, is_active = ?
-            WHERE id = ?
-        ");
-        $stmt->bind_param('ssdiii', $name, $slug, $priceDelta, $sortOrder, $isActive, $id);
+        // Handle Image Upload
+        $imagePath = null; // Default null means "no change" or "no new file"
+
+        // Get existing image to delete if replaced
+        $stmt = $this->db->prepare("SELECT image_path FROM materials WHERE id = ?");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $existing = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        $currentImage = $existing['image_path'] ?? null;
+
+        if (!empty($_FILES['image']['name'])) {
+            $newImage = $this->uploadImage($_FILES['image']);
+            if ($newImage) {
+                // Delete old image
+                if ($currentImage && is_file(__DIR__ . '/../../public/' . $currentImage)) {
+                    @unlink(__DIR__ . '/../../public/' . $currentImage);
+                }
+                $imagePath = $newImage;
+            }
+        }
+
+        // Build Update Query
+        if ($imagePath) {
+            $stmt = $this->db->prepare("
+                UPDATE materials 
+                SET name = ?, slug = ?, price_delta = ?, sort_order = ?, is_active = ?, image_path = ?
+                WHERE id = ?
+            ");
+            $stmt->bind_param('ssdiisi', $name, $slug, $priceDelta, $sortOrder, $isActive, $imagePath, $id);
+        } else {
+            $stmt = $this->db->prepare("
+                UPDATE materials 
+                SET name = ?, slug = ?, price_delta = ?, sort_order = ?, is_active = ?
+                WHERE id = ?
+            ");
+            $stmt->bind_param('ssdiii', $name, $slug, $priceDelta, $sortOrder, $isActive, $id);
+        }
+
         $ok = $stmt->execute();
         $stmt->close();
 
         if ($ok) {
             log_admin_action('UPDATE', "Mengubah bahan: $name", ['entity' => 'material', 'id' => $id, 'name' => $name]);
-            $_SESSION['flash_success'] = 'Bahan berhasil diperbarui.';
-            header('Location: ' . $this->baseUrl('admin/materials'));
+            $this->redirectWithSuccess('admin/materials', 'Bahan berhasil diperbarui.');
         } else {
-            $_SESSION['flash_error'] = 'Gagal memperbarui bahan.';
-            header('Location: ' . $this->baseUrl('admin/materials/edit/' . $id));
+            $this->redirectWithError('admin/materials/edit/' . $id, 'Gagal memperbarui bahan.');
         }
-        exit;
     }
 
     /* ===================== DELETE ===================== */
@@ -222,9 +265,7 @@ class MaterialController extends Controller
         $stmt->close();
 
         if ($row['cnt'] > 0) {
-            $_SESSION['flash_error'] = "Tidak bisa menghapus. Bahan masih digunakan oleh {$row['cnt']} kategori.";
-            header('Location: ' . $this->baseUrl('admin/materials'));
-            exit;
+            $this->redirectWithError('admin/materials', "Tidak bisa menghapus. Bahan masih digunakan oleh {$row['cnt']} kategori.");
         }
 
         $stmt = $this->db->prepare("SELECT name FROM materials WHERE id = ?");
@@ -232,17 +273,21 @@ class MaterialController extends Controller
         $stmt->execute();
         $mat = $stmt->get_result()->fetch_assoc();
         $stmt->close();
+        $stmt->close();
         $matName = $mat['name'] ?? 'Unknown';
+        $oldImage = $mat['image_path'] ?? null;
 
         $stmt = $this->db->prepare("DELETE FROM materials WHERE id = ?");
         $stmt->bind_param('i', $id);
-        $stmt->execute();
+        $ok = $stmt->execute(); // Capture result
         $stmt->close();
+
+        if ($ok && $oldImage && is_file(__DIR__ . '/../../public/' . $oldImage)) {
+            @unlink(__DIR__ . '/../../public/' . $oldImage);
+        }
 
         log_admin_action('DELETE', "Menghapus bahan: $matName", ['entity' => 'material', 'id' => $id, 'name' => $matName]);
 
-        $_SESSION['flash_success'] = 'Bahan berhasil dihapus.';
-        header('Location: ' . $this->baseUrl('admin/materials'));
-        exit;
+        $this->redirectWithSuccess('admin/materials', 'Bahan berhasil dihapus.');
     }
 }

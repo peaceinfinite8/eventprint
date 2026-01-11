@@ -6,7 +6,7 @@ $config = require __DIR__ . '/app.php';
 $host = 'localhost';
 $user = 'root';
 $pass = '';
-$db   = 'eventprint';
+$db = 'eventprint';
 
 $mysqli = new mysqli($host, $user, $pass, $db);
 

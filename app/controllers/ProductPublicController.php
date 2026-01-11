@@ -7,7 +7,7 @@ require_once __DIR__ . '/../models/ProductCategory.php';
 
 class ProductPublicController extends Controller
 {
-    protected mysqli $db;
+    protected $db;
 
     public function __construct(array $config = [])
     {
@@ -193,22 +193,14 @@ class ProductPublicController extends Controller
         }
         $stmt->close();
 
-        // Fetch active discount
+        // Fetch active discount (Use columns from products table for consistency with API)
         $discount = null;
-        $stmt = $this->db->prepare("
-            SELECT discount_type, discount_value
-            FROM product_discounts
-            WHERE product_id=? AND is_active=1
-              AND (start_at IS NULL OR start_at <= NOW())
-              AND (end_at IS NULL OR end_at >= NOW())
-            ORDER BY created_at DESC
-            LIMIT 1
-        ");
-        $stmt->bind_param('i', $product['id']);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $discount = $result->fetch_assoc();
-        $stmt->close();
+        if (!empty($product['discount_type']) && !empty($product['discount_value']) && (float) $product['discount_value'] > 0) {
+            $discount = [
+                'type' => $product['discount_type'],
+                'amount' => $product['discount_value']
+            ];
+        }
 
         $this->renderFrontend('pages/product_detail', [
             'page' => 'product_detail',
@@ -226,14 +218,16 @@ class ProductPublicController extends Controller
     }
 
     // API endpoints (keep for backward compatibility)
-    public function detailBySlug(): void
+    public function detailBySlug($slug = null): void
     {
-        $slug = trim($_GET['slug'] ?? '');
+        // Capture slug from route parameter OR query string
+        $slug = $slug ?? $_GET['slug'] ?? '';
+        $slug = trim($slug);
+
         if ($slug) {
             $this->show($slug);
         } else {
-            http_response_code(404);
-            echo "Product not found";
+            $this->redirectWithError('products', 'Product not found.');
         }
     }
 
@@ -244,7 +238,9 @@ class ProductPublicController extends Controller
 
         $page = (int) ($_GET['page'] ?? 1);
         $perPage = (int) ($_GET['per_page'] ?? 100); // Increased default to 100
-        $categoryParam = $_GET['category'] ?? null; // Can be ID or slug
+        // Support both 'category' (frontend) and 'category_id' (admin search)
+        $categoryParam = $_GET['category'] ?? $_GET['category_id'] ?? null;
+        $searchQuery = trim($_GET['q'] ?? ''); // Search parameter
         $offset = ($page - 1) * $perPage;
 
         // Build WHERE clause
@@ -278,6 +274,16 @@ class ProductPublicController extends Controller
                 $params[] = $categoryId;
                 $types .= 'i';
             }
+        }
+
+        // Add search query filter
+        if ($searchQuery !== '') {
+            $where .= " AND (p.name LIKE ? OR p.slug LIKE ? OR p.description LIKE ?)";
+            $searchWildcard = '%' . $searchQuery . '%';
+            $params[] = $searchWildcard;
+            $params[] = $searchWildcard;
+            $params[] = $searchWildcard;
+            $types .= 'sss';
         }
 
         // Count total
@@ -447,7 +453,7 @@ class ProductPublicController extends Controller
                 $stmt2 = $this->db->prepare("
                     SELECT id, label, price_type, price_value
                     FROM product_option_values
-WHERE group_id=? AND is_active=1
+                    WHERE group_id=? AND is_active=1
                     ORDER BY sort_order ASC
                 ");
                 $stmt2->bind_param('i', $group['id']);
@@ -605,19 +611,20 @@ WHERE group_id=? AND is_active=1
             // Fetch category-based materials if source is 'category' or 'both'
             if (($optionsSource === 'category' || $optionsSource === 'both') && $categoryId) {
                 $stmt = $this->db->prepare("
-                    SELECT 
-                        m.id,
-                        m.name,
-                        m.slug,
-                        COALESCE(cm.price_delta_override, m.price_delta) as price_delta,
-                        m.sort_order
-                    FROM materials m
-                    INNER JOIN category_materials cm ON m.id = cm.material_id
-                    WHERE cm.category_id = ? 
-                      AND cm.is_active = 1 
-                      AND m.is_active = 1
-                    ORDER BY m.sort_order ASC, m.name ASC
-                ");
+                SELECT 
+                    m.id,
+                    m.name,
+                    m.slug,
+                    COALESCE(cm.price_delta_override, m.price_delta) as price_delta,
+                    m.sort_order,
+                    m.image_path
+                FROM materials m
+                INNER JOIN category_materials cm ON m.id = cm.material_id
+                WHERE cm.category_id = ? 
+                  AND cm.is_active = 1 
+                  AND m.is_active = 1
+                ORDER BY m.sort_order ASC, m.name ASC
+            ");
                 $stmt->bind_param('i', $categoryId);
                 $stmt->execute();
                 $result = $stmt->get_result();
@@ -627,7 +634,8 @@ WHERE group_id=? AND is_active=1
                         'id' => $row['slug'] ?: (string) $row['id'],
                         'slug' => $row['slug'],
                         'name' => $row['name'],
-                        'price_delta' => (float) $row['price_delta']
+                        'price_delta' => (float) $row['price_delta'],
+                        'image' => !empty($row['image_path']) ? safeImageUrl($row['image_path'], 'product') : null
                     ];
                 }
                 $stmt->close();
@@ -636,19 +644,20 @@ WHERE group_id=? AND is_active=1
             // Fetch product-specific materials if source is 'product' or 'both'
             if ($optionsSource === 'product' || $optionsSource === 'both') {
                 $stmt = $this->db->prepare("
-                    SELECT 
-                        m.id,
-                        m.name,
-                        m.slug,
-                        COALESCE(pm.price_delta_override, m.price_delta) as price_delta,
-                        m.sort_order
-                    FROM materials m
-                    INNER JOIN product_materials pm ON m.id = pm.material_id
-                    WHERE pm.product_id = ? 
-                      AND pm.is_active = 1 
-                      AND m.is_active = 1
-                    ORDER BY m.sort_order ASC, m.name ASC
-                ");
+                SELECT 
+                    m.id,
+                    m.name,
+                    m.slug,
+                    COALESCE(pm.price_delta_override, m.price_delta) as price_delta,
+                    m.sort_order,
+                    m.image_path
+                FROM materials m
+                INNER JOIN product_materials pm ON m.id = pm.material_id
+                WHERE pm.product_id = ? 
+                  AND pm.is_active = 1 
+                  AND m.is_active = 1
+                ORDER BY m.sort_order ASC, m.name ASC
+            ");
                 $stmt->bind_param('i', $productId);
                 $stmt->execute();
                 $result = $stmt->get_result();
@@ -659,7 +668,8 @@ WHERE group_id=? AND is_active=1
                         'id' => $row['slug'] ?: (string) $row['id'],
                         'slug' => $row['slug'],
                         'name' => $row['name'],
-                        'price_delta' => (float) $row['price_delta']
+                        'price_delta' => (float) $row['price_delta'],
+                        'image' => !empty($row['image_path']) ? safeImageUrl($row['image_path'], 'product') : null
                     ];
                 }
                 $stmt->close();
@@ -668,19 +678,20 @@ WHERE group_id=? AND is_active=1
             // Fetch category-based laminations if source is 'category' or 'both'
             if (($optionsSource === 'category' || $optionsSource === 'both') && $categoryId) {
                 $stmt = $this->db->prepare("
-                    SELECT 
-                        l.id,
-                        l.name,
-                        l.slug,
-                        COALESCE(cl.price_delta_override, l.price_delta) as price_delta,
-                        l.sort_order
-                    FROM laminations l
-                    INNER JOIN category_laminations cl ON l.id = cl.lamination_id
-                    WHERE cl.category_id = ? 
-                      AND cl.is_active = 1 
-                      AND l.is_active = 1
-                    ORDER BY l.sort_order ASC, l.name ASC
-                ");
+                SELECT 
+                    l.id,
+                    l.name,
+                    l.slug,
+                    COALESCE(cl.price_delta_override, l.price_delta) as price_delta,
+                    l.sort_order,
+                    l.image_path
+                FROM laminations l
+                INNER JOIN category_laminations cl ON l.id = cl.lamination_id
+                WHERE cl.category_id = ? 
+                  AND cl.is_active = 1 
+                  AND l.is_active = 1
+                ORDER BY l.sort_order ASC, l.name ASC
+            ");
                 $stmt->bind_param('i', $categoryId);
                 $stmt->execute();
                 $result = $stmt->get_result();
@@ -690,7 +701,8 @@ WHERE group_id=? AND is_active=1
                         'id' => $row['slug'] ?: (string) $row['id'],
                         'slug' => $row['slug'],
                         'name' => $row['name'],
-                        'price_delta' => (float) $row['price_delta']
+                        'price_delta' => (float) $row['price_delta'],
+                        'image' => !empty($row['image_path']) ? safeImageUrl($row['image_path'], 'product') : null
                     ];
                 }
                 $stmt->close();
@@ -699,35 +711,36 @@ WHERE group_id=? AND is_active=1
             // Fetch product-specific laminations if source is 'product' or 'both'
             if ($optionsSource === 'product' || $optionsSource === 'both') {
                 $stmt = $this->db->prepare("
-                    SELECT 
-                        l.id,
-                        l.name,
-                        l.slug,
-                        COALESCE(pl.price_delta_override, l.price_delta) as price_delta,
-                        l.sort_order
-                    FROM laminations l
-                    INNER JOIN product_laminations pl ON l.id = pl.lamination_id
-                    WHERE pl.product_id = ? 
-                      AND pl.is_active = 1 
-                      AND l.is_active = 1
-                    ORDER BY l.sort_order ASC, l.name ASC
-                ");
+                SELECT 
+                    l.id,
+                    l.name,
+                    l.slug,
+                    COALESCE(pl.price_delta_override, l.price_delta) as price_delta,
+                    l.sort_order,
+                    l.image_path
+                FROM laminations l
+                INNER JOIN product_laminations pl ON l.id = pl.lamination_id
+                WHERE pl.product_id = ? 
+                  AND pl.is_active = 1 
+                  AND l.is_active = 1
+                ORDER BY l.sort_order ASC, l.name ASC
+            ");
                 $stmt->bind_param('i', $productId);
                 $stmt->execute();
                 $result = $stmt->get_result();
 
                 while ($row = $result->fetch_assoc()) {
-                    // Product-specific overrides category
+                    // Product-specific overrides 
                     $laminations[$row['id']] = [
                         'id' => $row['slug'] ?: (string) $row['id'],
                         'slug' => $row['slug'],
                         'name' => $row['name'],
-                        'price_delta' => (float) $row['price_delta']
+                        'price_delta' => (float) $row['price_delta'],
+                        'image' => !empty($row['image_path']) ? safeImageUrl($row['image_path'], 'product') : null
                     ];
                 }
                 $stmt->close();
             }
-
         } catch (\Exception $e) {
             // If tables don't exist yet, return empty arrays
             error_log("getProductOptions error: " . $e->getMessage());

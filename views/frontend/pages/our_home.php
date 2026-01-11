@@ -47,7 +47,10 @@
 
     .store-image {
         width: 160px;
-        height: 160px;
+        width: 160px;
+        aspect-ratio: 1/1;
+        /* Square 1:1 */
+        /* height: 160px; REMOVED for 4:3 */
         background: #E5E7EB;
         border-radius: 12px;
         display: flex;
@@ -166,7 +169,9 @@
 
     .gallery-item img {
         width: 100%;
-        height: 220px;
+        width: 100%;
+        /* height: 220px; REMOVED fixed height */
+        aspect-ratio: 4/3;
         object-fit: cover;
         display: block;
     }
@@ -223,7 +228,7 @@
 
         .store-image {
             width: 140px;
-            height: 140px;
+            /* height automatically 1:1 via aspect-ratio */
         }
 
         .gallery-grid {
@@ -243,7 +248,8 @@
 
         .store-image {
             width: 100%;
-            height: 180px;
+            height: auto;
+            /* Allow aspect-ratio 1/1 to work */
         }
 
         .our-home-title {
@@ -259,7 +265,7 @@
         }
 
         .gallery-item img {
-            height: 180px;
+            /* height: 180px; */
         }
     }
 </style>

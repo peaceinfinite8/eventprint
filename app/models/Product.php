@@ -248,7 +248,7 @@ class Product
     protected function renderFrontend(string $viewName, array $vars = []): void
     {
         // viewName WAJIB: "product/index" (tanpa "frontend/" dan tanpa ".php")
-        $baseUrl = $vars['baseUrl'] ?? '/eventprint/public';
+        $baseUrl = $vars['baseUrl'] ?? '/eventprint';
         $vars['baseUrl'] = $baseUrl;
 
         // app/ sebagai root view
@@ -451,7 +451,7 @@ class Product
         if ($slug === '')
             return false;
 
-        $sql = "SELECT id FROM products WHERE slug = ? AND deleted_at IS NULL";
+        $sql = "SELECT id FROM products WHERE slug = ?";
         if ($ignoreId !== null)
             $sql .= " AND id <> ?";
         $sql .= " LIMIT 1";
@@ -640,6 +640,57 @@ class Product
         $ok = $stmt->affected_rows > 0;
         $stmt->close();
 
+        return $ok;
+    }
+
+    // ==========================================
+    // GALLERY METHODS
+    // ==========================================
+    public function getGallery(int $productId): array
+    {
+        $db = $this->db();
+        $stmt = $db->prepare("SELECT * FROM product_images WHERE product_id = ? ORDER BY sort_order ASC, id ASC");
+        if (!$stmt)
+            return [];
+        $stmt->bind_param('i', $productId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        return $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+    }
+
+    public function addGalleryImage(int $productId, string $imagePath): bool
+    {
+        $db = $this->db();
+        $stmt = $db->prepare("INSERT INTO product_images (product_id, image_path, sort_order) VALUES (?, ?, 0)");
+        if (!$stmt)
+            return false;
+        $stmt->bind_param('is', $productId, $imagePath);
+        $ok = $stmt->execute();
+        $stmt->close();
+        return $ok;
+    }
+
+    public function getGalleryImageById(int $imageId): ?array
+    {
+        $db = $this->db();
+        $stmt = $db->prepare("SELECT * FROM product_images WHERE id = ?");
+        if (!$stmt)
+            return null;
+        $stmt->bind_param('i', $imageId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        return $res ? $res->fetch_assoc() : null;
+    }
+
+    public function deleteGalleryImage(int $imageId): bool
+    {
+        $db = $this->db();
+        $stmt = $db->prepare("DELETE FROM product_images WHERE id = ? LIMIT 1");
+        if (!$stmt)
+            return false;
+        $stmt->bind_param('i', $imageId);
+        $ok = $stmt->execute();
+        $stmt->close();
         return $ok;
     }
 }

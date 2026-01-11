@@ -37,9 +37,14 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Isi Pesan</label>
-                        <textarea name="message" class="form-textarea" placeholder="Tulis pesan Anda..."
+                        <label class="form-label">
+                            Isi Pesan
+                            <span class="text-muted small" style="float: right;" id="charCounter">0/1000</span>
+                        </label>
+                        <textarea name="message" id="messageInput" class="form-textarea"
+                            placeholder="Tulis pesan Anda..." maxlength="1000" oninput="updateCharCounter()"
                             required></textarea>
+                        <small class="text-muted">Maksimal 1000 karakter</small>
                     </div>
 
                     <button type="submit" class="btn btn-secondary">Kirim sekarang</button>

@@ -1,6 +1,7 @@
 <?php
 // app/controllers/ProductController.php
 
+require_once __DIR__ . '/../core/controller.php';
 require_once __DIR__ . '/../helpers/Security.php';
 require_once __DIR__ . '/../helpers/Validation.php';
 require_once __DIR__ . '/../helpers/Upload.php';
@@ -56,9 +57,20 @@ class ProductController extends Controller
 
     protected function uploadThumbnail(?array $file): ?string
     {
-        if (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK)
+        if (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            // Log why upload was skipped
+            error_log('Upload skipped: ' . ($file ? "Error code: " . ($file['error'] ?? 'unknown') : 'No file'));
             return null;
-        return Upload::image($file, 'products');
+        }
+
+        $result = Upload::image($file, 'products');
+
+        // Log if Upload::image returned null
+        if ($result === null) {
+            error_log('Upload::image() returned NULL for file: ' . ($file['name'] ?? 'unknown'));
+        }
+
+        return $result;
     }
 
     public function adminList()
@@ -114,6 +126,7 @@ class ProductController extends Controller
 
         $input = Validation::validateOrRedirect($_POST, $rules, $this->baseUrl('admin/products/create'));
 
+        // ... variable assignments remain same, just ensure they use $input ...
         $name = $input['name'];
         $category_id = ($input['category_id'] ?? '') !== '' ? (int) $input['category_id'] : null;
         $short_desc = $input['short_description'] ?? null;
@@ -174,21 +187,16 @@ class ProductController extends Controller
                 'specs' => $specs ?: null,
                 'upload_rules' => $upload_rules ?: null,
                 // Discount fields
-                'discount_type' => $discount_type,
                 'discount_value' => $discount_value,
             ]);
         } catch (Exception $e) {
-            $_SESSION['flash_error'] = 'Gagal menyimpan produk: ' . $e->getMessage();
-            header('Location: ' . $this->baseUrl('admin/products/create'));
-            exit;
+            $this->redirectWithError('admin/products/create', 'Gagal menyimpan produk: ' . $e->getMessage());
         }
 
         // Log activity
         log_admin_action('CREATE', "Menambah produk: $name", ['entity' => 'product', 'name' => $name]);
 
-        $_SESSION['flash_success'] = 'Produk berhasil ditambahkan.';
-        header('Location: ' . $this->baseUrl('admin/products'));
-        exit;
+        $this->redirectWithSuccess('admin/products', 'Produk berhasil ditambahkan.');
     }
 
     public function edit($id)
@@ -204,7 +212,79 @@ class ProductController extends Controller
         $this->renderAdmin('product/edit', [
             'product' => $product,
             'categories' => $this->getCategories(),
+            'gallery' => $this->product->getGallery($id)
         ], 'Edit Produk');
+    }
+
+    public function uploadGallery($id)
+    {
+        $id = (int) $id;
+        $product = $this->product->find($id);
+        if (!$product) {
+            $this->redirectWithError('admin/products', 'Produk tidak ditemukan.');
+        }
+
+        if (!empty($_FILES['gallery']['name'][0])) {
+            $files = $_FILES['gallery'];
+            $count = count($files['name']);
+            $successCount = 0;
+            $errors = [];
+
+            for ($i = 0; $i < $count; $i++) {
+                if ($files['error'][$i] === UPLOAD_ERR_OK) {
+                    try {
+                        // Prepare single file array for Upload helper
+                        $file = [
+                            'name' => $files['name'][$i],
+                            'type' => $files['type'][$i],
+                            'tmp_name' => $files['tmp_name'][$i],
+                            'error' => $files['error'][$i],
+                            'size' => $files['size'][$i]
+                        ];
+
+                        $path = Upload::image($file, 'products/gallery');
+                        if ($path) {
+                            $this->product->addGalleryImage($id, $path);
+                            $successCount++;
+                        }
+                    } catch (Exception $e) {
+                        $errors[] = $files['name'][$i] . ": " . $e->getMessage();
+                    }
+                }
+            }
+
+            if ($successCount > 0) {
+                $msg = "$successCount foto berhasil diupload.";
+                if (!empty($errors)) {
+                    $msg .= " Gagal: " . implode(', ', $errors);
+                    $this->redirectWithError('admin/products/edit/' . $id, $msg);
+                } else {
+                    $this->redirectWithSuccess('admin/products/edit/' . $id, $msg);
+                }
+            } else {
+                $this->redirectWithError('admin/products/edit/' . $id, 'Gagal upload foto. ' . implode(', ', $errors));
+            }
+        } else {
+            $this->redirectWithError('admin/products/edit/' . $id, 'Pilih foto terlebih dahulu.');
+        }
+    }
+
+    public function deleteGalleryImage($imgId)
+    {
+        $imgId = (int) $imgId;
+        $img = $this->product->getGalleryImageById($imgId);
+        if ($img) {
+            // Delete file
+            $path = __DIR__ . '/../../public/' . $img['image_path'];
+            if (is_file($path)) {
+                @unlink($path);
+            }
+
+            $this->product->deleteGalleryImage($imgId);
+            $this->redirectWithSuccess('admin/products/edit/' . $img['product_id'], 'Foto berhasil dihapus.');
+        } else {
+            $this->redirectWithError('admin/products', 'Foto tidak ditemukan.');
+        }
     }
 
     public function update($id)
@@ -278,8 +358,7 @@ class ProductController extends Controller
             } catch (Exception $e) {
                 $_SESSION['validation_errors'] = ['thumbnail' => ['Gagal upload thumbnail: ' . $e->getMessage()]];
                 $_SESSION['old_input'] = $input;
-                header('Location: ' . $this->baseUrl('admin/products/edit/' . $id));
-                exit;
+                $this->redirect('admin/products/edit/' . $id);
             }
         }
 
@@ -308,17 +387,13 @@ class ProductController extends Controller
                 'discount_value' => $discount_value,
             ]);
         } catch (Exception $e) {
-            $_SESSION['flash_error'] = 'Gagal memperbarui produk: ' . $e->getMessage();
-            header('Location: ' . $this->baseUrl('admin/products/edit/' . $id));
-            exit;
+            $this->redirectWithError('admin/products/edit/' . $id, 'Gagal memperbarui produk: ' . $e->getMessage());
         }
 
         // Log activity
         log_admin_action('UPDATE', "Mengubah produk: $name", ['entity' => 'product', 'id' => $id, 'name' => $name]);
 
-        $_SESSION['flash_success'] = 'Produk berhasil diperbarui.';
-        header('Location: ' . $this->baseUrl('admin/products'));
-        exit;
+        $this->redirectWithSuccess('admin/products', 'Produk berhasil diperbarui.');
     }
 
     public function delete($id)
@@ -351,8 +426,6 @@ class ProductController extends Controller
         // Log activity
         log_admin_action('DELETE', "Menghapus produk: $productName", ['entity' => 'product', 'id' => $id, 'name' => $productName]);
 
-        $_SESSION['flash_success'] = 'Produk berhasil dihapus.';
-        header('Location: ' . $this->baseUrl('admin/products'));
-        exit;
+        $this->redirectWithSuccess('admin/products', 'Produk berhasil dihapus.');
     }
 }
