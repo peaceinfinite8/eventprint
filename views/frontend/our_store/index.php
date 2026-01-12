@@ -1,0 +1,180 @@
+<?php
+// views/frontend/our_store/index.php
+$baseUrl = $baseUrl ?? '/eventprint';
+?>
+
+<style>
+  /* Our Home Page Specific Styles */
+  body {
+    /* Default background */
+  }
+
+  .our-home-section {
+    padding: 40px 0 60px;
+  }
+
+  .our-home-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 18px;
+    color: var(--gray-900);
+  }
+
+  .stores-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+
+  .store-card {
+    background: var(--white);
+    border: 1px solid #E5E7EB;
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 16px;
+  }
+
+  .store-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .store-image {
+    width: 160px;
+    height: 160px;
+    background: #E5E7EB;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9CA3AF;
+    font-size: 0.9rem;
+    font-weight: 500;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .store-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .store-label {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .store-info {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .info-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .info-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    color: var(--primary-cyan);
+    margin-top: 2px;
+  }
+
+  .info-icon svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .info-content {
+    flex: 1;
+  }
+
+  .info-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin-bottom: 2px;
+  }
+
+  .info-text {
+    font-size: 0.8rem;
+    color: var(--gray-600);
+    line-height: 1.4;
+  }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .stores-grid {
+      gap: 16px;
+    }
+
+    .store-card {
+      padding: 14px;
+    }
+
+    .store-image {
+      width: 140px;
+      height: 140px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .stores-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .store-card {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .store-image {
+      width: 100%;
+      height: 180px;
+    }
+
+    .our-home-title {
+      font-size: 1.5rem;
+    }
+  }
+</style>
+
+<!-- Our Home Content -->
+<section class="our-home-section">
+  <div class="container">
+    <h1 class="our-home-title">Our Home</h1>
+    <div id="storesGrid">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- Machine Gallery Section -->
+<section class="machine-gallery-section">
+  <div class="container">
+    <div class="gallery-header">
+      <h2 class="gallery-title">Galeri Mesin Produksi</h2>
+      <p class="gallery-subtitle">Lihat mesin yang kami gunakan untuk menjaga kualitas & kecepatan produksi
+      </p>
+    </div>
+    <div id="galleryGrid" class="gallery-grid">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+</section>

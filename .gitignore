@@ -1,0 +1,57 @@
+# Environment & Configuration
+.env
+.env.local
+.env.*.local
+
+# Uploads (user-generated content)
+public/uploads/*
+!public/uploads/.gitkeep
+
+# Logs
+storage/logs/*
+!storage/logs/.gitkeep
+*.log
+
+# Composer
+/vendor/
+composer.phar
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.bak
+*.cache
+
+# Node modules (if using npm)
+node_modules/
+
+# Build artifacts
+/build/
+/dist/
+
+# runtime uploads (jangan masuk repo)
+uploads/
+public/uploads/
+public/assets/frontend/images/
+
+# optional: cache/log
+storage/
+cache/
+*.log
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

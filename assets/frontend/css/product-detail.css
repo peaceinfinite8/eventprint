@@ -1,0 +1,113 @@
+/* =========================================================
+  EventPrint Product Detail Styles
+  Market place style dengan cyan #300AEEF dominant
+========================================================= */
+
+/* Market place badges */
+.ep-market-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  color: #374151;
+  background: #f3f4f6;
+  transition: all 0.2s ease;
+}
+
+.ep-market-btn:hover {
+  background: #e5e7eb;
+  color: #111827;
+  transform: translateY(-1px);
+}
+
+.pd-m {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  color: #fff;
+  font-weight: 900;
+  font-size: 11px;
+  line-height: 20px;
+  text-align: center;
+}
+
+.pd-m.shopee {
+  background: #ee4d2d;
+}
+
+.pd-m.tokopedia {
+  background: #00a652;
+}
+
+/* Product Gallery */
+.pd-gallery {
+  background: #fff;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-2);
+}
+
+.pd-main {
+  position: relative;
+  aspect-ratio: 1/1;
+  background: #f5f5f5;
+}
+
+.pd-main img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.pd-thumbs {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  background: #fff;
+  overflow-x: auto;
+}
+
+.pd-thumb {
+  flex: 0 0 auto;
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background: #f5f5f5;
+  cursor: pointer;
+  padding: 4px;
+  transition: all 0.2s ease;
+}
+
+.pd-thumb:hover {
+  border-color: rgba(48, 10, 239, 0.3);
+}
+
+.pd-thumb.active {
+  border-color: var(--c-primary);
+}
+
+.pd-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .pd-thumbs {
+    padding: 8px;
+  }
+  
+  .pd-thumb {
+    width: 50px;
+    height: 50px;
+  }
+}

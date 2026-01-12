@@ -1,0 +1,258 @@
+/* assets/frontend/css/home-marketplace.css */
+
+/* --- Container & Layout --- */
+.marketplace-container {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+.marketplace-section {
+    display: grid;
+    grid-template-columns: 44% 56%;
+    /* Banner ~44%, Products ~56% */
+    gap: 24px;
+    margin-bottom: 60px;
+    align-items: start;
+}
+
+.marketplace-section.banner-right {
+    grid-template-columns: 56% 44%;
+    /* Products Left, Banner Right */
+}
+
+/* Order Management for Banner Right */
+.marketplace-section.banner-right .mp-banner-wrapper {
+    order: 2;
+}
+
+.marketplace-section.banner-right .mp-product-grid {
+    order: 1;
+}
+
+
+/* --- Banner Card --- */
+.mp-banner-card {
+    position: relative;
+    width: 100%;
+    min-height: 480px;
+    /* Adjust as needed */
+    height: 100%;
+    background: #f0f2f5;
+    /* Fallback */
+    border-radius: 18px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 40px;
+    text-decoration: none;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    color: #333;
+}
+
+.mp-banner-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.mp-banner-card.theme-red {
+    background: linear-gradient(135deg, #fff5f5 0%, #ffe3e3 100%);
+}
+
+.mp-banner-card.theme-blue {
+    background: linear-gradient(135deg, #f0f7ff 0%, #e0efff 100%);
+}
+
+.mp-banner-card.theme-custom {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.mp-banner-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 10px;
+    line-height: 1.2;
+    z-index: 2;
+}
+
+.mp-banner-subtitle {
+    font-size: 1.1rem;
+    color: #666;
+    margin-bottom: 24px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+}
+
+.mp-banner-subtitle i {
+    margin-left: 8px;
+    transition: transform 0.2s;
+}
+
+.mp-banner-card:hover .mp-banner-subtitle i {
+    transform: translateX(5px);
+}
+
+/* Decoration Wave (CSS only) */
+.mp-banner-wave {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 150px;
+    background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1440 320" xmlns="http://www.w3.org/2000/svg"><path fill="%23ffffff" fill-opacity="0.4" d="M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,224C672,245,768,267,864,261.3C960,256,1056,224,1152,197.3C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>');
+    background-size: cover;
+    background-repeat: no-repeat;
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Hardcoded Images (Optional placement) */
+.mp-banner-img {
+    position: absolute;
+    bottom: -20px;
+    right: -20px;
+    width: 80%;
+    max-width: 300px;
+    transform: rotate(-5deg);
+    transition: transform 0.3s;
+    z-index: 1;
+}
+
+.mp-banner-card:hover .mp-banner-img {
+    transform: rotate(0deg) scale(1.05);
+}
+
+
+/* --- Product Grid --- */
+.mp-product-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    /* 3 Columns */
+    gap: 16px;
+}
+
+.mp-product-card {
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 14px;
+    overflow: hidden;
+    transition: all 0.2s;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+}
+
+.mp-product-card:hover {
+    border-color: #ddd;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
+
+.mp-pc-thumb {
+    width: 100%;
+    aspect-ratio: 1/1;
+    background: #f6f7f9;
+    position: relative;
+    overflow: hidden;
+}
+
+.mp-pc-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.mp-pc-body {
+    padding: 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.mp-pc-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+    line-height: 1.4;
+    color: #333;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 2.8em;
+    /* Force 2 lines height alignment */
+}
+
+.mp-pc-price {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0d6efd;
+    /* Brand Blue */
+    margin-top: auto;
+    /* Push to bottom */
+}
+
+.mp-pc-rating {
+    font-size: 0.75rem;
+    color: #ffc107;
+    margin-bottom: 8px;
+}
+
+.mp-pc-sold {
+    color: #999;
+    margin-left: 4px;
+    font-size: 0.75rem;
+}
+
+/* --- Responsive --- */
+@media (max-width: 992px) {
+
+    .marketplace-section,
+    .marketplace-section.banner-right {
+        grid-template-columns: 1fr;
+        /* Stacked */
+    }
+
+    .marketplace-section.banner-right .mp-banner-wrapper {
+        order: -1;
+        /* Banner always top on tablet/mobile */
+    }
+
+    .mp-banner-card {
+        min-height: 250px;
+        padding: 24px;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .mp-banner-img {
+        width: 150px;
+        position: relative;
+        bottom: 0;
+        right: 0;
+        transform: none;
+    }
+
+    .mp-product-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 576px) {
+    .mp-product-grid {
+        grid-template-columns: repeat(2, 1fr);
+        /* 2 cols on mobile */
+    }
+
+    .mp-banner-card {
+        min-height: 200px;
+    }
+
+    .mp-banner-title {
+        font-size: 1.8rem;
+    }
+}
