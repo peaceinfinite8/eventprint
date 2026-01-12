@@ -1,0 +1,370 @@
+/* ============================================
+   EventPrint - Global Styles (Pixel Perfect)
+   ============================================ */
+
+/* Google Fonts Import */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap');
+
+/* This file extends main.css with 1:1 parity fixes for Hero & Footer */
+
+/* ============================================
+   HERO BANNER CAROUSEL (1:1 PARITY FIX)
+   From: frontend/public/assets/css/main.css lines 995-1117
+   ============================================ */
+.banner-carousel {
+    width: 100%;
+    max-width: none;
+    background: var(--cyan-100);
+    border-radius: 0;
+    position: relative;
+    overflow: hidden;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.hero--fullbleed {
+    width: 100%;
+    /* Remove pixel-based min-height to allow aspect-ratio to dictate height */
+    min-height: unset !important;
+    height: auto !important;
+    aspect-ratio: auto;
+}
+
+.hero__inner {
+    max-width: var(--container-max-width);
+    width: 100%;
+    flex: 1;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+}
+
+.banner-slide {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    transition: background-image 0.5s ease;
+}
+
+@media (max-width: 768px) {
+    .hero--fullbleed {
+        min-height: clamp(320px, 45vh, 520px);
+    }
+
+    .hero__inner {
+        padding: 0 16px;
+    }
+}
+
+.banner-title {
+    font-family: var(--font-heading);
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--gray-900);
+    margin-bottom: 16px;
+}
+
+.banner-subtitle {
+    font-size: 1.25rem;
+    color: var(--gray-700);
+    margin-bottom: 24px;
+}
+
+.carousel-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    background: rgba(0, 0, 0, 0.3);
+    border: none;
+    border-radius: 50%;
+    color: var(--white);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.carousel-arrow:hover {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.carousel-arrow.left {
+    left: 24px;
+}
+
+.carousel-arrow.right {
+    right: 24px;
+}
+
+.carousel-dots {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+}
+
+.carousel-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.carousel-dot.active {
+    background: var(--white);
+}
+
+/* ============================================
+   FOOTER CYAN REDESIGN (1:1 PARITY FIX)
+   From: frontend/public/assets/css/main.css lines 2073-2179
+   ============================================ */
+.footer {
+    background-color: var(--primary-cyan) !important;
+    color: var(--white) !important;
+    padding: 60px 0 20px;
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 48px;
+    padding-bottom: 32px;
+}
+
+.footer-column h4 {
+    color: var(--white) !important;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 16px;
+}
+
+.footer-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-links li {
+    margin-bottom: 8px;
+}
+
+.footer-links a {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.footer-links a:hover {
+    color: var(--white) !important;
+    padding-left: 6px;
+}
+
+.footer-text {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-size: 0.9rem;
+    line-height: 1.8;
+}
+
+.footer-bar {
+    background: var(--primary-cyan) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
+    height: var(--footer-bar-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+}
+
+.footer-bar p {
+    color: rgba(255, 255, 255, 0.8) !important;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* Footer Extras Panel */
+.footer-extras {
+    margin-top: 40px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    padding-top: 32px;
+    display: flex;
+    justify-content: space-between;
+    text-align: left;
+    flex-wrap: wrap;
+    gap: 32px;
+}
+
+.footer-extra-panel h5 {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 16px;
+    color: rgba(255, 255, 255, 0.95);
+    font-weight: 700;
+}
+
+.footer-social-icons {
+    display: flex;
+    gap: 12px;
+}
+
+.social-icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--white);
+    transition: all 0.2s;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-decoration: none;
+}
+
+.social-icon-btn:hover {
+    background: var(--white);
+    color: var(--primary-cyan);
+    transform: translateY(-2px);
+}
+
+.footer-payment-icons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.payment-icon {
+    height: 32px;
+    background: var(--white);
+    padding: 4px 8px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.payment-icon img {
+    height: 100%;
+    width: auto;
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .footer-content {
+        grid-template-columns: 1fr;
+        gap: 32px;
+    }
+
+    .footer-extras {
+        flex-direction: column;
+        gap: 24px;
+        padding-top: 24px;
+        margin-top: 32px;
+    }
+
+    .banner-title {
+        font-size: 1.75rem;
+    }
+
+    .banner-subtitle {
+        font-size: 1rem;
+    }
+}
+
+/* ============================================
+   PRODUCTS PAGE - PLACEHOLDER IMAGE
+   ============================================ */
+.ep-products__img-placeholder {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    font-weight: 500;
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 16px;
+    border-radius: 8px;
+}
+
+/* ============================================
+   PRODUCTS PAGE - SEMUA PRODUK & CATEGORY COUNTS
+   ============================================ */
+.ep-products__cat-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: var(--gray-700);
+    border-radius: 6px;
+}
+
+.ep-products__cat-item:hover {
+    background-color: var(--gray-100);
+    transform: translateX(2px);
+}
+
+.ep-products__cat-item.active {
+    background-color: var(--primary-cyan);
+    color: var(--white);
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(6, 182, 212, 0.2);
+}
+
+.ep-products__cat-item--all {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 12px;
+    padding: 14px 16px;
+}
+
+.ep-products__cat-label {
+    flex: 1;
+}
+
+.ep-products__cat-count {
+    font-size: 0.85rem;
+    opacity: 0.75;
+    margin-left: 8px;
+}
+
+/* Make sure sidebar items also show counts */
+.ep-products-sidebar-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
